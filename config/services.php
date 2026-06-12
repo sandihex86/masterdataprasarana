@@ -35,4 +35,14 @@ return [
         ],
     ],
 
+    'recaptcha' => [
+        'enabled' => env('RECAPTCHA_ENABLED', false),
+        'type' => env('RECAPTCHA_TYPE', 'v3'),
+        'site_key' => env('RECAPTCHA_SITE_KEY'),
+        'secret_key' => env('RECAPTCHA_SECRET_KEY'),
+        'score_threshold' => (float) env('RECAPTCHA_SCORE_THRESHOLD', 0.5),
+        'login_action' => env('RECAPTCHA_LOGIN_ACTION', 'login'),
+        'verify_url' => env('RECAPTCHA_VERIFY_URL', 'https://www.google.com/recaptcha/api/siteverify'),
+    ],
+
 ];

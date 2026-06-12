@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Enums\MasterDataStatus;
-use App\Enums\UserRole;
 use App\Models\MasterData;
 use App\Models\MasterDataType;
 use App\Models\User;
@@ -22,8 +21,8 @@ class BridgeSqlDumpSeeder extends Seeder
 
     public function run(SqlDumpTableReader $reader, MasterDataChecksumService $checksumService): void
     {
-        $actor = $this->resolveActor();
-        $this->ensureBridgeType($actor->id);
+        $actorId = $this->resolveActorId();
+        $this->ensureBridgeType($actorId);
 
         $path = base_path($this->dumpPath);
 
@@ -137,7 +136,7 @@ class BridgeSqlDumpSeeder extends Seeder
 
             if (! $record->exists) {
                 $record->uuid = (string) Str::uuid();
-                $record->created_by = $actor->id;
+                $record->created_by = $actorId;
                 $record->version = 1;
             } elseif ($record->checksum !== $checksum) {
                 $record->version = $record->version + 1;
@@ -148,28 +147,22 @@ class BridgeSqlDumpSeeder extends Seeder
                 'checksum' => $checksum,
                 'status' => $status,
                 'synced_at' => now(),
-                'updated_by' => $actor->id,
+                'updated_by' => $actorId,
             ]);
 
             $record->save();
         }
     }
 
-    private function resolveActor(): User
+    private function resolveActorId(): ?int
     {
-        return User::query()->updateOrCreate(
-            ['email' => 'superadmin@example.com'],
-            [
-                'uuid' => User::query()->where('email', 'superadmin@example.com')->value('uuid') ?? (string) Str::uuid(),
-                'name' => 'Superadmin Local',
-                'password' => 'password',
-                'role' => UserRole::Superadmin,
-                'email_verified_at' => now(),
-            ],
-        );
+        return User::query()
+            ->where('is_admin', true)
+            ->orderBy('id')
+            ->value('id');
     }
 
-    private function ensureBridgeType(int $actorId): void
+    private function ensureBridgeType(?int $actorId): void
     {
         $type = MasterDataType::query()->firstOrNew(['code' => 'bridge']);
 

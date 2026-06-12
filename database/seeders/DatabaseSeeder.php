@@ -3,12 +3,10 @@
 namespace Database\Seeders;
 
 use App\Enums\MasterDataStatus;
-use App\Enums\UserRole;
 use App\Models\ApiClient;
 use App\Models\ImportMapping;
 use App\Models\MasterData;
 use App\Models\MasterDataType;
-use App\Models\User;
 use App\Support\MasterData\BridgeModuleDefinition;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -23,40 +21,12 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $superadmin = $this->seedUser(
-            name: 'Superadmin Local',
-            email: 'superadmin@example.com',
-            role: UserRole::Superadmin,
-        );
-
-        $this->seedUser(
-            name: 'Admin Local',
-            email: 'admin@example.com',
-            role: UserRole::Admin,
-        );
-
-        $this->seedUser(
-            name: 'Operator Local',
-            email: 'operator@example.com',
-            role: UserRole::Operator,
-        );
-
-        $this->seedUser(
-            name: 'Verifikator Local',
-            email: 'verifikator@example.com',
-            role: UserRole::Verifikator,
-        );
-
-        $this->seedUser(
-            name: 'Viewer Local',
-            email: 'viewer@example.com',
-            role: UserRole::Viewer,
-        );
+        $actorId = null;
 
         $stationType = $this->seedMasterDataType(
             code: 'station',
             name: 'Stasiun',
-            actorId: $superadmin->id,
+            actorId: $actorId,
             attributes: [
                 'validation_rules' => [
                     'code' => ['required', 'string', 'max:191'],
@@ -70,36 +40,22 @@ class DatabaseSeeder extends Seeder
         $bridgeType = $this->seedMasterDataType(
             code: 'bridge',
             name: 'Jembatan',
-            actorId: $superadmin->id,
+            actorId: $actorId,
             attributes: BridgeModuleDefinition::typeAttributes(),
         );
-        $this->seedMasterDataType(code: 'railway_track', name: 'Jalur Kereta', actorId: $superadmin->id);
-        $this->seedMasterDataType(code: 'province', name: 'Provinsi', actorId: $superadmin->id);
-        $this->seedMasterDataType(code: 'city', name: 'Kabupaten/Kota', actorId: $superadmin->id);
-        $this->seedMasterDataType(code: 'operator', name: 'Operator', actorId: $superadmin->id);
+        $this->seedMasterDataType(code: 'railway_track', name: 'Jalur Kereta', actorId: $actorId);
+        $this->seedMasterDataType(code: 'province', name: 'Provinsi', actorId: $actorId);
+        $this->seedMasterDataType(code: 'city', name: 'Kabupaten/Kota', actorId: $actorId);
+        $this->seedMasterDataType(code: 'operator', name: 'Operator', actorId: $actorId);
 
-        $this->seedMasterDataRecord($stationType, $superadmin->id);
-        $this->seedBridgeMasterDataRecord($bridgeType, $superadmin->id);
-        $this->seedApiClient($superadmin);
-        $this->seedImportMapping($superadmin->id);
-        $this->seedBridgeImportMapping($superadmin->id);
+        $this->seedMasterDataRecord($stationType, $actorId);
+        $this->seedBridgeMasterDataRecord($bridgeType, $actorId);
+        $this->seedApiClient($actorId);
+        $this->seedImportMapping($actorId);
+        $this->seedBridgeImportMapping($actorId);
     }
 
-    private function seedUser(string $name, string $email, UserRole $role): User
-    {
-        return User::query()->updateOrCreate(
-            ['email' => $email],
-            [
-                'name' => $name,
-                'password' => 'password',
-                'role' => $role,
-                'is_admin' => $role->grantsFullAccess(),
-                'email_verified_at' => now(),
-            ],
-        );
-    }
-
-    private function seedMasterDataType(string $code, string $name, int $actorId, array $attributes = []): MasterDataType
+    private function seedMasterDataType(string $code, string $name, ?int $actorId, array $attributes = []): MasterDataType
     {
         $type = MasterDataType::query()->firstOrNew(['code' => $code]);
 
@@ -129,7 +85,7 @@ class DatabaseSeeder extends Seeder
         return $type;
     }
 
-    private function seedMasterDataRecord(MasterDataType $stationType, int $actorId): void
+    private function seedMasterDataRecord(MasterDataType $stationType, ?int $actorId): void
     {
         $record = MasterData::query()->firstOrNew([
             'source_system' => 'legacy_seed',
@@ -169,7 +125,7 @@ class DatabaseSeeder extends Seeder
         $record->save();
     }
 
-    private function seedBridgeMasterDataRecord(MasterDataType $bridgeType, int $actorId): void
+    private function seedBridgeMasterDataRecord(MasterDataType $bridgeType, ?int $actorId): void
     {
         $record = MasterData::query()->firstOrNew([
             'source_system' => 'legacy_jembatan',
@@ -256,31 +212,31 @@ class DatabaseSeeder extends Seeder
         $record->save();
     }
 
-    private function seedApiClient(User $superadmin): void
+    private function seedApiClient(?int $actorId): void
     {
-        $client = ApiClient::query()->firstOrNew(['code' => 'dummy_local_client']);
+        $client = ApiClient::query()->firstOrNew(['code' => 'local_api_client']);
 
         if (! $client->exists) {
             $client->uuid = (string) Str::uuid();
-            $client->created_by = $superadmin->id;
+            $client->created_by = $actorId;
         }
 
         $client->forceFill([
-            'name' => 'Client Dummy Lokal',
-            'description' => $client->description ?? 'Client API bawaan untuk pengujian lokal.',
-            'owner_name' => $superadmin->name,
-            'owner_email' => $superadmin->email,
+            'name' => 'Client API',
+            'description' => $client->description,
+            'owner_name' => null,
+            'owner_email' => null,
             'allowed_ips' => ['127.0.0.1'],
-            'allowed_origins' => ['https://prasarana.labdata.id'],
+            'allowed_origins' => array_values(array_filter([(string) config('app.url')])),
             'rate_limit_per_minute' => 60,
             'rate_limit_per_day' => 10000,
             'expires_at' => now()->addMonth(),
             'is_active' => true,
-            'updated_by' => $superadmin->id,
+            'updated_by' => $actorId,
         ])->save();
     }
 
-    private function seedImportMapping(int $actorId): void
+    private function seedImportMapping(?int $actorId): void
     {
         $mapping = ImportMapping::query()->firstOrNew([
             'source_system' => 'legacy_djka',
@@ -338,7 +294,7 @@ class DatabaseSeeder extends Seeder
         $mapping->save();
     }
 
-    private function seedBridgeImportMapping(int $actorId): void
+    private function seedBridgeImportMapping(?int $actorId): void
     {
         $mapping = ImportMapping::query()->firstOrNew([
             'source_system' => 'legacy_jembatan',

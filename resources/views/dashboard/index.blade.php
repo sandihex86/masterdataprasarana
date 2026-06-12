@@ -702,13 +702,13 @@
     $userRoleLabel = $userRole?->label() ?? 'Guest';
 
     $quickMenu = [
-        ['label' => 'Swagger Docs', 'description' => 'Dokumentasi interaktif resmi yang digenerate oleh L5 Swagger.', 'href' => route('docs.swagger'), 'tag' => 'Docs'],
-        ['label' => 'OpenAPI Spec', 'description' => 'Spec mentah yang digenerate otomatis untuk Postman, codegen, atau integrasi pihak ketiga.', 'href' => route('l5-swagger.default.docs'), 'tag' => 'Spec'],
-        ['label' => 'Health Check API', 'description' => 'Cek status layanan inti dan readiness aplikasi.', 'href' => '/api/v1/health', 'tag' => 'API'],
+        ['label' => 'Swagger Docs', 'href' => route('docs.swagger'), 'tag' => 'Docs'],
+        ['label' => 'OpenAPI Spec', 'href' => route('l5-swagger.default.docs'), 'tag' => 'Spec'],
+        ['label' => 'Health Check API', 'href' => '/api/v1/health', 'tag' => 'API'],
     ];
 
     if ($user?->isAdministrator()) {
-        $quickMenu[] = ['label' => 'JSON Sistem', 'description' => 'Snapshot runtime dashboard untuk debugging dan inspeksi.', 'href' => route('dashboard.system'), 'tag' => 'Internal'];
+        $quickMenu[] = ['label' => 'JSON Sistem', 'href' => route('dashboard.system'), 'tag' => 'Internal'];
     }
 @endphp
 <div class="dashboard">
@@ -727,28 +727,19 @@
                 <a class="nav-link active" href="#beranda">
                     <div class="nav-main">
                         <svg class="icon" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>
-                        <div class="nav-copy">
-                            <strong>Beranda</strong>
-                            <span>Ringkasan dashboard</span>
-                        </div>
+                        <div class="nav-copy"><strong>Beranda</strong></div>
                     </div>
                 </a>
                 <a class="nav-link" href="#status-modul">
                     <div class="nav-main">
                         <svg class="icon" viewBox="0 0 24 24"><path d="M4 19h16"/><path d="M7 15V9"/><path d="M12 15V5"/><path d="M17 15v-3"/></svg>
-                        <div class="nav-copy">
-                            <strong>Status Modul</strong>
-                            <span>Kesiapan domain utama</span>
-                        </div>
+                        <div class="nav-copy"><strong>Status Modul</strong></div>
                     </div>
                 </a>
                 <a class="nav-link" href="#menu-penting">
                     <div class="nav-main">
                         <svg class="icon" viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h16"/></svg>
-                        <div class="nav-copy">
-                            <strong>Menu Penting</strong>
-                            <span>Akses cepat operasional</span>
-                        </div>
+                        <div class="nav-copy"><strong>Menu Penting</strong></div>
                     </div>
                 </a>
             </div>
@@ -760,39 +751,27 @@
                 <a class="nav-link" href="#master-data">
                     <div class="nav-main">
                         <svg class="icon" viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M8 9h8"/><path d="M8 13h5"/></svg>
-                        <div class="nav-copy">
-                            <strong>Master Data</strong>
-                            <span>Record dan tipe data</span>
-                        </div>
+                        <div class="nav-copy"><strong>Master Data</strong></div>
                     </div>
                     <span class="nav-badge">{{ number_format($metrics['master_data_records']) }}</span>
                 </a>
                 <a class="nav-link" href="#import-mapping">
                     <div class="nav-main">
                         <svg class="icon" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
-                        <div class="nav-copy">
-                            <strong>Import & Mapping</strong>
-                            <span>Batch, transformasi, validasi</span>
-                        </div>
+                        <div class="nav-copy"><strong>Import & Mapping</strong></div>
                     </div>
                     <span class="nav-badge">{{ number_format($metrics['import_mappings']) }}</span>
                 </a>
                 <a class="nav-link" href="#monitoring">
                     <div class="nav-main">
                         <svg class="icon" viewBox="0 0 24 24"><path d="M3 12h4l2.5-6 5 12 2.5-6H21"/></svg>
-                        <div class="nav-copy">
-                            <strong>Monitoring</strong>
-                            <span>Health, audit, request log</span>
-                        </div>
+                        <div class="nav-copy"><strong>Monitoring</strong></div>
                     </div>
                 </a>
                 <a class="nav-link" href="{{ route('docs.swagger') }}">
                     <div class="nav-main">
                         <svg class="icon" viewBox="0 0 24 24"><path d="M8 4h8"/><path d="M8 20h8"/><path d="M5 8h14"/><path d="M5 16h14"/><path d="M7 8v8"/><path d="M17 8v8"/></svg>
-                        <div class="nav-copy">
-                            <strong>Swagger Docs</strong>
-                            <span>Dokumentasi API interaktif</span>
-                        </div>
+                        <div class="nav-copy"><strong>Swagger Docs</strong></div>
                     </div>
                 </a>
             </div>
@@ -804,10 +783,7 @@
                 <a class="nav-link" href="{{ route('l5-swagger.default.docs') }}">
                     <div class="nav-main">
                         <svg class="icon" viewBox="0 0 24 24"><path d="M8 7h8"/><path d="M8 12h8"/><path d="M8 17h5"/><path d="M5 3h14v18H5z"/></svg>
-                        <div class="nav-copy">
-                            <strong>OpenAPI JSON</strong>
-                            <span>Spec untuk integrasi</span>
-                        </div>
+                        <div class="nav-copy"><strong>OpenAPI JSON</strong></div>
                     </div>
                 </a>
                 <form class="logout-form" method="post" action="{{ route('logout') }}">
@@ -815,10 +791,7 @@
                     <button class="nav-button" type="submit">
                         <div class="nav-main">
                             <svg class="icon" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg>
-                            <div class="nav-copy">
-                                <strong>Logout</strong>
-                                <span>Keluar dari sesi aman</span>
-                            </div>
+                            <div class="nav-copy"><strong>Logout</strong></div>
                         </div>
                     </button>
                 </form>
@@ -829,7 +802,7 @@
     <main class="content">
         <div class="topbar">
             <div class="topbar-title">
-                <strong>Dashboard Operasional</strong>
+                <strong>Dashboard</strong>
                 <span>{{ $app['name'] }} · {{ $app['generated_at']->format('d M Y H:i') }} UTC</span>
             </div>
             <div class="topbar-actions">
@@ -848,12 +821,8 @@
         <section class="grid hero section" id="beranda">
             <article class="card hero-main">
                 <div class="card-body">
-                    <span class="eyebrow">Dashboard Operasional</span>
-                    <h1>Selamat datang, {{ $userName }}.</h1>
-                    <p class="lead">
-                        Area ini dirancang seperti panel admin modern untuk membantu Anda memantau health aplikasi,
-                        status modul inti, integrasi API, import mapping, dan dokumentasi Swagger dari satu layar.
-                    </p>
+                    <span class="eyebrow">Dashboard</span>
+                    <h1>{{ $userName }}</h1>
 
                     <div class="hero-pills">
                         <span class="status {{ $health['status'] }}">{{ $health['status'] }}</span>
@@ -907,7 +876,6 @@
             <div class="section-header">
                 <div>
                     <h2>Matriks Role</h2>
-                    <p>Ringkasan role aplikasi dan jumlah user dummy yang tersedia pada tiap level akses.</p>
                 </div>
             </div>
             <div class="grid overview-grid">
@@ -915,7 +883,6 @@
                     <article class="overview-card">
                         <span class="menu-tag">{{ number_format($role['count']) }} user</span>
                         <h3 style="margin-top: 14px;">{{ $role['label'] }}</h3>
-                        <p class="meta" style="margin: 8px 0 0; line-height: 1.7;">{{ $role['description'] }}</p>
                     </article>
                 @endforeach
             </div>
@@ -925,17 +892,13 @@
             <div class="section-header">
                 <div>
                     <h2>Menu Penting</h2>
-                    <p>Tautan cepat untuk pekerjaan yang paling sering dibuka administrator dan integrator.</p>
                 </div>
             </div>
             <div class="card">
                 <div class="card-body menu-list">
                     @foreach ($quickMenu as $item)
                         <a class="menu-item" href="{{ $item['href'] }}" @if(\Illuminate\Support\Str::startsWith($item['href'], '/api/')) target="_blank" rel="noreferrer" @endif>
-                            <div class="menu-main">
-                                <strong>{{ $item['label'] }}</strong>
-                                <span>{{ $item['description'] }}</span>
-                            </div>
+                            <div class="menu-main"><strong>{{ $item['label'] }}</strong></div>
                             <span class="menu-tag">{{ $item['tag'] }}</span>
                         </a>
                     @endforeach
@@ -947,7 +910,6 @@
             <div class="section-header">
                 <div>
                     <h2>Status Modul</h2>
-                    <p>Kesiapan area utama sistem berdasarkan data aktual dan ketersediaan dependensi.</p>
                 </div>
             </div>
             <div class="grid overview-grid">
@@ -956,7 +918,6 @@
                         <span class="status {{ $module['status'] }}">{{ $module['status'] }}</span>
                         <strong>{{ $module['percentage'] }}%</strong>
                         <h3 style="margin-top: 12px;">{{ $module['label'] }}</h3>
-                        <p class="meta" style="margin: 8px 0 0; line-height: 1.7;">{{ $module['detail'] }}</p>
                         <div class="meter">
                             <span style="width: {{ $module['percentage'] }}%"></span>
                         </div>
@@ -973,7 +934,6 @@
                         <div class="section-header">
                             <div>
                                 <h2>Kesehatan Sistem</h2>
-                                <p>Status layanan inti yang paling penting untuk operasi harian.</p>
                             </div>
                             <span class="status {{ $health['status'] }}">{{ $health['status'] }}</span>
                         </div>
@@ -989,19 +949,13 @@
                                 </div>
                             @endforeach
                         </div>
-
-                        <div class="footer-callout">
-                            <strong>Mode debug lokal tetap aktif.</strong>
-                            Semua panel ini hanya menambah lapisan administrasi web tanpa mengubah mode pengembangan yang Anda minta.
-                        </div>
                     </div>
                 </div>
 
                 <div class="table-card" id="master-data">
                     <div class="table-head">
                         <div>
-                            <h2>Katalog Tipe dan Record Master Data</h2>
-                            <p class="table-note">Distribusi entitas aktif dan perubahan record terbaru.</p>
+                            <h2>Master Data</h2>
                         </div>
                         <span class="menu-tag">{{ $overview['entity_types']->count() }} tipe</span>
                     </div>
@@ -1068,7 +1022,6 @@
                         <div class="section-header">
                             <div>
                                 <h2>Import dan Mapping</h2>
-                                <p>Konfigurasi transformasi serta batch import yang sedang dipantau.</p>
                             </div>
                         </div>
                         <div class="module-list">
@@ -1083,8 +1036,7 @@
                             @empty
                                 <div class="module-item">
                                     <div class="module-main">
-                                        <strong>Belum ada mapping import</strong>
-                                        <span>Tambahkan konfigurasi mapping untuk mulai proses transformasi data.</span>
+                                        <strong>Belum ada mapping import.</strong>
                                     </div>
                                 </div>
                             @endforelse
@@ -1101,7 +1053,6 @@
                     <div class="table-head">
                         <div>
                             <h2>Import, Client API, dan Monitoring</h2>
-                            <p class="table-note">Panel kompak untuk integrasi dan observability.</p>
                         </div>
                     </div>
                     <div class="table-body">
@@ -1189,7 +1140,6 @@
                 <div class="table-head">
                     <div>
                         <h2>Audit Log dan Endpoint API</h2>
-                        <p class="table-note">Jejak perubahan terbaru dan daftar route API aktif untuk kebutuhan admin maupun integrator.</p>
                     </div>
                     <span class="menu-tag">{{ $overview['api_routes']->count() }} route</span>
                 </div>

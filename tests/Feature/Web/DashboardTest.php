@@ -2,9 +2,9 @@
 
 namespace Tests\Feature\Web;
 
-use App\Enums\UserRole;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class DashboardTest extends TestCase
@@ -19,34 +19,61 @@ class DashboardTest extends TestCase
 
     public function test_login_page_renders(): void
     {
+        config([
+            'services.recaptcha.enabled' => true,
+            'services.recaptcha.type' => 'v3',
+            'services.recaptcha.site_key' => 'test-site-key',
+            'services.recaptcha.secret_key' => 'test-secret-key',
+        ]);
+
         $this->get('/login')
             ->assertOk()
             ->assertSee('Master Data Prasarana DJKA')
-            ->assertSee('Masuk ke Sistem')
-            ->assertSee('superadmin@example.com')
-            ->assertSee('viewer@example.com')
+            ->assertSee('Masuk')
+            ->assertSee('reCAPTCHA v3 berjalan otomatis')
+            ->assertDontSee('example.com')
             ->assertSee('action="/login"', false)
-            ->assertDontSee('http://');
+            ->assertDontSee('https://prasarana.labdata.id')
+            ->assertDontSee('Masuk ke sistem.');
     }
 
     public function test_user_can_login_and_access_dashboard(): void
     {
         $this->seed();
+        $user = User::factory()->admin()->create();
+        config([
+            'services.recaptcha.enabled' => true,
+            'services.recaptcha.type' => 'v3',
+            'services.recaptcha.site_key' => 'test-site-key',
+            'services.recaptcha.secret_key' => 'test-secret-key',
+            'services.recaptcha.login_action' => 'login',
+            'services.recaptcha.score_threshold' => 0.5,
+            'services.recaptcha.verify_url' => 'https://www.google.com/recaptcha/api/siteverify',
+        ]);
 
-        $user = User::query()->where('email', 'admin@example.com')->firstOrFail();
+        Http::fake([
+            'https://www.google.com/recaptcha/api/siteverify' => Http::response([
+                'success' => true,
+                'action' => 'login',
+                'score' => 0.9,
+                'challenge_ts' => now()->toIso8601String(),
+                'hostname' => 'localhost',
+            ]),
+        ]);
 
         $this->post('/login', [
             'email' => $user->email,
             'password' => 'password',
+            'g-recaptcha-response' => 'test-recaptcha-token',
         ])->assertRedirect('/dashboard');
 
         $this->get('/dashboard')
             ->assertOk()
-            ->assertSee('Dashboard Operasional')
+            ->assertSee('Dashboard')
             ->assertSee('Status Modul')
-            ->assertSee('Buka Swagger Docs')
+            ->assertSee('Swagger Docs')
             ->assertSee('Admin')
-            ->assertSee('Client Dummy Lokal');
+            ->assertSee('Client API');
     }
 
     public function test_dashboard_system_route_requires_authentication(): void
@@ -58,7 +85,7 @@ class DashboardTest extends TestCase
     public function test_dashboard_system_route_returns_json_overview_for_authenticated_user(): void
     {
         $this->seed();
-        $user = User::query()->where('email', 'admin@example.com')->firstOrFail();
+        $user = User::factory()->admin()->create();
 
         $this->actingAs($user)
             ->getJson('/dashboard/system')
@@ -93,7 +120,7 @@ class DashboardTest extends TestCase
     public function test_authenticated_user_can_open_swagger_and_openapi_json(): void
     {
         $this->seed();
-        $user = User::query()->where('email', 'admin@example.com')->firstOrFail();
+        $user = User::factory()->admin()->create();
 
         $this->actingAs($user)
             ->get('/docs/swagger')
@@ -109,15 +136,11 @@ class DashboardTest extends TestCase
             ->assertJsonPath('paths./api/v1/master-data.get.summary', 'Daftar master data');
     }
 
-    public function test_seeder_creates_dummy_users_for_each_supported_role(): void
+    public function test_seeder_does_not_create_dummy_users(): void
     {
         $this->seed();
 
-        $this->assertDatabaseHas('users', ['email' => 'superadmin@example.com', 'role' => UserRole::Superadmin->value]);
-        $this->assertDatabaseHas('users', ['email' => 'admin@example.com', 'role' => UserRole::Admin->value]);
-        $this->assertDatabaseHas('users', ['email' => 'operator@example.com', 'role' => UserRole::Operator->value]);
-        $this->assertDatabaseHas('users', ['email' => 'verifikator@example.com', 'role' => UserRole::Verifikator->value]);
-        $this->assertDatabaseHas('users', ['email' => 'viewer@example.com', 'role' => UserRole::Viewer->value]);
+        $this->assertDatabaseCount('users', 0);
     }
 
     public function test_swagger_assets_are_accessible(): void

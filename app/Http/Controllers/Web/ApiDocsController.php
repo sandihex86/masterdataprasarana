@@ -10,7 +10,6 @@ class ApiDocsController extends Controller
     public function swagger(): Response
     {
         $title = 'Master Data Prasarana DJKA API Docs';
-        $subtitle = 'Dokumentasi API internal';
         $docsUrl = route('l5-swagger.default.docs');
         $cssUrl = 'https://unpkg.com/swagger-ui-dist@5/swagger-ui.css';
         $bundleUrl = 'https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js';
@@ -87,10 +86,6 @@ class ApiDocsController extends Controller
             font-size: 1.02rem;
             color: #f8fafc;
         }
-        .brand-copy span {
-            color: rgba(226, 232, 240, 0.82);
-            font-size: 0.9rem;
-        }
         .actions { display: flex; gap: 10px; flex-wrap: wrap; }
         .button {
             display: inline-flex;
@@ -131,7 +126,6 @@ class ApiDocsController extends Controller
             </div>
             <div class="brand-copy">
                 <strong>{$title}</strong>
-                <span>{$subtitle}</span>
             </div>
         </div>
         <div class="actions">
