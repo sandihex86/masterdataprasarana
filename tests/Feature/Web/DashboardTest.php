@@ -129,7 +129,7 @@ class DashboardTest extends TestCase
         $this->actingAs($user)
             ->get('/docs/swagger')
             ->assertOk()
-            ->assertSee('Master Data Prasarana API Docs')
+            ->assertSee('Master Data API Docs')
             ->assertSee('/docs/openapi');
 
         $this->actingAs($user)

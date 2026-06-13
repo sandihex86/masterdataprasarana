@@ -7,6 +7,7 @@
     <title>Dashboard | Master Data Prasarana</title>
     <link rel="icon" type="image/png" href="/favicon.png">
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
     <style>
         :root {
             color-scheme: light;
@@ -47,7 +48,8 @@
         body {
             margin: 0;
             min-height: 100vh;
-            font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+            font-family: "Roboto", "Segoe UI", Arial, sans-serif;
+            font-size: 14px;
             color: var(--text);
             background:
                 radial-gradient(circle at 0% 0%, rgba(209, 77, 31, 0.12), transparent 24%),
@@ -75,13 +77,16 @@
         .dashboard {
             min-height: 100vh;
             display: grid;
-            grid-template-columns: 272px minmax(0, 1fr);
+            grid-template-columns: minmax(292px, max-content) minmax(0, 1fr);
             transition: grid-template-columns 180ms ease;
         }
 
         .sidebar {
             position: sticky;
             top: 0;
+            width: max-content;
+            min-width: 292px;
+            max-width: min(390px, 34vw);
             height: 100vh;
             display: flex;
             flex-direction: column;
@@ -89,7 +94,8 @@
             background: var(--sidebar);
             border-right: 1px solid var(--line);
             backdrop-filter: blur(18px);
-            overflow: auto;
+            overflow-x: hidden;
+            overflow-y: auto;
         }
 
         .sidebar-header {
@@ -209,6 +215,8 @@
         .nav-children {
             display: grid;
             gap: 4px;
+            width: max-content;
+            max-width: 300px;
             margin: -2px 0 4px 46px;
             padding-left: 10px;
             border-left: 1px dashed rgba(15, 23, 42, 0.12);
@@ -220,6 +228,9 @@
             border-radius: 12px;
             color: var(--muted);
             font-size: 0.82rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
             transition: background 160ms ease, color 160ms ease, transform 160ms ease;
         }
 
@@ -263,7 +274,7 @@
             display: flex;
             align-items: center;
             gap: 12px;
-            min-width: 0;
+            min-width: max-content;
         }
 
         .icon {
@@ -295,12 +306,16 @@
         }
 
         .nav-badge {
-            padding: 6px 9px;
-            border-radius: 999px;
-            background: var(--violet-soft);
-            color: var(--violet);
-            font-size: 0.75rem;
-            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 6px 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(37, 99, 235, 0.28);
+            background: rgba(255, 255, 255, 0.78);
+            color: #1d4ed8;
+            font-size: 0.76rem;
+            font-weight: 650;
             white-space: nowrap;
         }
 
@@ -326,14 +341,17 @@
 
         .topbar-title strong {
             display: block;
-            font-size: 1.4rem;
-            line-height: 1.05;
-            letter-spacing: -0.04em;
+            font-size: 1rem;
+            line-height: 1.2;
+            letter-spacing: 0;
+            font-weight: 650;
         }
 
         .topbar-title span {
             color: var(--muted);
-            font-size: 0.96rem;
+            display: block;
+            font-size: 0.76rem;
+            line-height: 1.35;
             margin-top: 4px;
         }
 
@@ -479,18 +497,20 @@
             position: absolute;
             right: 0;
             top: calc(100% + 10px);
-            width: min(240px, 82vw);
-            padding: 8px;
-            border-radius: 18px;
+            width: min(286px, 86vw);
+            padding: 10px;
+            border-radius: 20px;
             background: rgba(255, 255, 255, 0.98);
             border: 1px solid rgba(15, 23, 42, 0.08);
-            box-shadow: var(--shadow-raised);
+            box-shadow: 0 18px 42px rgba(15, 23, 42, 0.12), 0 4px 12px rgba(15, 23, 42, 0.06);
             z-index: 120;
+            transform-origin: top right;
+            animation: menu-pop 140ms ease-out;
         }
 
         .user-menu-list {
             display: grid;
-            gap: 4px;
+            gap: 6px;
         }
 
         .user-menu-item,
@@ -498,21 +518,24 @@
             width: 100%;
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 10px 12px;
-            border-radius: 14px;
+            gap: 12px;
+            min-height: 54px;
+            padding: 11px 14px;
+            border-radius: 13px;
             border: 0;
             background: transparent;
             color: inherit;
+            font-family: "Inter", "Roboto", "IBM Plex Sans", "Segoe UI", sans-serif;
             text-align: left;
             cursor: pointer;
-            transition: background 160ms ease, transform 160ms ease;
+            transition: background 160ms ease, color 160ms ease, transform 160ms ease;
         }
 
         .user-menu-item:hover,
         .user-menu-button:hover {
-            background: rgba(15, 23, 42, 0.04);
-            transform: translateX(1px);
+            background: rgba(209, 77, 31, 0.08);
+            color: var(--accent-deep);
+            transform: translateX(2px);
         }
 
         .user-menu-icon {
@@ -528,16 +551,29 @@
 
         .user-menu-copy strong {
             display: block;
-            font-size: 0.84rem;
+            font-size: 0.86rem;
             font-weight: 600;
+            line-height: 1.2;
         }
 
         .user-menu-copy span {
             display: block;
-            margin-top: 2px;
+            margin-top: 3px;
             color: var(--muted);
             font-size: 0.72rem;
-            line-height: 1.35;
+            line-height: 1.4;
+        }
+
+        @keyframes menu-pop {
+            from {
+                opacity: 0;
+                transform: translateY(-4px) scale(0.98);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
         }
 
         .grid {
@@ -557,13 +593,15 @@
 
         .card-body {
             padding: 24px;
+            font-size: 0.86rem;
+            line-height: 1.52;
         }
 
         h1,
         h2,
         h3 {
             margin: 0;
-            letter-spacing: -0.04em;
+            letter-spacing: 0;
         }
 
         h1 {
@@ -579,7 +617,7 @@
             align-items: center;
             gap: 8px;
             padding: 10px 14px;
-            font-size: 0.9rem;
+            font-size: 0.84rem;
             font-weight: 600;
         }
 
@@ -638,24 +676,33 @@
         }
 
         .status {
+            padding: 7px 10px;
+            font-size: 0.78rem;
+            line-height: 1.15;
             text-transform: capitalize;
-            border-radius: 999px;
+            border-radius: 8px;
+            border: 1px solid rgba(37, 99, 235, 0.28);
+            background: rgba(255, 255, 255, 0.78);
+            color: #1d4ed8;
         }
 
         .status.ok,
         .status.ready {
-            background: var(--ok-soft);
+            border-color: rgba(15, 118, 110, 0.28);
+            background: rgba(255, 255, 255, 0.78);
             color: var(--ok);
         }
 
         .status.degraded,
         .status.partial {
-            background: var(--warn-soft);
+            border-color: rgba(180, 83, 9, 0.28);
+            background: rgba(255, 255, 255, 0.78);
             color: var(--warn);
         }
 
         .status.missing {
-            background: var(--danger-soft);
+            border-color: rgba(180, 35, 24, 0.28);
+            background: rgba(255, 255, 255, 0.78);
             color: var(--danger);
         }
 
@@ -704,6 +751,7 @@
         .section-header p {
             margin: 6px 0 0;
             color: var(--muted);
+            font-size: 0.82rem;
             line-height: 1.6;
         }
 
@@ -727,13 +775,13 @@
 
         .section-header h2,
         .table-head h2 {
-            font-size: 1.2rem;
-            line-height: 1.15;
+            font-size: 0.94rem;
+            line-height: 1.25;
         }
 
         .overview-card h3 {
-            font-size: 1.06rem;
-            line-height: 1.2;
+            font-size: 0.86rem;
+            line-height: 1.28;
         }
 
         .overview-card span,
@@ -801,12 +849,46 @@
         }
 
         .menu-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
             white-space: nowrap;
-            padding: 8px 12px;
-            border-radius: 999px;
-            background: var(--violet-soft);
-            color: var(--violet);
-            font-size: 0.8rem;
+            padding: 7px 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(37, 99, 235, 0.28);
+            background: rgba(255, 255, 255, 0.78);
+            color: #1d4ed8;
+            font-size: 0.78rem;
+            font-weight: 650;
+            line-height: 1.15;
+        }
+
+        .menu-tag .tag-icon,
+        .nav-badge .tag-icon,
+        .status .tag-icon,
+        .detail-chip .tag-icon {
+            width: 15px;
+            height: 15px;
+            flex: 0 0 15px;
+            stroke: currentColor;
+            stroke-width: 1.9;
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .menu-tag .tag-label,
+        .nav-badge .tag-label,
+        .status .tag-label,
+        .detail-chip .tag-label {
+            color: currentColor;
+        }
+
+        .menu-tag .tag-value,
+        .nav-badge .tag-value,
+        .status .tag-value,
+        .detail-chip .tag-value {
+            color: var(--text);
             font-weight: 700;
         }
 
@@ -891,6 +973,142 @@
         .footer-callout strong {
             display: block;
             margin-bottom: 4px;
+        }
+
+        .metadata-accordion {
+            display: grid;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .metadata-accordion-item {
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.72);
+            overflow: hidden;
+        }
+
+        .metadata-accordion-item[open] {
+            background: rgba(255, 255, 255, 0.96);
+            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
+        }
+
+        .metadata-accordion-summary {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            min-height: 56px;
+            padding: 14px 16px;
+            cursor: pointer;
+        }
+
+        .metadata-accordion-main {
+            display: grid;
+            gap: 3px;
+            min-width: 0;
+        }
+
+        .metadata-accordion-main strong {
+            font-size: 0.92rem;
+            font-weight: 650;
+        }
+
+        .metadata-accordion-main span {
+            color: var(--muted);
+            font-size: 0.78rem;
+            line-height: 1.35;
+        }
+
+        .metadata-accordion-side {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            flex: 0 0 auto;
+        }
+
+        .metadata-accordion-chevron {
+            width: 16px;
+            height: 16px;
+            color: var(--muted);
+            transition: transform 160ms ease;
+        }
+
+        .metadata-accordion-item[open] .metadata-accordion-chevron {
+            transform: rotate(180deg);
+        }
+
+        .metadata-accordion-panel {
+            padding: 0 16px 16px;
+        }
+
+        .metadata-panel-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+
+        .metadata-table-wrap {
+            overflow-x: auto;
+        }
+
+        .metadata-table th,
+        .metadata-table td {
+            padding: 11px 12px 11px 0;
+            font-size: 0.82rem;
+            line-height: 1.5;
+        }
+
+        .metadata-table th:last-child,
+        .metadata-table td:last-child {
+            padding-right: 0;
+        }
+
+        .metadata-pending {
+            margin: 0;
+            padding: 14px 16px;
+            border-radius: 14px;
+            background: rgba(148, 163, 184, 0.1);
+            color: var(--muted);
+            font-size: 0.84rem;
+            line-height: 1.5;
+        }
+
+        .metadata-value {
+            max-width: min(520px, 54vw);
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .metadata-values-summary {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .metadata-values-scroll {
+            max-height: min(62vh, 640px);
+            overflow: auto;
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            border-radius: 16px;
+            padding: 0 14px;
+            background: rgba(255, 255, 255, 0.78);
+        }
+
+        .metadata-value-json {
+            display: block;
+            margin: 0;
+            padding: 10px 12px;
+            border-radius: 12px;
+            background: #111827;
+            color: #f8fafc;
+            font-size: 0.78rem;
+            line-height: 1.45;
+            overflow: auto;
+            max-height: 220px;
         }
 
         .master-data-toolbar {
@@ -1189,6 +1407,35 @@
             flex-wrap: wrap;
         }
 
+        .bridge-row-actions {
+            flex-wrap: nowrap;
+            gap: 6px;
+            white-space: nowrap;
+        }
+
+        .bridge-row-actions .inline-button {
+            min-width: 54px;
+            padding: 7px 9px;
+            border-radius: 10px;
+            font-size: 0.76rem;
+            line-height: 1.15;
+        }
+
+        .bridge-row-actions .inline-button::before {
+            display: none;
+        }
+
+        .bridge-row-actions .inline-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+        }
+
+        .bridge-actions-cell {
+            width: 196px;
+            min-width: 196px;
+            white-space: nowrap;
+        }
+
         .inline-button,
         .pagination-button,
         .icon-button {
@@ -1300,19 +1547,28 @@
 
         .rows-select {
             min-width: 100%;
-            height: 28px;
-            padding: 0 20px 0 0;
+            height: 32px;
+            padding: 0 22px 0 8px;
             border: 0;
-            border-radius: 0;
+            border-radius: 10px;
             background: transparent;
             color: var(--text);
-            font-size: 0.88rem;
+            font-family: "Roboto", "Segoe UI", Arial, sans-serif;
+            font-size: 0.8rem;
             font-weight: 600;
+            line-height: 1.35;
             outline: none;
             appearance: none;
             -webkit-appearance: none;
             -moz-appearance: none;
             cursor: pointer;
+        }
+
+        .rows-select option,
+        .field select option {
+            font-family: "Roboto", "Segoe UI", Arial, sans-serif;
+            font-size: 0.84rem;
+            padding: 10px 14px;
         }
 
         .rows-select-icon {
@@ -1379,7 +1635,9 @@
             position: relative;
             width: min(780px, 100%);
             max-height: min(88vh, 920px);
-            overflow: auto;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
             scroll-behavior: smooth;
             border-radius: 20px;
             background: rgba(255, 255, 255, 0.98);
@@ -1393,8 +1651,6 @@
         }
 
         .modal-panel.modal-panel-xl .modal-head {
-            position: sticky;
-            top: 0;
             z-index: 5;
             padding-bottom: 18px;
             background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.94));
@@ -1411,13 +1667,20 @@
             justify-content: space-between;
             align-items: flex-start;
             gap: 14px;
+            flex: 0 0 auto;
             padding: 22px 22px 0;
         }
 
         .modal-head p {
             margin: 8px 0 0;
             color: var(--muted);
-            font-size: 0.9rem;
+            font-size: 0.8rem;
+        }
+
+        .modal-head h2 {
+            font-size: 1rem;
+            line-height: 1.25;
+            font-weight: 650;
         }
 
         .icon-button {
@@ -1426,10 +1689,70 @@
             padding: 0;
         }
 
+        .modal-head .icon-button {
+            flex: 0 0 38px;
+            border-radius: 999px;
+            border-color: rgba(15, 23, 42, 0.08);
+            background: rgba(248, 250, 252, 0.92);
+            color: #475467;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+        }
+
+        .modal-head .icon-button .icon {
+            width: 17px;
+            height: 17px;
+            stroke-width: 2;
+        }
+
+        .modal-head .icon-button:hover {
+            border-color: transparent;
+            background: #111827;
+            color: white;
+            transform: translateY(-1px);
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.14);
+        }
+
         .modal-body {
             padding: 22px;
             display: grid;
             gap: 18px;
+            min-height: 0;
+            overflow-y: auto;
+            overflow-x: hidden;
+            overscroll-behavior: contain;
+            scrollbar-gutter: stable;
+            scroll-behavior: smooth;
+        }
+
+        .modal-body::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        .modal-body::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.04);
+            border-radius: 999px;
+            margin: 8px 0;
+        }
+
+        .modal-body::-webkit-scrollbar-thumb {
+            border: 2px solid rgba(255, 255, 255, 0.92);
+            border-radius: 999px;
+            background: rgba(15, 23, 42, 0.28);
+        }
+
+        .modal-body::-webkit-scrollbar-thumb:hover {
+            background: rgba(15, 23, 42, 0.42);
+        }
+
+        .modal-panel > form {
+            display: flex;
+            flex: 1 1 auto;
+            min-height: 0;
+            flex-direction: column;
+        }
+
+        .modal-panel > form .modal-body {
+            flex: 1 1 auto;
         }
 
         .form-grid,
@@ -1463,6 +1786,88 @@
         .field select {
             padding: 12px 14px;
             outline: none;
+            font-family: "Roboto", "Segoe UI", Arial, sans-serif;
+            font-size: 0.84rem;
+            line-height: 1.45;
+        }
+
+        .field select {
+            min-height: 45px;
+            padding-right: 42px;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            cursor: pointer;
+            background:
+                linear-gradient(45deg, transparent 50%, #667085 50%),
+                linear-gradient(135deg, #667085 50%, transparent 50%),
+                white;
+            background-position:
+                calc(100% - 20px) 51%,
+                calc(100% - 14px) 51%,
+                0 0;
+            background-size:
+                6px 6px,
+                6px 6px,
+                100% 100%;
+            background-repeat: no-repeat;
+        }
+
+        .field select:hover,
+        .rows-select:hover {
+            background-color: rgba(248, 250, 252, 0.96);
+        }
+
+        .field input:focus,
+        .field textarea:focus,
+        .field select:focus,
+        .rows-select:focus {
+            border-color: rgba(209, 77, 31, 0.34);
+            box-shadow: 0 0 0 4px rgba(209, 77, 31, 0.1);
+        }
+
+        .password-field {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .password-field input {
+            padding-right: 48px;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 8px;
+            width: 34px;
+            height: 34px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 0;
+            border-radius: 999px;
+            background: rgba(15, 23, 42, 0.04);
+            color: #667085;
+            cursor: pointer;
+            transition: background 160ms ease, color 160ms ease, transform 160ms ease;
+        }
+
+        .password-toggle:hover,
+        .password-toggle:focus-visible {
+            background: rgba(209, 77, 31, 0.12);
+            color: var(--accent-deep);
+            transform: translateY(-1px);
+            outline: none;
+        }
+
+        .password-toggle .icon {
+            width: 18px;
+            height: 18px;
+            stroke-width: 2;
+        }
+
+        .password-toggle .icon[hidden] {
+            display: none;
         }
 
         .field textarea {
@@ -1532,7 +1937,6 @@
         }
 
         .detail-hero-main p,
-        .detail-section-title p,
         .detail-helper,
         .detail-empty {
             margin: 6px 0 0;
@@ -1568,6 +1972,98 @@
             line-height: 1.45;
         }
 
+        .bridge-summary-hero {
+            gap: 12px;
+            padding: 16px 18px;
+            border-radius: 18px;
+            background:
+                radial-gradient(circle at top right, rgba(241, 129, 32, 0.1), transparent 26%),
+                rgba(255, 255, 255, 0.96);
+        }
+
+        .bridge-summary-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 0;
+        }
+
+        .bridge-summary-primary {
+            align-items: center;
+        }
+
+        .bridge-summary-primary .detail-hero-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 999px;
+        }
+
+        .bridge-summary-copy {
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+            min-width: 0;
+            flex-wrap: wrap;
+        }
+
+        .bridge-summary-copy .detail-eyebrow {
+            margin: 0;
+            font-size: 0.68rem;
+        }
+
+        .bridge-summary-copy h3 {
+            font-size: 1rem;
+            line-height: 1.25;
+        }
+
+        .bridge-summary-route {
+            color: var(--muted);
+            font-size: 0.84rem;
+            font-weight: 650;
+        }
+
+        .bridge-summary-tags {
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .bridge-summary-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            min-height: 34px;
+            padding: 5px 10px 5px 5px;
+            border-radius: 999px;
+            border: 1px solid rgba(37, 99, 235, 0.22);
+            background: rgba(255, 255, 255, 0.86);
+            color: #1d4ed8;
+            font-size: 0.76rem;
+            font-weight: 650;
+            white-space: nowrap;
+        }
+
+        .bridge-summary-tag .tag-icon-circle {
+            width: 24px;
+            height: 24px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 24px;
+            border-radius: 999px;
+            background: rgba(37, 99, 235, 0.1);
+            color: #1d4ed8;
+        }
+
+        .bridge-summary-tag .tag-icon {
+            width: 14px;
+            height: 14px;
+        }
+
+        .bridge-summary-tag .tag-value {
+            color: var(--text);
+            font-weight: 700;
+        }
+
         .detail-stack {
             display: grid;
             gap: 14px;
@@ -1595,7 +2091,7 @@
         .detail-section-title {
             display: flex;
             gap: 12px;
-            align-items: flex-start;
+            align-items: center;
         }
 
         .detail-section-icon,
@@ -1603,24 +2099,35 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 42px;
-            height: 42px;
-            border-radius: 16px;
+            width: 40px;
+            height: 40px;
+            border-radius: 999px;
             color: #b45309;
-            background: rgba(241, 129, 32, 0.12);
+            background: rgba(241, 129, 32, 0.13);
+            border: 1px solid rgba(241, 129, 32, 0.12);
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.64);
             flex: 0 0 auto;
+        }
+
+        .detail-section-icon .icon,
+        .detail-hero-icon .icon {
+            width: 18px;
+            height: 18px;
+            flex-basis: 18px;
+            stroke-width: 1.9;
         }
 
         .detail-chip {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
-            padding: 7px 12px;
-            border-radius: 999px;
-            background: rgba(15, 23, 42, 0.05);
-            color: var(--muted);
+            gap: 7px;
+            padding: 7px 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(37, 99, 235, 0.24);
+            background: rgba(255, 255, 255, 0.78);
+            color: #1d4ed8;
             font-size: 0.76rem;
-            font-weight: 700;
+            font-weight: 650;
         }
 
         .detail-chip-grid {
@@ -1694,6 +2201,145 @@
 
         .detail-table-wrap table {
             min-width: 100%;
+        }
+
+        .detail-map-layout {
+            display: grid;
+            grid-template-columns: minmax(220px, 0.36fr) minmax(0, 1fr);
+            gap: 14px;
+            align-items: stretch;
+        }
+
+        .detail-map-card {
+            position: relative;
+            min-height: 242px;
+            overflow: hidden;
+            border-radius: 18px;
+            border: 1px solid rgba(15, 23, 42, 0.1);
+            background: #111827;
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+        }
+
+        .detail-map-canvas {
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+        }
+
+        .detail-map-card .leaflet-container {
+            width: 100%;
+            height: 100%;
+            background: #111827;
+            font: inherit;
+        }
+
+        .detail-map-card .leaflet-control-attribution {
+            border-radius: 999px 0 0 0;
+            background: rgba(255, 255, 255, 0.72);
+            color: #475467;
+            font-size: 0.62rem;
+        }
+
+        .detail-map-card .detail-map-leaflet-marker {
+            overflow: visible;
+        }
+
+        .detail-map-meta {
+            position: absolute;
+            left: 12px;
+            right: 12px;
+            bottom: 12px;
+            z-index: 2;
+            display: grid;
+            gap: 2px;
+            padding: 10px 12px;
+            border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            background: rgba(15, 23, 42, 0.72);
+            color: #ffffff;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.2);
+        }
+
+        .detail-map-meta span {
+            color: rgba(255, 255, 255, 0.72);
+            font-size: 0.68rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .detail-map-meta strong {
+            font-size: 0.82rem;
+            line-height: 1.35;
+            word-break: break-word;
+        }
+
+        .detail-map-marker {
+            display: block;
+            position: relative;
+            width: 18px;
+            height: 18px;
+            pointer-events: none;
+        }
+
+        .detail-map-marker .marker-wave,
+        .detail-map-marker .marker-dot {
+            position: absolute;
+            inset: 0;
+            border-radius: 999px;
+            transform-origin: center;
+        }
+
+        .detail-map-marker .marker-wave {
+            border: 2px solid rgba(59, 130, 246, 0.9);
+            animation: detailMapRipple 2.4s ease-out infinite;
+        }
+
+        .detail-map-marker .marker-wave:nth-child(2) {
+            animation-delay: 0.8s;
+        }
+
+        .detail-map-marker .marker-wave:nth-child(3) {
+            animation-delay: 1.6s;
+        }
+
+        .detail-map-marker .marker-dot {
+            inset: 4px;
+            z-index: 2;
+            border: 2px solid #ffffff;
+            background: #2563eb;
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.28), 0 0 22px rgba(37, 99, 235, 0.95);
+            animation: detailMapBlink 1.15s ease-in-out infinite;
+        }
+
+        @keyframes detailMapRipple {
+            0% {
+                opacity: 0.85;
+                transform: scale(0.65);
+            }
+
+            72% {
+                opacity: 0.18;
+            }
+
+            100% {
+                opacity: 0;
+                transform: scale(5.4);
+            }
+        }
+
+        @keyframes detailMapBlink {
+            0%,
+            100% {
+                transform: scale(0.9);
+                opacity: 0.75;
+            }
+
+            50% {
+                transform: scale(1.22);
+                opacity: 1;
+            }
         }
 
         .detail-empty {
@@ -1866,6 +2512,14 @@
             grid-template-columns: 96px minmax(0, 1fr);
         }
 
+        body.sidebar-collapsed .sidebar {
+            width: 96px;
+            min-width: 96px;
+            max-width: 96px;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
         body.sidebar-collapsed .sidebar-header {
             justify-content: center;
         }
@@ -1874,7 +2528,8 @@
         body.sidebar-collapsed .nav-title,
         body.sidebar-collapsed .nav-subtitle,
         body.sidebar-collapsed .nav-copy,
-        body.sidebar-collapsed .nav-badge {
+        body.sidebar-collapsed .nav-badge,
+        body.sidebar-collapsed .nav-children {
             display: none;
         }
 
@@ -1891,6 +2546,7 @@
 
         body.sidebar-collapsed .nav-main {
             justify-content: center;
+            min-width: 0;
         }
 
         body.sidebar-collapsed .sidebar-toggle .icon {
@@ -1904,9 +2560,13 @@
 
             .sidebar {
                 position: static;
+                width: 100%;
+                min-width: 0;
+                max-width: none;
                 height: auto;
                 border-right: 0;
                 border-bottom: 1px solid var(--line);
+                overflow: visible;
             }
 
             body.sidebar-collapsed .dashboard {
@@ -1933,6 +2593,10 @@
                 display: inline-flex;
             }
 
+            body.sidebar-collapsed .nav-children {
+                display: grid;
+            }
+
             body.sidebar-collapsed .sidebar-toggle {
                 position: static;
             }
@@ -1954,6 +2618,10 @@
 
             .detail-hero-stats {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .detail-map-layout {
+                grid-template-columns: 1fr;
             }
         }
 
@@ -2004,6 +2672,10 @@
                 grid-template-columns: 1fr;
             }
 
+            .detail-map-card {
+                min-height: 220px;
+            }
+
             .search-field {
                 min-width: 100%;
             }
@@ -2033,10 +2705,9 @@
     $isAdmin = $user?->hasRole(\App\Enums\UserRole::Admin) ?? false;
     $canViewDocumentation = true;
     $canViewMasterData = $isSuperadmin || $isAdmin;
-    $canViewImportMapping = $isSuperadmin || $isAdmin;
     $canViewMonitoring = $isSuperadmin || $isAdmin;
     $canViewFullDiagnostics = $isSuperadmin;
-    $hasOperationalDashboard = $canViewMasterData || $canViewImportMapping || $canViewMonitoring;
+    $hasOperationalDashboard = $canViewMasterData || $canViewMonitoring;
     $isDocumentationOnly = ! $hasOperationalDashboard && ! $canViewFullDiagnostics;
     $masterDataMenu = $masterDataMenu ?? [];
     $masterDataPage = $masterDataPage ?? null;
@@ -2045,8 +2716,41 @@
     $superadminApiClientPage = $superadminApiClientPage ?? null;
     $activeMasterDataKey = $masterDataPage['key'] ?? $bridgeSourceTablePage['parent_key'] ?? null;
     $bridgeModule = $overview['bridge_module'] ?? null;
+    $metadataModules = [
+        ['key' => 'jembatan', 'label' => 'Jembatan', 'status' => $bridgeModule ? count($bridgeModule['fields']) . ' field' : 'Pending', 'fields' => $bridgeModule['fields'] ?? []],
+        ['key' => 'jalur', 'label' => 'Jalur', 'status' => 'Pending', 'fields' => []],
+        ['key' => 'fasilitas-operasi', 'label' => 'Fasilitas Operasi', 'status' => 'Pending', 'fields' => []],
+        ['key' => 'sertifikat', 'label' => 'Sertifikat', 'status' => 'Pending', 'fields' => []],
+        ['key' => 'gudang', 'label' => 'Gudang', 'status' => 'Pending', 'fields' => []],
+    ];
     $infrastructureDomains = $overview['infrastructure_domains'] ?? collect();
     $currentPage = $currentPage ?? ($isDocumentationOnly ? 'documentation' : 'overview');
+    $bridgeFieldValuesEndpoint = route('dashboard.metadata.jembatan.fields.values', ['field' => '__field__']);
+    $tagIcon = function (string $icon): string {
+        return match ($icon) {
+            'api' => '<svg class="tag-icon" viewBox="0 0 24 24"><path d="M3 12h4l2.5-6 5 12 2.5-6H21"/></svg>',
+            'book' => '<svg class="tag-icon" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5z"/></svg>',
+            'check' => '<svg class="tag-icon" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>',
+            'clock' => '<svg class="tag-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+            'data' => '<svg class="tag-icon" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg>',
+            'field' => '<svg class="tag-icon" viewBox="0 0 24 24"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h10"/></svg>',
+            'file' => '<svg class="tag-icon" viewBox="0 0 24 24"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v6h6"/></svg>',
+            'key' => '<svg class="tag-icon" viewBox="0 0 24 24"><circle cx="7.5" cy="14.5" r="3.5"/><path d="M10 12 21 1"/><path d="m16 6 2 2"/><path d="m13 9 2 2"/></svg>',
+            'layers' => '<svg class="tag-icon" viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5z"/><path d="m3 12 9 5 9-5"/><path d="m3 16 9 5 9-5"/></svg>',
+            'mapping' => '<svg class="tag-icon" viewBox="0 0 24 24"><path d="M4 7h10"/><path d="M10 3l4 4-4 4"/><path d="M20 17H10"/><path d="m14 13-4 4 4 4"/></svg>',
+            'route' => '<svg class="tag-icon" viewBox="0 0 24 24"><circle cx="6" cy="19" r="3"/><circle cx="18" cy="5" r="3"/><path d="M9 19h2a7 7 0 0 0 7-7V8"/></svg>',
+            'table' => '<svg class="tag-icon" viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M4 10h16"/><path d="M9 5v14"/></svg>',
+            'user' => '<svg class="tag-icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="9.5" cy="7" r="4"/><path d="M19 8v6"/><path d="M22 11h-6"/></svg>',
+            default => '<svg class="tag-icon" viewBox="0 0 24 24"><path d="M20 10 14 4H5v9l6 6z"/><path d="M8 8h.01"/></svg>',
+        };
+    };
+    $tag = function (string $label, mixed $value = null, string $icon = 'tag', string $class = 'menu-tag', string $attributes = '') use ($tagIcon): \Illuminate\Support\HtmlString {
+        $valueHtml = $value === null ? '' : '<span class="tag-value">'.e((string) $value).'</span>';
+
+        return new \Illuminate\Support\HtmlString(
+            '<span class="'.e($class).'"'.$attributes.'>'.$tagIcon($icon).'<span class="tag-label">'.e($label).'</span>'.$valueHtml.'</span>'
+        );
+    };
 
     $pageMeta = [
         'overview' => ['title' => 'Dashboard', 'description' => 'Ringkasan operasional dan data inti.'],
@@ -2056,7 +2760,6 @@
         'master-data' => ['title' => 'Master Data', 'description' => 'Tipe data dan record master data terbaru.'],
         'master-data-entity' => ['title' => $masterDataPage['label'] ?? 'Master Data', 'description' => 'Grid data aktif.'],
         'bridge-source-table' => ['title' => $bridgeSourceTablePage['label'] ?? 'Tabel Source Jembatan', 'description' => $bridgeSourceTablePage['description'] ?? 'Data tabel source dari dump SQL.'],
-        'import-mapping' => ['title' => 'Import dan Mapping', 'description' => 'Konfigurasi mapping dan ringkasan batch import.'],
         'monitoring' => ['title' => 'Monitoring', 'description' => 'Kesehatan sistem, trafik API, dan observability.'],
         'superadmin-users' => ['title' => $superadminUserPage['label'] ?? 'Manajemen User', 'description' => 'CRUD akun internal, role, dan kontrol akses dashboard.'],
         'superadmin-api-clients' => ['title' => $superadminApiClientPage['label'] ?? 'Bearer Key API', 'description' => 'Kelola client API dan generate bearer token dengan desain dashboard modern.'],
@@ -2187,15 +2890,6 @@
             <div class="nav-section">
                 <p class="nav-title">Integrasi</p>
                 <div class="nav-list">
-                    @if ($canViewImportMapping)
-                        <a class="nav-link {{ $currentPage === 'import-mapping' ? 'active' : '' }}" href="{{ route('dashboard.import-mapping') }}">
-                            <div class="nav-main">
-                                <svg class="icon" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
-                                <div class="nav-copy"><strong>Import dan Mapping</strong></div>
-                            </div>
-                            <span class="nav-badge">{{ number_format($metrics['import_mappings']) }}</span>
-                        </a>
-                    @endif
                     @if ($canViewMonitoring)
                         <a class="nav-link {{ $currentPage === 'monitoring' ? 'active' : '' }}" href="{{ route('dashboard.monitoring') }}">
                             <div class="nav-main">
@@ -2340,14 +3034,14 @@
                                 <strong>Swagger UI</strong>
                                 <span>Dokumentasi interaktif untuk eksplorasi endpoint.</span>
                             </div>
-                            <span class="menu-tag">Docs</span>
+                            {!! $tag('Docs', null, 'book') !!}
                         </a>
                         <a class="menu-item" href="{{ route('docs.openapi') }}" target="_blank" rel="noreferrer">
                             <div class="menu-main">
                                 <strong>OpenAPI Spec</strong>
                                 <span>Spesifikasi JSON resmi untuk integrasi dan tooling.</span>
                             </div>
-                            <span class="menu-tag">Spec</span>
+                            {!! $tag('Spec', null, 'file') !!}
                         </a>
                         @if ($canViewMonitoring)
                             <a class="menu-item" href="/api/v1/health" target="_blank" rel="noreferrer">
@@ -2355,7 +3049,7 @@
                                     <strong>Health Check API</strong>
                                     <span>Status endpoint health untuk verifikasi layanan.</span>
                                 </div>
-                                <span class="menu-tag">API</span>
+                                {!! $tag('API', null, 'api') !!}
                             </a>
                         @endif
                     </div>
@@ -2364,56 +3058,73 @@
 
             @if ($bridgeModule)
                 <section class="section">
-                    <div class="card">
-                        <div class="card-body">
-                            <div class="section-header" style="margin-bottom: 18px;">
-                                <div>
-                                    <h2>Metadata Modul Jembatan</h2>
-                                    <p>{{ $bridgeModule['distinction'] }}</p>
-                                </div>
-                                <span class="menu-tag">{{ number_format($bridgeModule['record_count']) }} data</span>
-                            </div>
-
-                            <div class="footer-callout" style="margin-top: 0;">
-                                <strong>{{ $bridgeModule['label'] }} · {{ $bridgeModule['namespace'] }}</strong>
-                                Sumber utama `{{ $bridgeModule['source_system'] }}` dengan {{ number_format($bridgeModule['active_record_count']) }} data aktif. Modul ini menjadi acuan pengembangan endpoint spesifik untuk modul prasarana lain.
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <section class="section">
                     <div class="table-card">
                         <div class="table-head">
                             <div>
-                                <h2>Tabel Metadata Jembatan</h2>
+                                <h2>Metadata</h2>
                             </div>
-                            <span class="menu-tag">{{ count($bridgeModule['fields']) }} field</span>
+                            {!! $tag('Modul', count($metadataModules), 'layers') !!}
                         </div>
                         <div class="table-body">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Field</th>
-                                        <th>Path API</th>
-                                        <th>Sumber</th>
-                                        <th>Keterangan</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach ($bridgeModule['fields'] as $field)
-                                        <tr>
-                                            <td>
-                                                <strong>{{ $field['label'] }}</strong>
-                                                <div class="table-note mono">{{ $field['type'] }}</div>
-                                            </td>
-                                            <td class="mono">{{ $field['api_path'] }}</td>
-                                            <td class="mono">{{ $field['source'] }}</td>
-                                            <td>{{ $field['description'] }}</td>
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
+                            <div class="metadata-accordion">
+                                @foreach ($metadataModules as $module)
+                                    @php
+                                        $visibleModuleFields = collect($module['fields'] ?? [])
+                                            ->reject(fn ($field) => $module['key'] === 'jembatan' && in_array($field['key'] ?? null, ['created_at', 'updated_at', 'created_by'], true))
+                                            ->values();
+                                    @endphp
+                                    <details class="metadata-accordion-item">
+                                        <summary class="metadata-accordion-summary">
+                                            <span class="metadata-accordion-main">
+                                                <strong>{{ $module['label'] }}</strong>
+                                                <span>{{ $module['key'] === 'jembatan' ? 'Metadata field response Master Data Jembatan API.' : 'Metadata modul belum tersedia.' }}</span>
+                                            </span>
+                                            <span class="metadata-accordion-side">
+                                                {!! $module['key'] === 'jembatan' ? $tag('Field', $visibleModuleFields->count(), 'field') : $tag('Status', 'Pending', 'clock') !!}
+                                                <svg class="metadata-accordion-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                            </span>
+                                        </summary>
+                                        <div class="metadata-accordion-panel">
+                                            @if ($visibleModuleFields->isNotEmpty())
+                                                <div class="metadata-table-wrap">
+                                                    <table class="metadata-table">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Field</th>
+                                                                <th>Path API</th>
+                                                                <th>Sumber</th>
+                                                                <th>Keterangan</th>
+                                                                <th>Aksi</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            @foreach ($visibleModuleFields as $field)
+                                                                <tr>
+                                                                    <td>
+                                                                        <strong>{{ $field['label'] }}</strong>
+                                                                        <div class="table-note mono">{{ $field['type'] }}</div>
+                                                                    </td>
+                                                                    <td class="mono">{{ $field['api_path'] }}</td>
+                                                                    <td class="mono">{{ $field['source'] }}</td>
+                                                                    <td>{{ $field['description'] }}</td>
+                                                                    <td>
+                                                                        <button class="inline-button" type="button" data-bridge-field-values-open data-field-key="{{ $field['key'] }}" data-field-label="{{ $field['label'] }}">
+                                                                            <svg class="icon" viewBox="0 0 24 24"><path d="M3 5h18"/><path d="M3 12h18"/><path d="M3 19h18"/></svg>
+                                                                            Value
+                                                                        </button>
+                                                                    </td>
+                                                                </tr>
+                                                            @endforeach
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            @else
+                                                <p class="metadata-pending">Pending. Metadata modul ini akan diisi setelah endpoint dan schema API modul tersedia.</p>
+                                            @endif
+                                        </div>
+                                    </details>
+                                @endforeach
+                            </div>
                         </div>
                     </div>
                 </section>
@@ -2427,13 +3138,6 @@
                         <span>Master data aktif</span>
                         <strong>{{ number_format($metrics['active_master_data_records']) }}</strong>
                         <small>{{ number_format($metrics['master_data_types']) }} tipe data tersedia</small>
-                    </div>
-                </div>
-                <div class="metric card">
-                    <div class="card-body">
-                        <span>Import mapping</span>
-                        <strong>{{ number_format($metrics['import_mappings']) }}</strong>
-                        <small>{{ number_format($metrics['active_import_mappings']) }} mapping aktif</small>
                     </div>
                 </div>
                 <div class="metric card">
@@ -2463,7 +3167,7 @@
                 <div class="grid overview-grid">
                     @foreach ($overview['user_roles'] as $role)
                         <article class="overview-card">
-                            <span class="menu-tag">{{ number_format($role['count']) }} user</span>
+                            {!! $tag('User', number_format($role['count']), 'user') !!}
                             <h3 style="margin-top: 14px;">{{ $role['label'] }}</h3>
                         </article>
                     @endforeach
@@ -2483,7 +3187,7 @@
                         @foreach ($quickMenu as $item)
                             <a class="menu-item" href="{{ $item['href'] }}" @if(\Illuminate\Support\Str::startsWith($item['href'], '/api/')) target="_blank" rel="noreferrer" @endif>
                                 <div class="menu-main"><strong>{{ $item['label'] }}</strong></div>
-                                <span class="menu-tag">{{ $item['tag'] }}</span>
+                                {!! $tag($item['tag'], null, $item['tag'] === 'API' ? 'api' : ($item['tag'] === 'Docs' ? 'book' : ($item['tag'] === 'Spec' ? 'file' : 'tag'))) !!}
                             </a>
                         @endforeach
                     </div>
@@ -2501,7 +3205,7 @@
                 <div class="grid overview-grid">
                     @foreach ($overview['modules'] as $module)
                         <article class="overview-card">
-                            <span class="status {{ $module['status'] }}">{{ $module['status'] }}</span>
+                            {!! $tag('Status', $module['status'], $module['status'] === 'ready' ? 'check' : 'clock', 'status '.$module['status']) !!}
                             <strong>{{ $module['percentage'] }}%</strong>
                             <h3 style="margin-top: 12px;">{{ $module['label'] }}</h3>
                             <div class="meter">
@@ -2523,7 +3227,7 @@
                                 <h2>Manajemen User Superadmin</h2>
                                 <p>Kelola akun internal, role akses, dan pembaruan password dari satu workspace yang mengikuti template dashboard saat ini.</p>
                             </div>
-                            <span class="menu-tag">{{ number_format($superadminUserPage['records_count']) }} akun</span>
+                            {!! $tag('Akun', number_format($superadminUserPage['records_count']), 'user') !!}
                         </div>
                         <div class="grid superadmin-kpis">
                             <article class="superadmin-kpi">
@@ -2556,7 +3260,7 @@
                             </label>
                         </div>
                         <div class="toolbar-actions">
-                            <span class="menu-tag" data-grid-count>{{ number_format($superadminUserPage['records_count']) }} data</span>
+                            {!! $tag('Data', number_format($superadminUserPage['records_count']), 'data', 'menu-tag', ' data-grid-count') !!}
                             <button class="action-button primary" type="button" data-grid-create>Tambah User</button>
                         </div>
                     </div>
@@ -2608,7 +3312,7 @@
                                 <h2>Generator Bearer Key API</h2>
                                 <p>Kelola client integrasi, batas rate limit, dan buat bearer token Sanctum langsung dari panel Superadmin dengan pola desain dashboard yang sama.</p>
                             </div>
-                            <span class="menu-tag">{{ number_format($superadminApiClientPage['records_count']) }} client</span>
+                            {!! $tag('Client', number_format($superadminApiClientPage['records_count']), 'key') !!}
                         </div>
                         <div class="grid superadmin-kpis">
                             <article class="superadmin-kpi">
@@ -2641,7 +3345,7 @@
                             </label>
                         </div>
                         <div class="toolbar-actions">
-                            <span class="menu-tag" data-grid-count>{{ number_format($superadminApiClientPage['records_count']) }} data</span>
+                            {!! $tag('Data', number_format($superadminApiClientPage['records_count']), 'data', 'menu-tag', ' data-grid-count') !!}
                             <button class="action-button primary" type="button" data-grid-create>Tambah Client API</button>
                         </div>
                     </div>
@@ -2748,11 +3452,11 @@
                                 </label>
                             </div>
                             <div class="toolbar-actions">
-                                <span class="menu-tag" data-grid-count>{{ number_format($masterDataPage['records_count']) }} data</span>
+                                {!! $tag('Data', number_format($masterDataPage['records_count']), 'data', 'menu-tag', ' data-grid-count') !!}
                                 @if (($masterDataPage['crud_enabled'] ?? false))
                                     <button class="action-button primary" type="button" data-grid-create>Tambah</button>
                                 @else
-                                    <span class="menu-tag">Mode baca dari dump SQL</span>
+                                    {!! $tag('Mode', 'Dump SQL', 'data') !!}
                                 @endif
                             </div>
                         </div>
@@ -2810,7 +3514,7 @@
                                 </label>
                             </div>
                             <div class="toolbar-actions">
-                                <span class="menu-tag" data-grid-count>{{ number_format($masterDataPage['records_count']) }} data</span>
+                                {!! $tag('Data', number_format($masterDataPage['records_count']), 'data', 'menu-tag', ' data-grid-count') !!}
                                 <button class="action-button primary" type="button" data-grid-create>Tambah</button>
                             </div>
                         </div>
@@ -2869,7 +3573,7 @@
                                 <h2>{{ $bridgeSourceTablePage['table'] }}</h2>
                                 <p>{{ $bridgeSourceTablePage['description'] }}</p>
                             </div>
-                            <span class="menu-tag">{{ number_format($bridgeSourceTablePage['row_count']) }} baris</span>
+                            {!! $tag('Baris', number_format($bridgeSourceTablePage['row_count']), 'table') !!}
                         </div>
                     </div>
                 </div>
@@ -2883,7 +3587,7 @@
                             </label>
                         </div>
                         <div class="toolbar-actions">
-                            <span class="menu-tag" data-grid-count>{{ number_format($bridgeSourceTablePage['row_count']) }} data</span>
+                            {!! $tag('Data', number_format($bridgeSourceTablePage['row_count']), 'data', 'menu-tag', ' data-grid-count') !!}
                         </div>
                     </div>
 
@@ -2925,7 +3629,7 @@
             </section>
         @endif
 
-        @if (in_array($currentPage, ['import-mapping', 'monitoring'], true) && $hasOperationalDashboard)
+        @if ($currentPage === 'monitoring' && $hasOperationalDashboard)
         <section class="grid workspace section">
             <div class="stack">
                 @if ($currentPage === 'monitoring' && $canViewMonitoring)
@@ -2935,7 +3639,7 @@
                                 <div>
                                     <h2>Kesehatan Sistem</h2>
                                 </div>
-                                <span class="status {{ $health['status'] }}">{{ $health['status'] }}</span>
+                                {!! $tag('Status', $health['status'], $health['status'] === 'ok' ? 'check' : 'clock', 'status '.$health['status']) !!}
                             </div>
 
                             <div class="health-list">
@@ -2945,7 +3649,7 @@
                                             <strong>{{ $check['label'] }}</strong>
                                             <span>{{ $check['detail'] }}</span>
                                         </div>
-                                        <span class="status {{ $check['ok'] ? 'ok' : 'missing' }}">{{ $check['ok'] ? 'ok' : 'issue' }}</span>
+                                        {!! $tag('Status', $check['ok'] ? 'ok' : 'issue', $check['ok'] ? 'check' : 'clock', 'status '.($check['ok'] ? 'ok' : 'missing')) !!}
                                     </div>
                                 @endforeach
                             </div>
@@ -2968,7 +3672,7 @@
                                             <span>{{ $domain['connection'] }} → {{ $domain['database'] ?? 'belum dikonfigurasi' }}</span>
                                             <span>{{ $domain['description'] }}</span>
                                         </div>
-                                        <span class="status {{ $domain['configured'] ? 'ok' : 'partial' }}">{{ $domain['configured'] ? 'aktif' : 'opsional' }}</span>
+                                        {!! $tag('Status', $domain['configured'] ? 'aktif' : 'opsional', $domain['configured'] ? 'check' : 'clock', 'status '.($domain['configured'] ? 'ok' : 'partial')) !!}
                                     </div>
                                 @endforeach
                             </div>
@@ -2979,40 +3683,6 @@
             </div>
 
             <div class="stack">
-                @if ($currentPage === 'import-mapping' && $canViewImportMapping)
-                    <div class="card" id="import-mapping">
-                        <div class="card-body">
-                            <div class="section-header">
-                                <div>
-                                    <h2>Import dan Mapping</h2>
-                                </div>
-                            </div>
-                            <div class="module-list">
-                                @forelse ($overview['recent_mappings'] as $mapping)
-                                    <div class="module-item">
-                                        <div class="module-main">
-                                            <strong>{{ $mapping['name'] }}</strong>
-                                            <span>{{ $mapping['source_system'] }}/{{ $mapping['source_table'] }} → {{ $mapping['entity_type'] }}</span>
-                                        </div>
-                                        <span class="status {{ $mapping['is_active'] ? 'ready' : 'partial' }}">v{{ $mapping['version'] }}</span>
-                                    </div>
-                                @empty
-                                    <div class="module-item">
-                                        <div class="module-main">
-                                            <strong>Belum ada mapping import.</strong>
-                                        </div>
-                                    </div>
-                                @endforelse
-                            </div>
-
-                            <div class="footer-callout" style="margin-top: 16px;">
-                                <strong>Batch import tersimpan: {{ number_format($metrics['import_batches']) }}</strong>
-                                Error import yang tercatat saat ini: {{ number_format($metrics['import_errors']) }}.
-                            </div>
-                        </div>
-                    </div>
-                @endif
-
                 @if ($currentPage === 'monitoring' && $canViewMonitoring)
                     <div class="table-card">
                         <div class="table-head">
@@ -3036,7 +3706,7 @@
                                                 <strong>{{ $import['entity_type'] ?? 'n/a' }}</strong>
                                                 <div class="table-note mono">{{ $import['source_system'] }}/{{ $import['source_table'] ?? '-' }}</div>
                                             </td>
-                                            <td><span class="status {{ $import['status'] === 'completed' ? 'ready' : 'partial' }}">{{ $import['status'] }}</span></td>
+                                            <td>{!! $tag('Status', $import['status'], $import['status'] === 'completed' ? 'check' : 'clock', 'status '.($import['status'] === 'completed' ? 'ready' : 'partial')) !!}</td>
                                             <td>{{ $import['progress_percentage'] }}% / {{ number_format($import['total_rows']) }}</td>
                                         </tr>
                                     @empty
@@ -3063,7 +3733,7 @@
                                                 <div class="table-note">{{ $client['owner_email'] ?? 'owner belum diisi' }}</div>
                                             </td>
                                             <td class="mono">{{ $client['code'] }}</td>
-                                            <td><span class="status {{ $client['is_active'] ? 'ready' : 'partial' }}">{{ $client['is_active'] ? 'active' : 'inactive' }}</span></td>
+                                            <td>{!! $tag('Status', $client['is_active'] ? 'active' : 'inactive', $client['is_active'] ? 'check' : 'clock', 'status '.($client['is_active'] ? 'ready' : 'partial')) !!}</td>
                                         </tr>
                                     @empty
                                         <tr>
@@ -3109,7 +3779,7 @@
                         <div>
                             <h2>Audit Log dan Endpoint API</h2>
                         </div>
-                        <span class="menu-tag">{{ $overview['api_routes']->count() }} route</span>
+                        {!! $tag('Route', $overview['api_routes']->count(), 'route') !!}
                     </div>
                     <div class="table-body">
                         <table>
@@ -3211,7 +3881,13 @@
                                 </div>
                                 <div class="field">
                                     <label for="managed-user-password">Password</label>
-                                    <input id="managed-user-password" name="password" type="password" placeholder="Minimal 8 karakter">
+                                    <div class="password-field">
+                                        <input id="managed-user-password" name="password" type="password" placeholder="Minimal 8 karakter">
+                                        <button class="password-toggle" type="button" data-password-toggle aria-label="Tampilkan password" aria-pressed="false">
+                                            <svg class="icon password-eye" viewBox="0 0 24 24"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6z"/><circle cx="12" cy="12" r="3"/></svg>
+                                            <svg class="icon password-eye-off" viewBox="0 0 24 24" hidden><path d="M3 3l18 18"/><path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"/><path d="M9.9 4.4A9.8 9.8 0 0 1 12 4c6 0 9.5 6 9.5 6a16.6 16.6 0 0 1-2.1 2.7"/><path d="M6.1 6.1C3.8 7.6 2.5 10 2.5 10s3.5 6 9.5 6c1.1 0 2.2-.2 3.1-.6"/></svg>
+                                        </button>
+                                    </div>
                                 </div>
                                 <div class="field full">
                                     <label>Verifikasi Email</label>
@@ -3694,6 +4370,26 @@
             @endif
         @endif
 
+        @if ($currentPage === 'documentation' && $bridgeModule)
+            <div class="modal" data-bridge-field-values-modal aria-hidden="true">
+                <div class="modal-backdrop" data-modal-close></div>
+                <div class="modal-panel modal-panel-xl">
+                    <div class="modal-head">
+                        <div>
+                            <h2 data-bridge-field-values-title>Unique Value Field</h2>
+                            <p data-bridge-field-values-subtitle>Pilih field metadata jembatan untuk melihat daftar value unik.</p>
+                        </div>
+                        <button class="icon-button" type="button" data-modal-close aria-label="Tutup unique value">
+                            <svg class="icon" viewBox="0 0 24 24"><path d="M6 6 18 18"/><path d="M18 6 6 18"/></svg>
+                        </button>
+                    </div>
+                    <div class="modal-body" data-bridge-field-values-content>
+                        <div class="grid-loading">Pilih field untuk melihat unique value.</div>
+                    </div>
+                </div>
+            </div>
+        @endif
+
         @if ($currentPage === 'bridge-source-table' && $canViewMasterData && $bridgeSourceTablePage)
             <div class="modal" data-bridge-source-table-view-modal aria-hidden="true">
                 <div class="modal-backdrop" data-modal-close></div>
@@ -3714,7 +4410,267 @@
     </main>
 </div>
 <script src="{{ asset('vendor-cytoscape.min.js') }}"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script>
+    window.dashboardDetailMap = (() => {
+        const mapStore = new WeakMap();
+        const observedRoots = new WeakSet();
+        const satelliteTileUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+        const satelliteAttribution = 'Tiles &copy; Esri';
+
+        const escapeHtml = (value) => String(value ?? '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#039;');
+
+        const numericValue = (value) => {
+            if (value === null || value === undefined || value === '') {
+                return null;
+            }
+
+            const normalized = String(value).trim().replace(',', '.');
+            const match = normalized.match(/-?\d+(?:\.\d+)?/);
+
+            if (!match) {
+                return null;
+            }
+
+            const number = Number(match[0]);
+
+            return Number.isFinite(number) ? number : null;
+        };
+
+        const pairValue = (value) => {
+            if (value === null || value === undefined || value === '') {
+                return null;
+            }
+
+            const matches = String(value)
+                .replaceAll(',', '.')
+                .match(/-?\d+(?:\.\d+)?/g);
+
+            if (!matches || matches.length < 2) {
+                return null;
+            }
+
+            const lat = Number(matches[0]);
+            const lon = Number(matches[1]);
+
+            return isValidCoordinate(lat, lon) ? { lat, lon } : null;
+        };
+
+        const isValidCoordinate = (lat, lon) => (
+            Number.isFinite(lat)
+            && Number.isFinite(lon)
+            && lat >= -90
+            && lat <= 90
+            && lon >= -180
+            && lon <= 180
+        );
+
+        const coordinateRole = (key, label) => {
+            const normalized = `${key || ''} ${label || ''}`
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, '_');
+
+            if (/(^|_)(lat|latitude|lintang)(_|$)/.test(normalized)) {
+                return 'lat';
+            }
+
+            if (/(^|_)(lon|lng|long|longitude|bujur)(_|$)/.test(normalized)) {
+                return 'lon';
+            }
+
+            if (/(^|_)(koordinat|coordinate|coordinates)(_|$)/.test(normalized)) {
+                return 'pair';
+            }
+
+            return null;
+        };
+
+        const coordinatesFromEntries = (entries) => {
+            let lat = null;
+            let lon = null;
+
+            for (const [label, value, key] of entries || []) {
+                const role = coordinateRole(key, label);
+
+                if (role === 'pair') {
+                    const pair = pairValue(value);
+
+                    if (pair) {
+                        return pair;
+                    }
+                }
+
+                if (role === 'lat') {
+                    const pair = pairValue(value);
+
+                    if (pair) {
+                        return pair;
+                    }
+
+                    lat = numericValue(value);
+                }
+
+                if (role === 'lon') {
+                    lon = numericValue(value);
+                }
+            }
+
+            return isValidCoordinate(lat, lon) ? { lat, lon } : null;
+        };
+
+        const coordinatesFromRows = (rows) => {
+            for (const row of rows || []) {
+                const entries = Object.entries(row || {}).map(([key, value]) => [key, value, key]);
+                const coordinates = coordinatesFromEntries(entries);
+
+                if (coordinates) {
+                    return coordinates;
+                }
+            }
+
+            return null;
+        };
+
+        const renderMapCard = ({ lat, lon }) => `
+            <aside class="detail-map-card" data-detail-map data-lat="${escapeHtml(lat)}" data-lon="${escapeHtml(lon)}">
+                <div class="detail-map-canvas" data-detail-map-canvas></div>
+                <div class="detail-map-meta">
+                    <span>Lokasi</span>
+                    <strong>${escapeHtml(lat.toFixed(6))}, ${escapeHtml(lon.toFixed(6))}</strong>
+                </div>
+            </aside>
+        `;
+
+        const wrapTable = (coordinates, tableHtml) => {
+            if (!coordinates) {
+                return tableHtml;
+            }
+
+            return `
+                <div class="detail-map-layout">
+                    ${renderMapCard(coordinates)}
+                    <div class="detail-map-table">${tableHtml}</div>
+                </div>
+            `;
+        };
+
+        const wrapEntries = (entries, tableHtml) => wrapTable(coordinatesFromEntries(entries), tableHtml);
+        const wrapRows = (rows, tableHtml) => wrapTable(coordinatesFromRows(rows), tableHtml);
+
+        const hasMapNode = (node) => {
+            if (!(node instanceof Element)) {
+                return false;
+            }
+
+            return node.matches('[data-detail-map]') || Boolean(node.querySelector('[data-detail-map]'));
+        };
+
+        const queueInit = (root) => {
+            window.requestAnimationFrame(() => {
+                init(root);
+            });
+        };
+
+        const observeMapInsertions = (root) => {
+            if (!window.MutationObserver || observedRoots.has(root)) {
+                return;
+            }
+
+            observedRoots.add(root);
+
+            new MutationObserver((mutations) => {
+                const shouldInit = mutations.some((mutation) => (
+                    Array.from(mutation.addedNodes).some(hasMapNode)
+                ));
+
+                if (shouldInit) {
+                    queueInit(root);
+                }
+            }).observe(root, {
+                childList: true,
+                subtree: true,
+            });
+        };
+
+        const init = (root = document) => {
+            if (!window.L) {
+                return;
+            }
+
+            observeMapInsertions(root);
+
+            root.querySelectorAll('[data-detail-map]').forEach((mapCard) => {
+                if (mapStore.has(mapCard)) {
+                    return;
+                }
+
+                const canvas = mapCard.querySelector('[data-detail-map-canvas]');
+                const lat = Number(mapCard.dataset.lat);
+                const lon = Number(mapCard.dataset.lon);
+
+                if (!canvas || !isValidCoordinate(lat, lon)) {
+                    return;
+                }
+
+                const map = window.L.map(canvas, {
+                    zoomControl: false,
+                    attributionControl: true,
+                    scrollWheelZoom: false,
+                    dragging: true,
+                    doubleClickZoom: false,
+                    boxZoom: false,
+                    keyboard: false,
+                    tap: false,
+                }).setView([lat, lon], 16);
+
+                window.L.tileLayer(satelliteTileUrl, {
+                    attribution: satelliteAttribution,
+                    maxZoom: 19,
+                    maxNativeZoom: 19,
+                }).addTo(map);
+
+                const markerIcon = window.L.divIcon({
+                    className: 'detail-map-leaflet-marker',
+                    html: '<span class="detail-map-marker"><span class="marker-wave"></span><span class="marker-wave"></span><span class="marker-wave"></span><span class="marker-dot"></span></span>',
+                    iconSize: [18, 18],
+                    iconAnchor: [9, 9],
+                });
+
+                window.L.marker([lat, lon], { icon: markerIcon, interactive: false }).addTo(map);
+                mapStore.set(mapCard, map);
+
+                requestAnimationFrame(() => {
+                    map.invalidateSize();
+                });
+
+                window.setTimeout(() => {
+                    map.invalidateSize();
+                }, 180);
+            });
+        };
+
+        return {
+            wrapEntries,
+            wrapRows,
+            init,
+        };
+    })();
+
+    window.dashboardModalA11y = {
+        prepareClose(modal) {
+            const activeElement = document.activeElement;
+
+            if (activeElement instanceof HTMLElement && modal?.contains(activeElement)) {
+                activeElement.blur();
+            }
+        },
+    };
+
     (() => {
         const body = document.body;
         const sidebarToggle = document.querySelector('[data-sidebar-toggle]');
@@ -3754,6 +4710,181 @@
         document.addEventListener('click', (event) => {
             if (userMenu && userMenu.open && !userMenu.contains(event.target)) {
                 userMenu.removeAttribute('open');
+            }
+        });
+
+        const bridgeFieldValuesEndpoint = @json($bridgeFieldValuesEndpoint);
+        const bridgeFieldValuesModal = document.querySelector('[data-bridge-field-values-modal]');
+        const bridgeFieldValuesTitle = bridgeFieldValuesModal?.querySelector('[data-bridge-field-values-title]');
+        const bridgeFieldValuesSubtitle = bridgeFieldValuesModal?.querySelector('[data-bridge-field-values-subtitle]');
+        const bridgeFieldValuesContent = bridgeFieldValuesModal?.querySelector('[data-bridge-field-values-content]');
+        const openBridgeFieldValuesButtons = document.querySelectorAll('[data-bridge-field-values-open]');
+
+        const openStaticModal = (modal) => {
+            if (!modal) {
+                return;
+            }
+
+            modal.classList.add('is-open');
+            modal.setAttribute('aria-hidden', 'false');
+            body.classList.add('modal-open');
+
+            requestAnimationFrame(() => window.dashboardDetailMap?.init(modal));
+        };
+
+        const closeStaticModal = (modal) => {
+            if (!modal) {
+                return;
+            }
+
+            window.dashboardModalA11y?.prepareClose(modal);
+            modal.classList.remove('is-open');
+            modal.setAttribute('aria-hidden', 'true');
+
+            if (!document.querySelector('.modal.is-open')) {
+                body.classList.remove('modal-open');
+            }
+        };
+
+        const escapeStaticHtml = (value) => String(value ?? '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#039;');
+
+        const staticTagIcon = (icon) => ({
+            check: '<svg class="tag-icon" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>',
+            clock: '<svg class="tag-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+            data: '<svg class="tag-icon" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg>',
+            field: '<svg class="tag-icon" viewBox="0 0 24 24"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h10"/></svg>',
+            location: '<svg class="tag-icon" viewBox="0 0 24 24"><path d="M12 21s7-4.4 7-11a7 7 0 1 0-14 0c0 6.6 7 11 7 11z"/><circle cx="12" cy="10" r="2"/></svg>',
+            table: '<svg class="tag-icon" viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M4 10h16"/><path d="M9 5v14"/></svg>',
+            tag: '<svg class="tag-icon" viewBox="0 0 24 24"><path d="M20 10 14 4H5v9l6 6z"/><path d="M8 8h.01"/></svg>',
+        }[icon] || '<svg class="tag-icon" viewBox="0 0 24 24"><path d="M20 10 14 4H5v9l6 6z"/><path d="M8 8h.01"/></svg>');
+
+        const staticTag = (label, value = null, icon = 'tag', className = 'menu-tag') => `
+            <span class="${escapeStaticHtml(className)}">
+                ${staticTagIcon(icon)}
+                <span class="tag-label">${escapeStaticHtml(label)}</span>
+                ${value === null ? '' : `<span class="tag-value">${escapeStaticHtml(String(value))}</span>`}
+            </span>
+        `;
+
+        const fillStaticTag = (element, label, value, icon = 'tag') => {
+            if (!element) {
+                return;
+            }
+
+            element.innerHTML = `
+                ${staticTagIcon(icon)}
+                <span class="tag-label">${escapeStaticHtml(label)}</span>
+                <span class="tag-value">${escapeStaticHtml(String(value))}</span>
+            `;
+        };
+
+        window.dashboardFillStaticTag = fillStaticTag;
+
+        const renderBridgeFieldValues = (payload) => {
+            if (!bridgeFieldValuesContent) {
+                return;
+            }
+
+            const values = Array.isArray(payload?.values) ? payload.values : [];
+
+            if (!values.length) {
+                bridgeFieldValuesContent.innerHTML = '<p class="metadata-pending">Belum ada value untuk field ini.</p>';
+                return;
+            }
+
+            bridgeFieldValuesContent.innerHTML = `
+                <div class="metadata-values-summary">
+                    ${staticTag('Unique', String(payload.unique_count || values.length), 'field')}
+                    <span class="helper-text">${escapeStaticHtml(String(payload.record_count || 0))} record dicek</span>
+                </div>
+                <div class="metadata-values-scroll">
+                    <table class="metadata-table">
+                        <thead>
+                            <tr>
+                                <th>Value Unik</th>
+                                <th>Jumlah</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${values.map((item) => `
+                                <tr>
+                                    <td class="metadata-value">
+                                        ${item.is_structured
+                                            ? `<pre class="metadata-value-json">${escapeStaticHtml(item.value || '{}')}</pre>`
+                                            : escapeStaticHtml(item.value || '(kosong)')}
+                                    </td>
+                                    <td class="mono">${escapeStaticHtml(String(item.count || 0))}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        };
+
+        const openBridgeFieldValues = async (button) => {
+            const fieldKey = button.dataset.fieldKey || '';
+            const fieldLabel = button.dataset.fieldLabel || fieldKey || 'Field';
+
+            if (bridgeFieldValuesTitle) {
+                bridgeFieldValuesTitle.textContent = `Unique Value: ${fieldLabel}`;
+            }
+
+            if (bridgeFieldValuesSubtitle) {
+                bridgeFieldValuesSubtitle.textContent = 'Mengambil semua value unik berdasarkan data jembatan yang tersedia sekarang...';
+            }
+
+            if (bridgeFieldValuesContent) {
+                bridgeFieldValuesContent.innerHTML = '<div class="grid-loading">Memuat unique value...</div>';
+            }
+
+            openStaticModal(bridgeFieldValuesModal);
+
+            try {
+                const response = await fetch(bridgeFieldValuesEndpoint.replace('__field__', encodeURIComponent(fieldKey)), {
+                    headers: {
+                        Accept: 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                });
+                const payload = await response.json().catch(() => null);
+
+                if (!response.ok || payload?.success === false) {
+                    throw payload || { message: 'Gagal mengambil unique value.' };
+                }
+
+                if (bridgeFieldValuesSubtitle) {
+                    bridgeFieldValuesSubtitle.textContent = payload?.data?.field?.api_path
+                        ? `${payload.data.field.api_path} · ${payload.data.unique_count || 0} unique value`
+                        : `${payload?.data?.unique_count || 0} unique value`;
+                }
+
+                renderBridgeFieldValues(payload?.data || {});
+            } catch (errorPayload) {
+                const message = errorPayload?.message || 'Gagal mengambil unique value.';
+
+                if (bridgeFieldValuesContent) {
+                    bridgeFieldValuesContent.innerHTML = `<div class="feedback">${escapeStaticHtml(message)}</div>`;
+                }
+            }
+        };
+
+        openBridgeFieldValuesButtons.forEach((button) => {
+            button.addEventListener('click', () => openBridgeFieldValues(button));
+        });
+
+        bridgeFieldValuesModal?.querySelectorAll('[data-modal-close]').forEach((button) => {
+            button.addEventListener('click', () => closeStaticModal(bridgeFieldValuesModal));
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                closeStaticModal(bridgeFieldValuesModal);
             }
         });
 
@@ -3953,7 +5084,9 @@
             return String(value);
         };
 
-        const buildRows = (entries) => entries.filter(([, value]) => value !== undefined);
+        const hiddenBridgeTableFields = new Set(['created_at', 'updated_at', 'created_by']);
+        const isHiddenBridgeTableField = (key = '') => hiddenBridgeTableFields.has(String(key || '').toLowerCase());
+        const buildRows = (entries) => entries.filter(([, value, key]) => value !== undefined && !isHiddenBridgeTableField(key));
 
         const renderKeyValueTable = (entries) => {
             const rows = buildRows(entries);
@@ -3962,7 +5095,7 @@
                 return '<div class="detail-empty">Belum ada data yang tersimpan pada bagian ini.</div>';
             }
 
-            return `
+            const tableHtml = `
                 <div class="detail-table-wrap">
                     <table class="detail-kv-table">
                         <tbody>
@@ -3976,6 +5109,8 @@
                     </table>
                 </div>
             `;
+
+            return window.dashboardDetailMap?.wrapEntries(rows, tableHtml) || tableHtml;
         };
 
         const renderRecordTable = (rows, preferredOrder = []) => {
@@ -3989,7 +5124,7 @@
                 ...allColumns.filter((column) => !preferredOrder.includes(column)),
             ];
 
-            return `
+            const tableHtml = `
                 <div class="detail-table-wrap">
                     <table class="detail-record-table">
                         <thead>
@@ -4007,19 +5142,20 @@
                     </table>
                 </div>
             `;
+
+            return window.dashboardDetailMap?.wrapRows(rows, tableHtml) || tableHtml;
         };
 
-        const renderSection = (title, description, iconName, body, chip = null) => `
+        const renderSection = (title, iconName, body, chip = null) => `
             <section class="detail-section">
                 <div class="detail-section-head">
                     <div class="detail-section-title">
                         <span class="detail-section-icon">${iconMarkup(iconName)}</span>
                         <div>
                             <h4>${escapeHtml(title)}</h4>
-                            <p>${escapeHtml(description)}</p>
                         </div>
                     </div>
-                    ${chip ? `<span class="detail-chip">${escapeHtml(chip)}</span>` : ''}
+                    ${chip ? `<span class="detail-chip"><svg class="tag-icon" viewBox="0 0 24 24"><path d="M20 10 14 4H5v9l6 6z"/><path d="M8 8h.01"/></svg><span class="tag-label">Info</span><span class="tag-value">${escapeHtml(chip)}</span></span>` : ''}
                 </div>
                 ${body}
             </section>
@@ -4037,7 +5173,7 @@
             return 'missing';
         };
 
-        const renderStatus = (value) => `<span class="status ${statusTone(value)}">${escapeHtml(formatText(value))}</span>`;
+        const renderStatus = (value) => `<span class="status ${statusTone(value)}"><svg class="tag-icon" viewBox="0 0 24 24"><path d="${statusTone(value) === 'ready' ? 'M20 6 9 17l-5-5' : 'M12 7v5l3 2'}"/><circle cx="12" cy="12" r="9"/></svg><span class="tag-label">Status</span><span class="tag-value">${escapeHtml(formatText(value))}</span></span>`;
 
         const setLoadingState = (loading) => {
             state.loading = loading;
@@ -4123,7 +5259,7 @@
             const end = total === 0 ? 0 : Math.min(currentPage * perPage, total);
 
             if (gridCount) {
-                gridCount.textContent = `${new Intl.NumberFormat('id-ID').format(total)} data`;
+                window.dashboardFillStaticTag(gridCount, 'Data', new Intl.NumberFormat('id-ID').format(total), 'data');
             }
 
             if (gridSummary) {
@@ -4153,6 +5289,8 @@
             modal.classList.add('is-open');
             modal.setAttribute('aria-hidden', 'false');
             body.classList.add('modal-open');
+
+            requestAnimationFrame(() => window.dashboardDetailMap?.init(modal));
         };
 
         const closeModal = (modal) => {
@@ -4160,6 +5298,7 @@
                 return;
             }
 
+            window.dashboardModalA11y?.prepareClose(modal);
             modal.classList.remove('is-open');
             modal.setAttribute('aria-hidden', 'true');
 
@@ -4712,9 +5851,12 @@
 
         const config = JSON.parse(root.dataset.bridgeSourceApp || '{}');
         const crudEnabled = Boolean(config.crud_enabled);
-        const columns = Array.isArray(config.columns) && config.columns.length > 0
+        const hiddenBridgeTableFields = new Set(['created_at', 'updated_at', 'created_by']);
+        const isHiddenBridgeTableField = (key = '') => hiddenBridgeTableFields.has(String(key || '').toLowerCase());
+        const columns = (Array.isArray(config.columns) && config.columns.length > 0
             ? config.columns
-            : ['uniqid', 'no_bh', 'jenis', 'km_hm', 'updated_at'];
+            : ['uniqid', 'no_bh', 'jenis', 'km_hm'])
+            .filter((column) => !isHiddenBridgeTableField(column));
         const columnLabels = {
             bridge_identity: 'Identitas Jembatan',
             route_summary: 'Rute dan Stasiun',
@@ -4722,7 +5864,6 @@
             location_summary: 'Lokasi',
             structure_summary: 'Struktur Gabungan',
             assessment_summary: 'Asesmen',
-            updated_at: 'Diperbarui',
         };
 
         const gridHead = root.querySelector('[data-grid-head]');
@@ -4887,7 +6028,7 @@
             return String(value);
         };
 
-        const buildRows = (entries) => entries.filter(([, value]) => value !== undefined);
+        const buildRows = (entries) => entries.filter(([, value, key]) => value !== undefined && !isHiddenBridgeTableField(key));
 
         const renderKeyValueTable = (entries) => {
             const rows = buildRows(entries);
@@ -4896,7 +6037,7 @@
                 return '<div class="detail-empty">Belum ada data yang tersimpan pada bagian ini.</div>';
             }
 
-            return `
+            const tableHtml = `
                 <div class="detail-table-wrap">
                     <table class="detail-kv-table">
                         <tbody>
@@ -4910,6 +6051,8 @@
                     </table>
                 </div>
             `;
+
+            return window.dashboardDetailMap?.wrapEntries(rows, tableHtml) || tableHtml;
         };
 
         const renderRecordTable = (rows, preferredOrder = []) => {
@@ -4917,13 +6060,14 @@
                 return '<div class="detail-empty">Belum ada baris data pada tabel relasi ini.</div>';
             }
 
-            const allColumns = Array.from(new Set(rows.flatMap((row) => Object.keys(row || {}))));
+            const allColumns = Array.from(new Set(rows.flatMap((row) => Object.keys(row || {}))))
+                .filter((column) => !isHiddenBridgeTableField(column));
             const orderedColumns = [
                 ...preferredOrder.filter((column) => allColumns.includes(column)),
                 ...allColumns.filter((column) => !preferredOrder.includes(column)),
             ];
 
-            return `
+            const tableHtml = `
                 <div class="detail-table-wrap">
                     <table class="detail-record-table">
                         <thead>
@@ -4941,19 +6085,20 @@
                     </table>
                 </div>
             `;
+
+            return window.dashboardDetailMap?.wrapRows(rows, tableHtml) || tableHtml;
         };
 
-        const renderSection = (title, description, iconName, body, chip = null) => `
+        const renderSection = (title, iconName, body, chip = null) => `
             <section class="detail-section">
                 <div class="detail-section-head">
                     <div class="detail-section-title">
                         <span class="detail-section-icon">${iconMarkup(iconName)}</span>
                         <div>
                             <h4>${escapeHtml(title)}</h4>
-                            <p>${escapeHtml(description)}</p>
                         </div>
                     </div>
-                    ${chip ? `<span class="detail-chip">${escapeHtml(chip)}</span>` : ''}
+                    ${chip ? `<span class="detail-chip"><svg class="tag-icon" viewBox="0 0 24 24"><path d="M20 10 14 4H5v9l6 6z"/><path d="M8 8h.01"/></svg><span class="tag-label">Info</span><span class="tag-value">${escapeHtml(chip)}</span></span>` : ''}
                 </div>
                 ${body}
             </section>
@@ -5004,6 +6149,8 @@
             modal.classList.add('is-open');
             modal.setAttribute('aria-hidden', 'false');
             body.classList.add('modal-open');
+
+            requestAnimationFrame(() => window.dashboardDetailMap?.init(modal));
         };
 
         const closeModal = (modal) => {
@@ -5011,6 +6158,7 @@
                 return;
             }
 
+            window.dashboardModalA11y?.prepareClose(modal);
             modal.classList.remove('is-open');
             modal.setAttribute('aria-hidden', 'true');
 
@@ -5071,8 +6219,8 @@
                 return `
                     <tr>
                         ${cells}
-                        <td>
-                            <div class="inline-actions">
+                        <td class="bridge-actions-cell">
+                            <div class="inline-actions bridge-row-actions">
                                 <button class="inline-button" type="button" data-bridge-row-action="view" data-uniqid="${escapeHtml(row.uniqid)}">Lihat</button>
                                 ${crudEnabled ? `<button class="inline-button primary" type="button" data-bridge-row-action="edit" data-uniqid="${escapeHtml(row.uniqid)}">Edit</button>` : ''}
                                 ${crudEnabled ? `<button class="inline-button danger" type="button" data-bridge-row-action="delete" data-uniqid="${escapeHtml(row.uniqid)}">Hapus</button>` : ''}
@@ -5092,7 +6240,7 @@
             const end = total === 0 ? 0 : Math.min(currentPage * perPage, total);
 
             if (gridCount) {
-                gridCount.textContent = `${new Intl.NumberFormat('id-ID').format(total)} data`;
+                window.dashboardFillStaticTag(gridCount, 'Data', new Intl.NumberFormat('id-ID').format(total), 'data');
             }
 
             if (gridSummary) {
@@ -5340,6 +6488,7 @@
                 'id_kabkot', 'city_name', 'lintas', 'lintas_name', 'stasiun1', 'stasiun1_name',
                 'stasiun2', 'stasiun2_name', 'catatan', 'foto1', 'foto2', 'foto3', 'foto4',
                 'caption1', 'caption2', 'caption3', 'caption4', 'dokumen', 'video',
+                'created_at', 'updated_at', 'created_by',
             ]);
             const extraSourceFields = Object.entries(record).filter(([key, value]) => {
                 if (relationKeys.has(key) || curatedSourceKeys.has(key)) {
@@ -5431,51 +6580,45 @@
                 ['Catatan', record.catatan, 'catatan'],
             ];
 
+            const summaryTag = (label, value, icon) => `
+                <span class="bridge-summary-tag">
+                    <span class="tag-icon-circle">${icon}</span>
+                    <span class="tag-label">${escapeHtml(label)}</span>
+                    <span class="tag-value">${escapeHtml(value)}</span>
+                </span>
+            `;
+
             viewContent.innerHTML = `
-                <section class="detail-hero">
-                    <div class="detail-hero-main">
+                <section class="detail-hero bridge-summary-hero">
+                    <div class="bridge-summary-row bridge-summary-primary">
                         <span class="detail-hero-icon">${iconMarkup('bridge')}</span>
-                        <div class="detail-hero-main-copy">
+                        <div class="bridge-summary-copy">
                             <span class="detail-eyebrow">Source m_jembatan</span>
                             <h3>${escapeHtml(record.bridge_identity || record.no_bh || record.uniqid || 'Detail Jembatan')}</h3>
-                            <p>${escapeHtml(record.route_summary || 'Data detail ini menggabungkan induk jembatan, lookup, bentang, struktur bawah, proteksi, dan asesmen.')}</p>
-                            <div class="detail-chip-grid">
-                                <span class="detail-chip">${escapeHtml(record.wilayah_summary || 'Wilayah belum tersedia')}</span>
-                                <span class="detail-chip">${escapeHtml(record.location_summary || 'Lokasi belum tersedia')}</span>
-                                <span class="detail-chip">${escapeHtml('6 tabel source terhubung')}</span>
-                            </div>
+                            <span class="bridge-summary-route">${escapeHtml(record.route_summary || '-')}</span>
                         </div>
                     </div>
-                    <div class="detail-hero-stats">
-                        <div class="detail-stat">
-                            <span>Bentang</span>
-                            <strong>${escapeHtml(String(spans.length))} data</strong>
-                        </div>
-                        <div class="detail-stat">
-                            <span>Struktur Bawah</span>
-                            <strong>${escapeHtml(String(substructures.length))} data</strong>
-                        </div>
-                        <div class="detail-stat">
-                            <span>Panjang Total</span>
-                            <strong>${escapeHtml(profile.pjg_total || (totalSpanLength > 0 ? compactNumber(totalSpanLength) : '-'))}</strong>
-                        </div>
-                        <div class="detail-stat">
-                            <span>Nilai Asesmen</span>
-                            <strong>${escapeHtml(assessment.total !== undefined && assessment.total !== null ? compactNumber(assessment.total) : '-')}</strong>
-                        </div>
+                    <div class="bridge-summary-row bridge-summary-tags">
+                        ${summaryTag('Wilayah', record.wilayah_summary || 'Belum tersedia', '<svg class="tag-icon" viewBox="0 0 24 24"><path d="M12 21s7-4.4 7-11a7 7 0 1 0-14 0c0 6.6 7 11 7 11z"/><circle cx="12" cy="10" r="2"/></svg>')}
+                        ${summaryTag('Lokasi', record.location_summary || 'Belum tersedia', '<svg class="tag-icon" viewBox="0 0 24 24"><path d="M4 18h16"/><path d="M6 18V9l3-3 3 3 3-3 3 3v9"/></svg>')}
+                        ${summaryTag('Tabel', '6 source', '<svg class="tag-icon" viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M4 10h16"/><path d="M9 5v14"/></svg>')}
+                        ${summaryTag('Bentang', `${spans.length} data`, '<svg class="tag-icon" viewBox="0 0 24 24"><path d="M4 18h16"/><path d="M7 18V8l5-3 5 3v10"/><path d="M9 12h6"/></svg>')}
+                        ${summaryTag('Struktur Bawah', `${substructures.length} data`, '<svg class="tag-icon" viewBox="0 0 24 24"><path d="M4 20h16"/><path d="M8 20V10"/><path d="M16 20V10"/><path d="M6 10h12"/><path d="M12 4v16"/></svg>')}
+                        ${summaryTag('Panjang Total', profile.pjg_total || (totalSpanLength > 0 ? compactNumber(totalSpanLength) : '-'), '<svg class="tag-icon" viewBox="0 0 24 24"><path d="M4 12h16"/><path d="m7 9-3 3 3 3"/><path d="m17 9 3 3-3 3"/></svg>')}
+                        ${summaryTag('Nilai Asesmen', assessment.total !== undefined && assessment.total !== null ? compactNumber(assessment.total) : '-', '<svg class="tag-icon" viewBox="0 0 24 24"><path d="M12 3 4 7v5c0 5 3.4 9.4 8 10 4.6-.6 8-5 8-10V7z"/><path d="m9 12 2 2 4-5"/></svg>')}
                     </div>
                 </section>
 
                 <div class="detail-stack">
-                    ${renderSection('Identitas & Lokasi', 'Ringkasan utama dari tabel source induk m_jembatan.', 'map', renderKeyValueTable(identityRows))}
-                    ${renderSection('Kewilayahan & Rute', 'Lookup ditampilkan dengan nama lengkap, bukan kode mentah saja.', 'route', renderKeyValueTable(routeRows))}
-                    ${renderSection('Profil Struktur', 'Data lengkap dari tabel m_jembatan_profil.', 'profile', renderKeyValueTable(profileRows), record.profile_summary || 'profil')}
-                    ${renderSection('Bentang', 'Gabungan seluruh baris dari tabel m_jembatan_bentang.', 'span', renderRecordTable(spans, ['urut', 'pjg_bentang', 'uniqid', 'id_jembatan', 'active', 'updated_at']), `${spans.length} baris`)}
-                    ${renderSection('Struktur Bawah', 'Gabungan seluruh baris dari tabel m_jembatan_bawah.', 'substructure', renderRecordTable(substructures, ['urut', 'nomor', 'material', 'tipe', 'manteling', 'jenis', 'uniqid', 'id_jembatan', 'updated_at']), `${substructures.length} baris`)}
-                    ${renderSection('Pelindung', 'Detail pelindung arus, pengarah arus, dan longsoran.', 'shield', renderKeyValueTable(protectionRows))}
-                    ${renderSection('Asesmen Total', 'Nilai akhir dari tabel m_jembatan_nilai_total.', 'assessment', renderKeyValueTable(assessmentRows), record.assessment_summary || 'nilai')}
-                    ${renderSection('Media & Catatan', 'Dokumen pendukung, media, dan catatan operasional.', 'media', renderKeyValueTable(mediaRows))}
-                    ${renderSection('Atribut Source Tambahan', 'Field lain dari tabel m_jembatan yang tetap dipertahankan apa adanya.', 'database', renderKeyValueTable(extraSourceFields.map(([key, value]) => [prettifyField(key), value, key])))}
+                    ${renderSection('Identitas & Lokasi', 'map', renderKeyValueTable(identityRows))}
+                    ${renderSection('Kewilayahan & Rute', 'route', renderKeyValueTable(routeRows))}
+                    ${renderSection('Profil Struktur', 'profile', renderKeyValueTable(profileRows), record.profile_summary || 'profil')}
+                    ${renderSection('Bentang', 'span', renderRecordTable(spans, ['urut', 'pjg_bentang', 'uniqid', 'id_jembatan', 'active']), `${spans.length} baris`)}
+                    ${renderSection('Struktur Bawah', 'substructure', renderRecordTable(substructures, ['urut', 'nomor', 'material', 'tipe', 'manteling', 'jenis', 'uniqid', 'id_jembatan']), `${substructures.length} baris`)}
+                    ${renderSection('Pelindung', 'shield', renderKeyValueTable(protectionRows))}
+                    ${renderSection('Asesmen Total', 'assessment', renderKeyValueTable(assessmentRows), record.assessment_summary || 'nilai')}
+                    ${renderSection('Media & Catatan', 'media', renderKeyValueTable(mediaRows))}
+                    ${renderSection('Atribut Source Tambahan', 'database', renderKeyValueTable(extraSourceFields.map(([key, value]) => [prettifyField(key), value, key])))}
                 </div>
             `;
         };
@@ -5707,9 +6850,13 @@
         }
 
         const config = JSON.parse(root.dataset.bridgeSourceTableApp || '{}');
-        const columns = Array.isArray(config.columns) && config.columns.length > 0
+        const hiddenBridgeSourceTableFields = new Set(['created_at', 'updated_at', 'created_by']);
+        const isHiddenBridgeSourceTableField = (key = '') => hiddenBridgeSourceTableFields.has(String(key || '').toLowerCase());
+        const configuredColumns = Array.isArray(config.columns) && config.columns.length > 0
             ? config.columns
             : ['row_key'];
+        const visibleColumns = configuredColumns.filter((column) => !isHiddenBridgeSourceTableField(column));
+        const columns = visibleColumns.length > 0 ? visibleColumns : ['row_key'];
         const gridHead = root.querySelector('[data-grid-head]');
         const gridBody = root.querySelector('[data-grid-body]');
         const gridSearch = root.querySelector('[data-grid-search]');
@@ -5786,8 +6933,10 @@
             .replace(/\b\w/g, (letter) => letter.toUpperCase());
 
         const renderFieldTable = (record) => {
-            const priority = ['row_key', 'uniqid', 'id', 'kode', 'nama', 'tanggal', 'updated_at', 'created_at'];
-            const entries = Object.entries(record || {}).sort(([left], [right]) => {
+            const priority = ['row_key', 'uniqid', 'id', 'kode', 'nama', 'tanggal'];
+            const entries = Object.entries(record || {})
+                .filter(([key]) => !isHiddenBridgeSourceTableField(key))
+                .sort(([left], [right]) => {
                 const leftIndex = priority.indexOf(left);
                 const rightIndex = priority.indexOf(right);
 
@@ -5810,7 +6959,7 @@
                 return '<div class="detail-empty">Tidak ada field yang bisa ditampilkan.</div>';
             }
 
-            return `
+            const tableHtml = `
                 <div class="detail-table-wrap">
                     <table class="detail-kv-table">
                         <tbody>
@@ -5824,6 +6973,8 @@
                     </table>
                 </div>
             `;
+
+            return window.dashboardDetailMap?.wrapEntries(entries.map(([key, value]) => [key, value, key]), tableHtml) || tableHtml;
         };
 
         const fetchJson = async (url) => {
@@ -5900,7 +7051,7 @@
             const end = total === 0 ? 0 : Math.min(currentPage * perPage, total);
 
             if (gridCount) {
-                gridCount.textContent = `${new Intl.NumberFormat('id-ID').format(total)} data`;
+                window.dashboardFillStaticTag(gridCount, 'Data', new Intl.NumberFormat('id-ID').format(total), 'data');
             }
 
             if (gridSummary) {
@@ -5930,6 +7081,8 @@
             modal.classList.add('is-open');
             modal.setAttribute('aria-hidden', 'false');
             body.classList.add('modal-open');
+
+            requestAnimationFrame(() => window.dashboardDetailMap?.init(modal));
         };
 
         const closeModal = (modal) => {
@@ -5937,6 +7090,7 @@
                 return;
             }
 
+            window.dashboardModalA11y?.prepareClose(modal);
             modal.classList.remove('is-open');
             modal.setAttribute('aria-hidden', 'true');
 
@@ -5999,8 +7153,8 @@
                             <h3>${escapeHtml(config.table || 'Tabel Source')}</h3>
                             <p>${escapeHtml(config.description || 'Tampilan lengkap per baris dari tabel source hasil seeder SQL.')}</p>
                             <div class="detail-chip-grid">
-                                <span class="detail-chip">${escapeHtml(`Row Key ${record.row_key}`)}</span>
-                                <span class="detail-chip">${escapeHtml(`${Object.keys(record).length} field`)}</span>
+                                <span class="detail-chip"><svg class="tag-icon" viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M4 10h16"/><path d="M9 5v14"/></svg><span class="tag-label">Row</span><span class="tag-value">${escapeHtml(record.row_key)}</span></span>
+                                <span class="detail-chip"><svg class="tag-icon" viewBox="0 0 24 24"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h10"/></svg><span class="tag-label">Field</span><span class="tag-value">${escapeHtml(String(Object.keys(record).length))}</span></span>
                             </div>
                         </div>
                     </div>
@@ -6015,7 +7169,6 @@
                             </span>
                             <div>
                                 <h4>Detail Field</h4>
-                                <p>Setiap kolom ditampilkan sebagai tabel baca, bukan JSON mentah.</p>
                             </div>
                         </div>
                     </div>
@@ -6126,6 +7279,10 @@
         const form = formModal?.querySelector('[data-superadmin-user-form]');
         const formFeedback = formModal?.querySelector('[data-user-form-feedback]');
         const submitButton = formModal?.querySelector('[data-user-form-submit]');
+        const passwordInput = form?.querySelector('[name="password"]');
+        const passwordToggle = form?.querySelector('[data-password-toggle]');
+        const passwordEye = passwordToggle?.querySelector('.password-eye');
+        const passwordEyeOff = passwordToggle?.querySelector('.password-eye-off');
 
         const state = {
             page: 1,
@@ -6220,6 +7377,8 @@
             modal.classList.add('is-open');
             modal.setAttribute('aria-hidden', 'false');
             body.classList.add('modal-open');
+
+            requestAnimationFrame(() => window.dashboardDetailMap?.init(modal));
         };
 
         const closeModal = (modal) => {
@@ -6227,6 +7386,7 @@
                 return;
             }
 
+            window.dashboardModalA11y?.prepareClose(modal);
             modal.classList.remove('is-open');
             modal.setAttribute('aria-hidden', 'true');
 
@@ -6289,7 +7449,7 @@
             const end = total === 0 ? 0 : Math.min(currentPage * perPage, total);
 
             if (gridCount) {
-                gridCount.textContent = `${new Intl.NumberFormat('id-ID').format(total)} data`;
+                window.dashboardFillStaticTag(gridCount, 'Data', new Intl.NumberFormat('id-ID').format(total), 'data');
             }
 
             if (gridSummary) {
@@ -6329,6 +7489,24 @@
             formFeedback.hidden = false;
             formFeedback.textContent = message;
             formFeedback.classList.remove('success');
+        };
+
+        const setPasswordVisible = (visible) => {
+            if (!passwordInput || !passwordToggle) {
+                return;
+            }
+
+            passwordInput.type = visible ? 'text' : 'password';
+            passwordToggle.setAttribute('aria-pressed', visible ? 'true' : 'false');
+            passwordToggle.setAttribute('aria-label', visible ? 'Sembunyikan password' : 'Tampilkan password');
+
+            if (passwordEye) {
+                passwordEye.hidden = visible;
+            }
+
+            if (passwordEyeOff) {
+                passwordEyeOff.hidden = !visible;
+            }
         };
 
         const loadRows = async () => {
@@ -6376,6 +7554,7 @@
 
             form.reset();
             form.querySelector('[name="email_verified"]').checked = true;
+            setPasswordVisible(false);
             state.mode = 'create';
             state.activeUuid = null;
 
@@ -6404,6 +7583,7 @@
             form.querySelector('[name="email"]').value = record.email || '';
             form.querySelector('[name="role"]').value = record.role || 'viewer';
             form.querySelector('[name="password"]').value = '';
+            setPasswordVisible(false);
             form.querySelector('[name="email_verified"]').checked = Boolean(record.email_verified);
         };
 
@@ -6427,7 +7607,6 @@
                             <span class="detail-section-icon"><svg class="icon" viewBox="0 0 24 24"><path d="M9 12h6"/><path d="M12 9v6"/><path d="M12 3 4 7v5c0 5 3.4 9.4 8 10 4.6-.6 8-5 8-10V7z"/></svg></span>
                             <div>
                                 <h4>Ability Role</h4>
-                                <p>Hak akses turunan dari role user saat ini.</p>
                             </div>
                         </div>
                     </div>
@@ -6550,6 +7729,11 @@
         });
 
         createButton?.addEventListener('click', openCreate);
+
+        passwordToggle?.addEventListener('click', () => {
+            setPasswordVisible(passwordInput?.type === 'password');
+            passwordInput?.focus();
+        });
 
         root.addEventListener('click', (event) => {
             const trigger = event.target.closest('[data-user-action]');
@@ -6795,6 +7979,8 @@
             modal.classList.add('is-open');
             modal.setAttribute('aria-hidden', 'false');
             body.classList.add('modal-open');
+
+            requestAnimationFrame(() => window.dashboardDetailMap?.init(modal));
         };
 
         const closeModal = (modal) => {
@@ -6802,6 +7988,7 @@
                 return;
             }
 
+            window.dashboardModalA11y?.prepareClose(modal);
             modal.classList.remove('is-open');
             modal.setAttribute('aria-hidden', 'true');
 
@@ -6863,7 +8050,7 @@
                     <td class="mono">${escapeHtml(formatText(row.code))}</td>
                     <td>${escapeHtml(formatText(row.owner_email || row.owner_name))}</td>
                     <td>${escapeHtml(formatText(row.access_tokens_count))}</td>
-                    <td><span class="status ${row.is_active ? 'ready' : 'partial'}">${row.is_active ? 'active' : 'inactive'}</span></td>
+                    <td><span class="status ${row.is_active ? 'ready' : 'partial'}"><svg class="tag-icon" viewBox="0 0 24 24">${row.is_active ? '<path d="M20 6 9 17l-5-5"/>' : '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'}</svg><span class="tag-label">Status</span><span class="tag-value">${row.is_active ? 'active' : 'inactive'}</span></span></td>
                     <td>${escapeHtml(formatDate(row.expires_at))}</td>
                     <td>${escapeHtml(formatDate(row.updated_at))}</td>
                     <td>
@@ -6887,7 +8074,7 @@
             const end = total === 0 ? 0 : Math.min(currentPage * perPage, total);
 
             if (gridCount) {
-                gridCount.textContent = `${new Intl.NumberFormat('id-ID').format(total)} data`;
+                window.dashboardFillStaticTag(gridCount, 'Data', new Intl.NumberFormat('id-ID').format(total), 'data');
             }
 
             if (gridSummary) {
@@ -7030,7 +8217,6 @@
                             <span class="detail-section-icon"><svg class="icon" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="7" ry="3"/><path d="M5 5v14c0 1.7 3.1 3 7 3s7-1.3 7-3V5"/><path d="M5 12c0 1.7 3.1 3 7 3s7-1.3 7-3"/></svg></span>
                             <div>
                                 <h4>Riwayat Token Terakhir</h4>
-                                <p>Token plaintext tidak ditampilkan ulang, hanya metadata yang disimpan.</p>
                             </div>
                         </div>
                     </div>

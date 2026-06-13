@@ -8,11 +8,11 @@ use App\Models\ApiRequestLog;
 use App\Models\AuditLog;
 use App\Models\ImportBatch;
 use App\Models\ImportError;
-use App\Models\ImportMapping;
 use App\Models\MasterData;
 use App\Models\MasterDataType;
 use App\Models\PersonalAccessToken;
 use App\Models\User;
+use App\Services\BridgeBatchService;
 use App\Support\MasterData\BridgeModuleCatalog;
 use Illuminate\Database\Connection;
 use Illuminate\Database\Eloquent\Model;
@@ -56,7 +56,6 @@ class DashboardService
             'bridge_module' => $this->bridgeModule(),
             'entity_types' => $this->entityTypes(),
             'recent_records' => $this->recentMasterData(),
-            'recent_mappings' => $this->recentMappings(),
             'recent_imports' => $this->recentImports(),
             'recent_clients' => $this->recentClients(),
             'recent_audits' => $this->recentAudits(),
@@ -167,8 +166,6 @@ class DashboardService
             'active_master_data_types' => $this->safeCount(MasterDataType::class, fn ($query) => $query->where('is_active', true)),
             'master_data_records' => $this->safeCount(MasterData::class),
             'active_master_data_records' => $this->safeCount(MasterData::class, fn ($query) => $query->where('status', 'active')),
-            'import_mappings' => $this->safeCount(ImportMapping::class),
-            'active_import_mappings' => $this->safeCount(ImportMapping::class, fn ($query) => $query->where('is_active', true)),
             'import_batches' => $this->safeCount(ImportBatch::class),
             'import_errors' => $this->safeCount(ImportError::class),
             'api_clients' => $this->safeCount(ApiClient::class),
@@ -206,15 +203,6 @@ class DashboardService
                     $metrics['active_master_data_types'] > 0,
                 ],
                 detail: 'Katalog tipe data, record utama, dan struktur validasi tersedia.',
-            ),
-            $this->moduleCard(
-                label: 'Import dan Mapping',
-                checks: [
-                    $this->tableExists((new ImportBatch)->getTable()),
-                    $metrics['import_mappings'] > 0,
-                    $this->tableExists((new ImportError)->getTable()),
-                ],
-                detail: 'Pipeline import, mapping, dan pencatatan error siap digunakan.',
             ),
             $this->moduleCard(
                 label: 'Audit dan Monitoring',
@@ -289,6 +277,146 @@ class DashboardService
     }
 
     /**
+     * @return array<string, mixed>|null
+     */
+    public function bridgeFieldUniqueValues(string $fieldKey): ?array
+    {
+        $fields = collect(BridgeModuleCatalog::fields())->keyBy('key');
+        $field = $fields->get($fieldKey);
+
+        if (! is_array($field)) {
+            return null;
+        }
+
+        $structuredFields = ['profil', 'nilai_kondisi_terakhir', 'perawatan_terakhir', 'survey_terakhir'];
+        $usesFullBatch = in_array($fieldKey, $structuredFields, true);
+        $bridgeBatchService = app(BridgeBatchService::class);
+        $cursor = 0;
+        $guard = 0;
+        $recordCount = 0;
+        $unique = [];
+
+        do {
+            $batch = $usesFullBatch
+                ? $bridgeBatchService->fullBatch(['limit' => 200, 'cursor' => $cursor])
+                : $bridgeBatchService->batch(['limit' => 1000, 'cursor' => $cursor]);
+
+            foreach ($batch['data'] ?? [] as $row) {
+                if (! is_array($row)) {
+                    continue;
+                }
+
+                $recordCount++;
+                $row = $this->normalizeBridgeValueRow($row);
+                $entry = $this->normalizeUniqueValue(data_get($row, (string) $field['api_path']));
+
+                if (! isset($unique[$entry['key']])) {
+                    $unique[$entry['key']] = [
+                        'value' => $entry['value'],
+                        'is_empty' => $entry['is_empty'],
+                        'is_structured' => $entry['is_structured'],
+                        'count' => 0,
+                    ];
+                }
+
+                $unique[$entry['key']]['count']++;
+            }
+
+            $cursor = (int) ($batch['meta']['next_cursor'] ?? 0);
+            $hasMore = (bool) ($batch['meta']['has_more'] ?? false);
+            $guard++;
+        } while ($hasMore && $cursor > 0 && $guard < 100);
+
+        $values = array_values($unique);
+
+        usort($values, function (array $left, array $right): int {
+            $countComparison = $right['count'] <=> $left['count'];
+
+            return $countComparison !== 0
+                ? $countComparison
+                : strnatcasecmp((string) $left['value'], (string) $right['value']);
+        });
+
+        return [
+            'field' => $field,
+            'record_count' => $recordCount,
+            'unique_count' => count($values),
+            'values' => $values,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $row
+     * @return array<string, mixed>
+     */
+    private function normalizeBridgeValueRow(array $row): array
+    {
+        $row['nilai_kondisi_terakhir'] = data_get($row, 'nilai_kondisi.total');
+
+        return $row;
+    }
+
+    /**
+     * @return array{key: string, value: string, is_empty: bool, is_structured: bool}
+     */
+    private function normalizeUniqueValue(mixed $value): array
+    {
+        if ($value === null || $value === '') {
+            return [
+                'key' => '__empty__',
+                'value' => '(kosong)',
+                'is_empty' => true,
+                'is_structured' => false,
+            ];
+        }
+
+        if (is_bool($value)) {
+            return [
+                'key' => 'bool:'.($value ? 'true' : 'false'),
+                'value' => $value ? 'true' : 'false',
+                'is_empty' => false,
+                'is_structured' => false,
+            ];
+        }
+
+        if (is_array($value) || is_object($value)) {
+            $normalized = $this->sortValueKeys(json_decode(json_encode($value), true) ?? []);
+            $compact = json_encode($normalized, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+
+            return [
+                'key' => 'json:'.$compact,
+                'value' => json_encode($normalized, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?: '{}',
+                'is_empty' => $normalized === [],
+                'is_structured' => true,
+            ];
+        }
+
+        $display = (string) $value;
+
+        return [
+            'key' => 'scalar:'.$display,
+            'value' => $display,
+            'is_empty' => false,
+            'is_structured' => false,
+        ];
+    }
+
+    private function sortValueKeys(mixed $value): mixed
+    {
+        if (! is_array($value)) {
+            return $value;
+        }
+
+        foreach ($value as $key => $item) {
+            $value[$key] = $this->sortValueKeys($item);
+        }
+
+        ksort($value);
+
+        return $value;
+    }
+
+    /**
      * @return \Illuminate\Support\Collection<int, array<string, mixed>>
      */
     private function infrastructureDomains(): Collection
@@ -336,34 +464,6 @@ class DashboardService
                     'type_name' => $record->type?->name,
                     'status' => $record->status?->value ?? (string) $record->status,
                     'updated_at' => $record->updated_at,
-                ]);
-        } catch (Throwable) {
-            return collect();
-        }
-    }
-
-    /**
-     * @return \Illuminate\Support\Collection<int, array<string, mixed>>
-     */
-    private function recentMappings(): Collection
-    {
-        if (! $this->tableExists((new ImportMapping)->getTable())) {
-            return collect();
-        }
-
-        try {
-            return ImportMapping::query()
-                ->latest('updated_at')
-                ->limit(6)
-                ->get()
-                ->map(fn (ImportMapping $mapping): array => [
-                    'name' => $mapping->name,
-                    'source_system' => $mapping->source_system,
-                    'source_table' => $mapping->source_table,
-                    'entity_type' => $mapping->entity_type,
-                    'version' => $mapping->version,
-                    'is_active' => $mapping->is_active,
-                    'updated_at' => $mapping->updated_at,
                 ]);
         } catch (Throwable) {
             return collect();

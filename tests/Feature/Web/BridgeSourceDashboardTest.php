@@ -269,7 +269,7 @@ class BridgeSourceDashboardTest extends TestCase
         $this->actingAs($user)
             ->get('/dashboard/master-data/jembatan')
             ->assertOk()
-            ->assertSee('Mode baca dari dump SQL');
+            ->assertSee('Source database belum tersedia');
 
         $this->actingAs($user)
             ->getJson('/dashboard/master-data/jembatan/source-records')

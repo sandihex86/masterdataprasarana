@@ -115,11 +115,6 @@ class DashboardController extends Controller
         ]);
     }
 
-    public function importMapping(): View
-    {
-        return $this->renderPage('import-mapping');
-    }
-
     public function bridgeSourceTable(string $table): View
     {
         return $this->renderPage('bridge-source-table', [
@@ -149,6 +144,17 @@ class DashboardController extends Controller
     public function system(): JsonResponse
     {
         return response()->json($this->dashboardService->overview());
+    }
+
+    public function bridgeMetadataFieldValues(string $field): JsonResponse
+    {
+        $payload = $this->dashboardService->bridgeFieldUniqueValues($field);
+
+        if ($payload === null) {
+            return ApiResponse::error('Field metadata jembatan tidak ditemukan.', 'BRIDGE_METADATA_FIELD_NOT_FOUND', 404);
+        }
+
+        return ApiResponse::success('Unique value field berhasil diambil.', $payload);
     }
 
     public function superadminUserRecords(ListSuperadminRecordsRequest $request): JsonResponse
@@ -553,7 +559,6 @@ class DashboardController extends Controller
                     'location_summary',
                     'structure_summary',
                     'assessment_summary',
-                    'updated_at',
                 ],
                 'relation_map' => $this->bridgeSourceCrudService->relationMap(),
                 'list_endpoint' => route('dashboard.bridge-source.records.index'),

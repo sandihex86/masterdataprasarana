@@ -23,6 +23,7 @@ Route::middleware('auth')->group(function (): void {
     Route::prefix('dashboard')->name('dashboard.')->group(function (): void {
         Route::get('/', [DashboardController::class, 'index'])->name('index');
         Route::get('/documentation', [DashboardController::class, 'documentation'])->name('documentation');
+        Route::get('/metadata/jembatan/fields/{field}/values', [DashboardController::class, 'bridgeMetadataFieldValues'])->name('metadata.jembatan.fields.values');
         Route::get('/menu-penting', [DashboardController::class, 'quickMenu'])->name('quick-menu');
         Route::get('/status-modul', [DashboardController::class, 'moduleStatus'])->name('module-status');
         Route::get('/master-data', [DashboardController::class, 'masterData'])->name('master-data');
@@ -38,7 +39,6 @@ Route::middleware('auth')->group(function (): void {
         Route::get('/master-data/{entity}/records/{masterData}', [DashboardController::class, 'masterDataRecord'])->name('master-data.record');
         Route::match(['put', 'patch'], '/master-data/{entity}/records/{masterData}', [DashboardController::class, 'updateMasterDataRecord'])->name('master-data.records.update');
         Route::get('/master-data/{entity}', [DashboardController::class, 'masterDataEntity'])->name('master-data.entity');
-        Route::get('/import-mapping', [DashboardController::class, 'importMapping'])->name('import-mapping');
         Route::get('/monitoring', [DashboardController::class, 'monitoring'])->name('monitoring');
         Route::get('/superadmin/users', [DashboardController::class, 'superadminUsers'])->middleware('role:superadmin')->name('superadmin.users');
         Route::get('/superadmin/users/records', [DashboardController::class, 'superadminUserRecords'])->middleware('role:superadmin')->name('superadmin.users.records.index');

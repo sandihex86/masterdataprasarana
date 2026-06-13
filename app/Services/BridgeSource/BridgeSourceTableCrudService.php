@@ -64,7 +64,30 @@ class BridgeSourceTableCrudService
         $this->assertManagedTable($table);
 
         $meta = $this->bridgeSourceSql->tableMeta($table);
-        $columns = collect(DB::connection($this->connectionName())->select('SHOW FULL COLUMNS FROM `'.$table.'`'))
+        $connection = DB::connection($this->connectionName());
+        [$columns, $indexes] = $connection->getDriverName() === 'sqlite'
+            ? $this->sqliteSchema($connection, $table)
+            : $this->mysqlSchema($connection, $table);
+
+        return [
+            'table' => $table,
+            'label' => $meta['label'],
+            'description' => $meta['description'],
+            'row_count' => $this->countRows($table),
+            'primary_key' => collect($indexes)->firstWhere('name', 'PRIMARY')['columns'] ?? [],
+            'unique_keys' => collect($indexes)->filter(fn (array $index): bool => $index['unique'] && $index['name'] !== 'PRIMARY')->values()->all(),
+            'required_columns' => $this->requiredColumns($columns),
+            'columns' => $columns,
+            'indexes' => $indexes,
+        ];
+    }
+
+    /**
+     * @return array{0: array<int, array<string, mixed>>, 1: array<int, array<string, mixed>>}
+     */
+    private function mysqlSchema(Connection $connection, string $table): array
+    {
+        $columns = collect($connection->select('SHOW FULL COLUMNS FROM `'.$table.'`'))
             ->map(function (object $column): array {
                 $row = (array) $column;
 
@@ -81,7 +104,7 @@ class BridgeSourceTableCrudService
             })
             ->values()
             ->all();
-        $indexes = collect(DB::connection($this->connectionName())->select('SHOW INDEX FROM `'.$table.'`'))
+        $indexes = collect($connection->select('SHOW INDEX FROM `'.$table.'`'))
             ->map(fn (object $index): array => (array) $index)
             ->groupBy('Key_name')
             ->map(function ($group, string $name): array {
@@ -98,17 +121,40 @@ class BridgeSourceTableCrudService
             ->values()
             ->all();
 
-        return [
-            'table' => $table,
-            'label' => $meta['label'],
-            'description' => $meta['description'],
-            'row_count' => $this->countRows($table),
-            'primary_key' => collect($indexes)->firstWhere('name', 'PRIMARY')['columns'] ?? [],
-            'unique_keys' => collect($indexes)->filter(fn (array $index): bool => $index['unique'] && $index['name'] !== 'PRIMARY')->values()->all(),
-            'required_columns' => $this->requiredColumns($columns),
-            'columns' => $columns,
-            'indexes' => $indexes,
-        ];
+        return [$columns, $indexes];
+    }
+
+    /**
+     * @return array{0: array<int, array<string, mixed>>, 1: array<int, array<string, mixed>>}
+     */
+    private function sqliteSchema(Connection $connection, string $table): array
+    {
+        $columns = collect($connection->select('PRAGMA table_info(`'.$table.'`)'))
+            ->map(fn (object $column): array => [
+                'name' => $column->name,
+                'type' => $column->type,
+                'collation' => null,
+                'nullable' => ((int) $column->notnull) === 0,
+                'key' => ((int) $column->pk) > 0 ? 'PRI' : null,
+                'default' => $column->dflt_value,
+                'extra' => ((int) $column->pk) > 0 ? 'auto_increment' : null,
+                'comment' => null,
+            ])
+            ->values()
+            ->all();
+        $primary = collect($columns)
+            ->filter(fn (array $column): bool => $column['key'] === 'PRI')
+            ->pluck('name')
+            ->values()
+            ->all();
+        $indexes = $primary === [] ? [] : [[
+            'name' => 'PRIMARY',
+            'unique' => true,
+            'columns' => $primary,
+            'type' => null,
+        ]];
+
+        return [$columns, $indexes];
     }
 
     public function paginate(string $table, array $filters = []): LengthAwarePaginator

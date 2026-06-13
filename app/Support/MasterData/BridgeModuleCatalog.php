@@ -9,8 +9,8 @@ final class BridgeModuleCatalog
         return [
             'code' => 'bridge',
             'label' => 'Jembatan',
-            'namespace' => '/api/v1/bridges',
-            'description' => 'Endpoint khusus modul master data Jembatan untuk konsumsi aplikasi utama.',
+            'namespace' => '/api/v1/master/bridges',
+            'description' => 'Endpoint khusus Master Data Jembatan untuk konsumsi aplikasi utama dan integrasi lintas aplikasi.',
             'distinction' => 'Modul Jembatan adalah namespace V1 spesialis pertama. Modul lain seperti Fasilitas Operasional, Gudang, Sertifikat, dan Jalur akan dikembangkan dengan endpoint spesifik masing-masing, bukan dicampur ke namespace bridges.',
         ];
     }
@@ -79,22 +79,29 @@ final class BridgeModuleCatalog
     public static function fields(): array
     {
         return [
-            ['key' => 'uuid', 'label' => 'UUID Publik', 'type' => 'uuid', 'api_path' => 'uuid', 'source' => 'master_data.uuid', 'description' => 'Identifier publik stabil untuk integrasi aplikasi utama.'],
-            ['key' => 'code', 'label' => 'Kode Record', 'type' => 'string', 'api_path' => 'code', 'source' => 'master_data.code / m_jembatan.uniqid', 'description' => 'Kunci record hasil normalisasi bridge.'],
-            ['key' => 'name', 'label' => 'Nama Jembatan', 'type' => 'string', 'api_path' => 'name', 'source' => 'master_data.name / m_jembatan.nama', 'description' => 'Nama tampilan jembatan pada aplikasi.'],
-            ['key' => 'status', 'label' => 'Status Record', 'type' => 'string', 'api_path' => 'status', 'source' => 'master_data.status', 'description' => 'Status record API setelah normalisasi.'],
-            ['key' => 'bridge_number', 'label' => 'Nomor Jembatan', 'type' => 'string', 'api_path' => 'bridge_number', 'source' => 'data.bridge_number / m_jembatan.no_bh', 'description' => 'Nomor identifikasi bridge di sumber legacy.'],
-            ['key' => 'bridge_kind', 'label' => 'Jenis Jembatan', 'type' => 'string', 'api_path' => 'bridge_kind', 'source' => 'data.bridge_kind / m_jembatan.jenis', 'description' => 'Jenis konstruksi atau klasifikasi bridge.'],
-            ['key' => 'km_hm', 'label' => 'KM/HM', 'type' => 'string', 'api_path' => 'km_hm', 'source' => 'data.km_hm / m_jembatan.km_hm', 'description' => 'Posisi kilometer/hektometer.'],
-            ['key' => 'lintas_code', 'label' => 'Kode Lintas', 'type' => 'string', 'api_path' => 'lintas_code', 'source' => 'data.lintas_code / m_jembatan.lintas', 'description' => 'Relasi jalur/lintas tempat jembatan berada.'],
-            ['key' => 'station_start_code', 'label' => 'Stasiun Awal', 'type' => 'string', 'api_path' => 'station_start_code', 'source' => 'data.station_start_code / m_jembatan.stasiun1', 'description' => 'Kode stasiun awal segmen bridge.'],
-            ['key' => 'station_end_code', 'label' => 'Stasiun Akhir', 'type' => 'string', 'api_path' => 'station_end_code', 'source' => 'data.station_end_code / m_jembatan.stasiun2', 'description' => 'Kode stasiun akhir segmen bridge.'],
-            ['key' => 'operational_area_code', 'label' => 'Wilayah Operasi', 'type' => 'string', 'api_path' => 'operational_area_code', 'source' => 'data.operational_area_code / m_jembatan.wil_op', 'description' => 'Wilayah operasi pengelolaan jembatan.'],
-            ['key' => 'coordinates', 'label' => 'Koordinat', 'type' => 'object', 'api_path' => 'coordinates.latitude, coordinates.longitude', 'source' => 'data.latitude / data.longitude / m_jembatan.lat/lon', 'description' => 'Koordinat hasil normalisasi yang siap dipakai aplikasi peta.'],
-            ['key' => 'profile', 'label' => 'Profil Struktur', 'type' => 'object', 'api_path' => 'structures.profile', 'source' => 'm_jembatan_profil', 'description' => 'Ringkasan profil dan dimensi utama bridge.'],
-            ['key' => 'spans', 'label' => 'Bentang', 'type' => 'array', 'api_path' => 'structures.spans', 'source' => 'm_jembatan_bentang', 'description' => 'Daftar bentang bridge yang telah dinormalisasi.'],
-            ['key' => 'substructures', 'label' => 'Struktur Bawah', 'type' => 'array', 'api_path' => 'structures.substructures', 'source' => 'm_jembatan_bawah', 'description' => 'Komponen struktur bawah bridge.'],
-            ['key' => 'assessment', 'label' => 'Asesmen', 'type' => 'object', 'api_path' => 'assessment', 'source' => 'm_jembatan_nilai_total + m_jembatan_detil_3', 'description' => 'Ringkasan hasil penilaian kondisi dan pelindung.'],
+            ['key' => 'kode_jembatan', 'label' => 'Kode Jembatan', 'type' => 'string', 'api_path' => 'kode_jembatan', 'source' => 'm_jembatan.uniqid', 'description' => 'Identifier utama jembatan yang dipakai sebagai kunci path dan cursor integrasi.'],
+            ['key' => 'nama', 'label' => 'Nama Jembatan', 'type' => 'string', 'api_path' => 'nama', 'source' => 'm_jembatan.nama', 'description' => 'Nama tampilan jembatan pada aplikasi dan hasil pencarian.'],
+            ['key' => 'no_bh', 'label' => 'Nomor BH', 'type' => 'string|null', 'api_path' => 'no_bh', 'source' => 'm_jembatan.no_bh', 'description' => 'Nomor bangunan hikmat/jembatan dari data sumber.'],
+            ['key' => 'jenis', 'label' => 'Jenis', 'type' => 'string|null', 'api_path' => 'jenis', 'source' => 'm_jembatan.jenis', 'description' => 'Kode atau klasifikasi jenis jembatan sesuai sumber.'],
+            ['key' => 'km_hm', 'label' => 'KM/HM', 'type' => 'string|null', 'api_path' => 'km_hm', 'source' => 'm_jembatan.km_hm', 'description' => 'Posisi kilometer/hektometer jembatan pada lintas.'],
+            ['key' => 'lintas', 'label' => 'Lintas', 'type' => 'string|null', 'api_path' => 'lintas', 'source' => 'm_jembatan.lintas / lookup lintas', 'description' => 'Nama atau kode lintas jalur tempat jembatan berada.'],
+            ['key' => 'stasiun1', 'label' => 'Stasiun Awal', 'type' => 'string|null', 'api_path' => 'stasiun1', 'source' => 'm_jembatan.stasiun1 / m_stasiun', 'description' => 'Stasiun awal segmen jembatan.'],
+            ['key' => 'stasiun2', 'label' => 'Stasiun Akhir', 'type' => 'string|null', 'api_path' => 'stasiun2', 'source' => 'm_jembatan.stasiun2 / m_stasiun', 'description' => 'Stasiun akhir segmen jembatan.'],
+            ['key' => 'wilayah_operasi', 'label' => 'Wilayah Operasi', 'type' => 'string|null', 'api_path' => 'wilayah_operasi', 'source' => 'm_jembatan.wil_op / lookup wilayah operasi', 'description' => 'Wilayah operasi/Daop yang mengelola area jembatan.'],
+            ['key' => 'wilayah_kerja', 'label' => 'Wilayah Kerja', 'type' => 'string|null', 'api_path' => 'wilayah_kerja', 'source' => 'm_jembatan.wil_ker / m_wilayah_kerja', 'description' => 'Wilayah kerja/BTP terkait jembatan.'],
+            ['key' => 'id_prov', 'label' => 'ID Provinsi', 'type' => 'string|null', 'api_path' => 'id_prov', 'source' => 'm_jembatan.id_prov / m_provinsi', 'description' => 'Kode provinsi lokasi jembatan.'],
+            ['key' => 'id_kabkot', 'label' => 'ID Kab/Kota', 'type' => 'string|null', 'api_path' => 'id_kabkot', 'source' => 'm_jembatan.id_kabkot / m_kabkot', 'description' => 'Kode kabupaten/kota lokasi jembatan.'],
+            ['key' => 'lat', 'label' => 'Latitude', 'type' => 'number|null', 'api_path' => 'lat', 'source' => 'm_jembatan.lat', 'description' => 'Koordinat latitude untuk peta dan endpoint GeoJSON.'],
+            ['key' => 'lon', 'label' => 'Longitude', 'type' => 'number|null', 'api_path' => 'lon', 'source' => 'm_jembatan.lon', 'description' => 'Koordinat longitude untuk peta dan endpoint GeoJSON.'],
+            ['key' => 'active', 'label' => 'Active', 'type' => 'integer|null', 'api_path' => 'active', 'source' => 'm_jembatan.active', 'description' => 'Flag aktif dari data sumber.'],
+            ['key' => 'status', 'label' => 'Status', 'type' => 'integer|null', 'api_path' => 'status', 'source' => 'm_jembatan.status', 'description' => 'Status operasional/administratif dari sumber jembatan.'],
+            ['key' => 'statusdata', 'label' => 'Status Data', 'type' => 'integer|null', 'api_path' => 'statusdata', 'source' => 'm_jembatan.statusdata', 'description' => 'Status kelengkapan atau validitas data sumber.'],
+            ['key' => 'created_at', 'label' => 'Created At', 'type' => 'date-time|null', 'api_path' => 'created_at', 'source' => 'm_jembatan.created_at', 'description' => 'Waktu pembuatan record pada sumber.'],
+            ['key' => 'updated_at', 'label' => 'Updated At', 'type' => 'date-time|null', 'api_path' => 'updated_at', 'source' => 'm_jembatan.updated_at', 'description' => 'Waktu perubahan terakhir, dipakai oleh filter sinkronisasi `updated_since`.'],
+            ['key' => 'profil', 'label' => 'Profil', 'type' => 'object|null', 'api_path' => 'profil', 'source' => 'm_jembatan_profil', 'description' => 'Profil teknis utama seperti perpotongan, jumlah lintasan, jumlah bentang, panjang total, dan tahun selesai.'],
+            ['key' => 'nilai_kondisi_terakhir', 'label' => 'Nilai Kondisi Terakhir', 'type' => 'object|null', 'api_path' => 'nilai_kondisi_terakhir', 'source' => 'm_jembatan_nilai_total', 'description' => 'Data penilaian kondisi terbaru yang ditemukan untuk jembatan.'],
+            ['key' => 'perawatan_terakhir', 'label' => 'Perawatan Terakhir', 'type' => 'object|null', 'api_path' => 'perawatan_terakhir', 'source' => 'm_jembatan_perawatan', 'description' => 'Riwayat perawatan terbaru yang tersedia untuk jembatan.'],
+            ['key' => 'survey_terakhir', 'label' => 'Survey Terakhir', 'type' => 'object|null', 'api_path' => 'survey_terakhir', 'source' => 'm_jembatan_survey', 'description' => 'Riwayat survey terbaru yang tersedia untuk jembatan.'],
         ];
     }
 
@@ -104,9 +111,9 @@ final class BridgeModuleCatalog
     public static function endpoints(): array
     {
         return [
-            ['method' => 'GET', 'path' => '/api/v1/bridges/metadata', 'purpose' => 'Metadata modul bridge, daftar field, filter, sumber legacy, dan pembeda terhadap modul prasarana lain.'],
-            ['method' => 'GET', 'path' => '/api/v1/bridges', 'purpose' => 'Daftar jembatan terfilter dan terpagiasi untuk pemrograman aplikasi utama.'],
-            ['method' => 'GET', 'path' => '/api/v1/bridges/{uuid}', 'purpose' => 'Detail satu jembatan lengkap dengan struktur, media, lokasi, dan asesmen.'],
+            ['method' => 'GET', 'path' => '/api/v1/master/bridges', 'purpose' => 'Daftar master jembatan terfilter dan terpagiasi.'],
+            ['method' => 'GET', 'path' => '/api/v1/master/bridges/batch', 'purpose' => 'Batch master jembatan berbasis cursor id untuk integrasi besar.'],
+            ['method' => 'GET', 'path' => '/api/v1/master/bridges/{kode_jembatan}', 'purpose' => 'Detail satu jembatan lengkap dengan profil dan ringkasan riwayat terbaru.'],
         ];
     }
 }
