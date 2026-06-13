@@ -3,10 +3,12 @@
 namespace Tests\Feature\Web;
 
 use App\Models\User;
+use Database\Seeders\TunnelLookupSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -111,6 +113,7 @@ class DashboardTest extends TestCase
     public function test_admin_can_view_tunnel_records_from_tunnel_database_on_dashboard(): void
     {
         $this->ensureTunnelSchema();
+        $this->seed(TunnelLookupSeeder::class);
 
         $user = User::factory()->admin()->create();
 
@@ -131,6 +134,11 @@ class DashboardTest extends TestCase
             ->assertOk()
             ->assertSee('Terowongan')
             ->assertSee('prasarana_tunnel')
+            ->assertSee('<select id="tunnel-wilayah" name="id_wilayah_kerja">', false)
+            ->assertSee('<select id="tunnel-lintas" name="id_lintas">', false)
+            ->assertSee('BTP KELAS II PALEMBANG')
+            ->assertSee('KAMALPIER - KALIANGET')
+            ->assertSee('tunnel-row-actions', false)
             ->assertSee('Edit')
             ->assertSee('Koordinat')
             ->assertDontSee('<span>Tambah</span>', false)
@@ -150,6 +158,7 @@ class DashboardTest extends TestCase
     public function test_admin_can_update_tunnel_record_from_dashboard(): void
     {
         $this->ensureTunnelSchema();
+        Storage::fake('public');
         $user = User::factory()->admin()->create();
 
         $tunnel = \App\Models\Tunnel::query()->create([
@@ -177,6 +186,28 @@ class DashboardTest extends TestCase
             'lat' => -6.175392,
             'long' => 106.827153,
         ], 'tunnel');
+
+        $upload = UploadedFile::fake()->create('ded-terowongan.pdf', 128, 'application/pdf');
+
+        $response = $this->actingAs($user)
+            ->post("/dashboard/master-data/terowongan/source-records/{$tunnel->tunnel_id}", [
+                '_method' => 'PATCH',
+                'nama_terowongan' => 'Terowongan Edit Baru',
+                'docs' => [
+                    'no_ded_bed_kajian_teknis' => 'DED/TUN/2026/001',
+                ],
+                'docs_files' => [
+                    'ded_bed_kajian_teknis' => $upload,
+                ],
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.docs.no_ded_bed_kajian_teknis', 'DED/TUN/2026/001')
+            ->assertJsonPath('data.docs.ded_bed_kajian_teknis.file_name', 'ded-terowongan.pdf');
+
+        $path = $response->json('data.docs.ded_bed_kajian_teknis.path');
+        $this->assertIsString($path);
+        $this->assertStringStartsWith('tunnels/docs/', $path);
+        Storage::disk('public')->assertExists($path);
     }
 
     public function test_admin_can_create_import_export_and_download_tunnel_csv_template(): void
@@ -235,20 +266,33 @@ class DashboardTest extends TestCase
     public function test_admin_can_open_each_tunnel_database_table_from_submenu(): void
     {
         $this->ensureTunnelSchema();
+        $this->seed(TunnelLookupSeeder::class);
         $user = User::factory()->admin()->create();
 
         $this->actingAs($user)
             ->get('/dashboard/master-data/terowongan')
             ->assertOk()
+            ->assertSee('nav-child-link-combine', false)
+            ->assertSee('nav-child-link-master', false)
+            ->assertSee('nav-child-link-detail', false)
+            ->assertSee('nav-child-link-lookup', false)
             ->assertSee('m_tunnels')
             ->assertSee('m_tunnel_structures')
             ->assertSee('m_tunnel_specs')
-            ->assertSee('m_tunnel_docs');
+            ->assertSee('m_tunnel_docs')
+            ->assertSee('m_tunnel_lookup_lintas')
+            ->assertSee('m_tunnel_lookup_wilayah_kerja')
+            ->assertSee('m_tunnel_lookup_wilayah_operasi');
 
         $this->actingAs($user)
             ->get('/dashboard/master-data/terowongan/tables/m_tunnels')
             ->assertOk()
             ->assertSee('data-tunnel-source-table-app', false)
+            ->assertSee('data-tunnel-source-table-coordinate-modal', false)
+            ->assertSee('data-tunnel-source-table-coordinate-open', false)
+            ->assertSee('data-tunnel-source-table-generated-id', false)
+            ->assertSee('BTP KELAS II PALEMBANG')
+            ->assertSee('KAMALPIER - KALIANGET')
             ->assertSee('Template CSV')
             ->assertSee('Import CSV')
             ->assertSee('Export CSV')
@@ -260,6 +304,34 @@ class DashboardTest extends TestCase
             ->getJson('/dashboard/master-data/terowongan/tables/m_tunnel_specs/rows')
             ->assertOk()
             ->assertJsonPath('meta.tunnel_source_table.table', 'm_tunnel_specs');
+    }
+
+    public function test_admin_can_view_seeded_tunnel_lookup_tables_from_dashboard(): void
+    {
+        $this->ensureTunnelSchema();
+        $this->seed(TunnelLookupSeeder::class);
+        $user = User::factory()->admin()->create();
+
+        $this->actingAs($user)
+            ->get('/dashboard/master-data/terowongan/tables/m_tunnel_lookup_wilayah_kerja')
+            ->assertOk()
+            ->assertSee('Lookup Wilayah Kerja')
+            ->assertSee('Template CSV')
+            ->assertSee('Import CSV')
+            ->assertSee('Export CSV')
+            ->assertSee('Tambah');
+
+        $this->actingAs($user)
+            ->getJson('/dashboard/master-data/terowongan/tables/m_tunnel_lookup_lintas/rows')
+            ->assertOk()
+            ->assertJsonPath('meta.tunnel_source_table.table', 'm_tunnel_lookup_lintas')
+            ->assertJsonPath('data.0.data.nama', 'Kamalpier - Kalianget');
+
+        $this->assertDatabaseHas('m_tunnel_lookup_wilayah_operasi', [
+            'kode' => '1',
+            'nama' => 'DAOP I',
+            'active' => 1,
+        ], 'tunnel');
     }
 
     public function test_admin_can_create_rows_in_tunnel_database_tables_from_modal_endpoint(): void
@@ -328,6 +400,40 @@ class DashboardTest extends TestCase
             'tunnel_id' => $tunnelId,
             'jenis_jalur' => 'Ganda',
             'gauge_m' => '1.435',
+        ], 'tunnel');
+
+        $lookup = $this->actingAs($user)
+            ->postJson('/dashboard/master-data/terowongan/tables/m_tunnel_lookup_lintas/rows', [
+                'data' => [
+                    'kode' => 'TEST - LKP',
+                    'nama' => 'Test Lookup Lintasan',
+                    'active' => 1,
+                    'sort_order' => 99,
+                ],
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.table', 'm_tunnel_lookup_lintas')
+            ->assertJsonPath('data.data.kode', 'TEST - LKP');
+
+        $lookupId = $lookup->json('data.data.id');
+        $this->assertMatchesRegularExpression('/^[0-9A-HJKMNP-TV-Z]{26}$/', $lookupId);
+
+        $this->actingAs($user)
+            ->patchJson('/dashboard/master-data/terowongan/tables/m_tunnel_lookup_lintas/rows/'.$lookupId, [
+                'data' => [
+                    'nama' => 'Test Lookup Lintasan Edit',
+                    'active' => 0,
+                ],
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.data.nama', 'Test Lookup Lintasan Edit')
+            ->assertJsonPath('data.data.active', 0);
+
+        $this->assertDatabaseHas('m_tunnel_lookup_lintas', [
+            'id' => $lookupId,
+            'kode' => 'TEST - LKP',
+            'nama' => 'Test Lookup Lintasan Edit',
+            'active' => 0,
         ], 'tunnel');
     }
 
@@ -450,6 +556,10 @@ class DashboardTest extends TestCase
     {
         if (! Schema::connection('tunnel')->hasTable('m_tunnels')) {
             (require base_path('database/migrations/2026_06_13_080000_create_tunnel_source_tables.php'))->up();
+        }
+
+        if (! Schema::connection('tunnel')->hasTable('m_tunnel_lookup_lintas')) {
+            (require base_path('database/migrations/2026_06_13_090000_create_tunnel_lookup_tables.php'))->up();
         }
     }
 }

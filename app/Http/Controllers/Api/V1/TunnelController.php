@@ -14,6 +14,7 @@ use App\Http\Resources\Api\V1\TunnelDocResource;
 use App\Http\Resources\Api\V1\TunnelResource;
 use App\Http\Resources\Api\V1\TunnelSpecResource;
 use App\Http\Resources\Api\V1\TunnelStructureResource;
+use App\Services\TunnelDocumentUploadService;
 use App\Services\TunnelService;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
@@ -23,6 +24,7 @@ class TunnelController extends Controller
 {
     public function __construct(
         private readonly TunnelService $tunnelService,
+        private readonly TunnelDocumentUploadService $tunnelDocumentUploadService,
     ) {}
 
     #[OA\Get(
@@ -91,9 +93,11 @@ class TunnelController extends Controller
     )]
     public function store(StoreTunnelRequest $request): JsonResponse
     {
+        $payload = $this->tunnelDocumentUploadService->mergeUploadedFiles($request, $request->validated());
+
         return ApiResponse::success(
             'Data tunnel berhasil dibuat.',
-            TunnelDetailResource::make($this->tunnelService->create($request->validated()))->resolve(),
+            TunnelDetailResource::make($this->tunnelService->create($payload))->resolve(),
             status: 201,
         );
     }
@@ -163,9 +167,11 @@ class TunnelController extends Controller
     )]
     public function update(UpdateTunnelRequest $request, string $tunnel_id): JsonResponse
     {
+        $payload = $this->tunnelDocumentUploadService->mergeUploadedFiles($request, $request->validated());
+
         return ApiResponse::success(
             'Data tunnel berhasil diperbarui.',
-            TunnelDetailResource::make($this->tunnelService->update($tunnel_id, $request->validated()))->resolve(),
+            TunnelDetailResource::make($this->tunnelService->update($tunnel_id, $payload))->resolve(),
         );
     }
 
@@ -228,6 +234,8 @@ class TunnelController extends Controller
     #[OA\Put(path: '/api/tunnels/{tunnel_id}/docs', operationId: 'tunnelDocsReplace', summary: 'Simpan dokumen tunnel', description: 'Alias PUT untuk membuat atau memperbarui dokumen teknis tunnel.', tags: ['Tunnels'], security: [['sanctumBearer' => []]], parameters: [new OA\Parameter(name: 'tunnel_id', in: 'path', required: true, schema: new OA\Schema(type: 'string'))], requestBody: new OA\RequestBody(required: true, content: new OA\JsonContent(ref: '#/components/schemas/TunnelDoc')), responses: [new OA\Response(response: 200, description: 'Dokumen tunnel berhasil disimpan', content: new OA\JsonContent(ref: '#/components/schemas/ApiSuccessResponse')), new OA\Response(response: 400, description: 'Input tidak valid', content: new OA\JsonContent(ref: '#/components/schemas/ApiErrorResponse')), new OA\Response(response: 404, description: 'Data tidak ditemukan', content: new OA\JsonContent(ref: '#/components/schemas/ApiErrorResponse')), new OA\Response(response: 422, description: 'Validasi gagal', content: new OA\JsonContent(ref: '#/components/schemas/ApiErrorResponse')), new OA\Response(response: 500, description: 'Server error', content: new OA\JsonContent(ref: '#/components/schemas/ApiErrorResponse'))])]
     public function upsertDocs(UpsertTunnelDocRequest $request, string $tunnel_id): JsonResponse
     {
-        return ApiResponse::success('Dokumen tunnel berhasil disimpan.', TunnelDocResource::make($this->tunnelService->upsertDocs($tunnel_id, $request->validated()))->resolve());
+        $payload = $this->tunnelDocumentUploadService->mergeUploadedFiles($request, $request->validated(), nestedDocs: false);
+
+        return ApiResponse::success('Dokumen tunnel berhasil disimpan.', TunnelDocResource::make($this->tunnelService->upsertDocs($tunnel_id, $payload))->resolve());
     }
 }

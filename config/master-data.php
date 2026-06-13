@@ -70,7 +70,7 @@ return [
     ],
     'bridge_source' => [
         'connection' => env('MASTER_DATA_BRIDGE_SOURCE_CONNECTION', 'bridge'),
-        'dump_path' => env('MASTER_DATA_BRIDGE_SOURCE_DUMP_PATH', 'database/struktur/data_jembatan.sql'),
+        'dump_path' => env('MASTER_DATA_BRIDGE_SOURCE_DUMP_PATH', 'database/data/data_jembatan.sql'),
         'tables' => \App\Support\BridgeSource\BridgeSourceSql::SOURCE_TABLES,
     ],
 ];

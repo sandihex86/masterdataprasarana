@@ -60,6 +60,7 @@ class DatabaseSeeder extends Seeder
         $this->seedApiClient($actorId);
         $this->seedImportMapping($actorId);
         $this->seedBridgeImportMapping($actorId);
+        $this->call(TunnelLookupSeeder::class);
     }
 
     private function seedMasterDataType(string $code, string $name, ?int $actorId, array $attributes = []): MasterDataType

@@ -161,6 +161,7 @@ class BridgeSourceCrudService
                 'table' => $table,
                 'label' => $meta['label'],
                 'description' => $meta['description'],
+                'kind' => $this->bridgeSourceSql->tableKind($table),
                 'row_count' => $this->tableCount($table),
                 'href' => route('dashboard.bridge-source.tables.show', ['table' => $table]),
             ];
@@ -183,6 +184,7 @@ class BridgeSourceCrudService
             'table' => $table,
             'label' => $meta['label'],
             'description' => $meta['description'],
+            'kind' => $this->bridgeSourceSql->tableKind($table),
             'row_count' => $this->tableCount($table),
             'columns' => $columns === [] ? ['row_key'] : $columns,
             'list_endpoint' => route('dashboard.bridge-source.tables.rows', ['table' => $table]),

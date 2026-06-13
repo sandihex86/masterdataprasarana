@@ -38,6 +38,10 @@ class BridgeSourceDashboardTest extends TestCase
         $this->actingAs($user)
             ->get('/dashboard/master-data/jembatan')
             ->assertOk()
+            ->assertSee('nav-child-link-combine', false)
+            ->assertSee('nav-child-link-master', false)
+            ->assertSee('nav-child-link-detail', false)
+            ->assertSee('nav-child-link-lookup', false)
             ->assertSee('Relasi Tabel Source Jembatan')
             ->assertSee('m_jembatan')
             ->assertSee('m_jembatan_bentang');

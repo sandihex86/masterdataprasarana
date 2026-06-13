@@ -245,7 +245,9 @@
         }
 
         .nav-child-link {
-            display: block;
+            display: flex;
+            align-items: center;
+            gap: 8px;
             padding: 8px 10px;
             border-radius: 12px;
             color: var(--muted);
@@ -254,6 +256,62 @@
             overflow: hidden;
             text-overflow: ellipsis;
             transition: background 160ms ease, color 160ms ease, transform 160ms ease;
+        }
+
+        .nav-child-icon {
+            width: 24px;
+            height: 24px;
+            flex: 0 0 24px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            background: rgba(15, 23, 42, 0.06);
+            color: #667085;
+        }
+
+        .nav-child-icon .icon {
+            width: 14px;
+            height: 14px;
+            stroke-width: 1.9;
+        }
+
+        .nav-child-text {
+            min-width: 0;
+            display: flex;
+            align-items: baseline;
+            gap: 4px;
+        }
+
+        .nav-child-text span {
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .nav-child-text small {
+            color: var(--muted);
+            font-size: 0.78rem;
+            font-weight: 700;
+        }
+
+        .nav-child-link-combine .nav-child-icon {
+            background: rgba(37, 99, 235, 0.1);
+            color: #1d4ed8;
+        }
+
+        .nav-child-link-master .nav-child-icon {
+            background: rgba(241, 129, 32, 0.13);
+            color: #b45309;
+        }
+
+        .nav-child-link-lookup .nav-child-icon {
+            background: rgba(15, 118, 110, 0.1);
+            color: #0f766e;
+        }
+
+        .nav-child-link-detail .nav-child-icon {
+            background: rgba(102, 112, 133, 0.1);
+            color: #475467;
         }
 
         .nav-child-link:hover,
@@ -1369,6 +1427,27 @@
             background: rgba(244, 241, 234, 0.42);
         }
 
+        .form-stack {
+            display: grid;
+            gap: 18px;
+        }
+
+        .field-hint {
+            margin: -2px 0 0;
+            color: var(--muted);
+            font-size: 0.74rem;
+            line-height: 1.35;
+        }
+
+        .field input:disabled,
+        .field textarea:disabled,
+        .field select:disabled {
+            border-color: rgba(15, 23, 42, 0.08);
+            background: rgba(248, 250, 252, 0.82);
+            color: #667085;
+            cursor: not-allowed;
+        }
+
         .section-header.compact {
             margin-bottom: 0;
         }
@@ -1394,6 +1473,71 @@
 
         .coordinate-action-field .action-button {
             width: 100%;
+            min-height: 45px;
+            justify-content: center;
+        }
+
+        .coordinate-pulse-button {
+            border-color: rgba(37, 99, 235, 0.3);
+            background: rgba(239, 246, 255, 0.92);
+            color: #1d4ed8;
+            box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.2);
+            animation: coordinateButtonPulse 1.6s ease-in-out infinite;
+        }
+
+        .coordinate-pulse-button .icon {
+            width: 17px;
+            height: 17px;
+            color: #2563eb;
+            animation: coordinateIconBlink 1.05s ease-in-out infinite;
+        }
+
+        .coordinate-pulse-button:hover {
+            border-color: rgba(37, 99, 235, 0.46);
+            background: rgba(219, 234, 254, 0.96);
+            color: #1e40af;
+        }
+
+        .nested-detail-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .nested-detail-card {
+            display: grid;
+            gap: 12px;
+            min-height: 142px;
+            padding: 14px;
+            border-radius: 16px;
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            background: rgba(255, 255, 255, 0.86);
+        }
+
+        .nested-detail-card h4 {
+            margin: 0;
+            font-size: 0.95rem;
+        }
+
+        .nested-detail-card p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.78rem;
+            line-height: 1.45;
+        }
+
+        .nested-detail-summary {
+            color: #1d4ed8;
+            font-size: 0.76rem;
+            font-weight: 700;
+        }
+
+        .nested-detail-summary.is-filled {
+            color: #0f766e;
+        }
+
+        .nested-detail-card .action-button {
+            align-self: end;
             justify-content: center;
         }
 
@@ -1448,6 +1592,18 @@
         .bridge-row-actions {
             flex-wrap: nowrap;
             gap: 6px;
+            white-space: nowrap;
+        }
+
+        .tunnel-row-actions {
+            flex-wrap: nowrap;
+            gap: 6px;
+            white-space: nowrap;
+        }
+
+        .tunnel-actions-cell {
+            width: 132px;
+            min-width: 132px;
             white-space: nowrap;
         }
 
@@ -2485,6 +2641,30 @@
             }
         }
 
+        @keyframes coordinateButtonPulse {
+            0%,
+            100% {
+                box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.22);
+            }
+
+            50% {
+                box-shadow: 0 0 0 5px rgba(37, 99, 235, 0.08);
+            }
+        }
+
+        @keyframes coordinateIconBlink {
+            0%,
+            100% {
+                opacity: 0.55;
+                transform: translateY(0) scale(0.95);
+            }
+
+            50% {
+                opacity: 1;
+                transform: translateY(-1px) scale(1.12);
+            }
+        }
+
         .detail-empty {
             padding: 20px;
             border-radius: 18px;
@@ -2816,6 +2996,10 @@
                 grid-template-columns: 1fr;
             }
 
+            .nested-detail-grid {
+                grid-template-columns: 1fr;
+            }
+
             .coordinate-action-field {
                 min-width: 0;
             }
@@ -2900,6 +3084,14 @@
         return new \Illuminate\Support\HtmlString(
             '<span class="'.e($class).'"'.$attributes.'>'.$tagIcon($icon).'<span class="tag-label">'.e($label).'</span>'.$valueHtml.'</span>'
         );
+    };
+    $navChildIcon = function (string $kind): string {
+        return match ($kind) {
+            'combine' => '<svg class="icon" viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5z"/><path d="m3 12 9 5 9-5"/><path d="m3 16 9 5 9-5"/></svg>',
+            'master' => '<svg class="icon" viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M4 10h16"/><path d="M9 5v14"/></svg>',
+            'lookup' => '<svg class="icon" viewBox="0 0 24 24"><circle cx="8" cy="8" r="3"/><circle cx="17" cy="17" r="3"/><path d="M11 8h2a4 4 0 0 1 4 4v2"/><path d="M8 11v2a4 4 0 0 0 4 4h2"/></svg>',
+            default => '<svg class="icon" viewBox="0 0 24 24"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h10"/></svg>',
+        };
     };
 
     $pageMeta = [
@@ -3017,6 +3209,7 @@
                                         @foreach ($item['children'] as $child)
                                             @php
                                                 $isPrimaryChild = ($child['type'] ?? null) === 'entity';
+                                                $childKind = $child['kind'] ?? ($isPrimaryChild ? 'combine' : 'detail');
                                                 $isActiveChild = $isPrimaryChild
                                                     ? ($currentPage === 'master-data-entity' && $activeMasterDataKey === $item['key'])
                                                     : (
@@ -3024,8 +3217,12 @@
                                                         || ($currentPage === 'tunnel-source-table' && ($tunnelSourceTablePage['table'] ?? null) === ($child['table'] ?? null))
                                                     );
                                             @endphp
-                                            <a class="nav-child-link {{ $isActiveChild ? 'active' : '' }}" href="{{ $child['href'] }}">
-                                                {{ $child['label'] ?? $child['table'] }} · {{ number_format($child['row_count']) }}
+                                            <a class="nav-child-link nav-child-link-{{ $childKind }} {{ $isActiveChild ? 'active' : '' }}" href="{{ $child['href'] }}">
+                                                <span class="nav-child-icon">{!! $navChildIcon($childKind) !!}</span>
+                                                <span class="nav-child-text">
+                                                    <span>{{ $child['label'] ?? $child['table'] }}</span>
+                                                    <small>· {{ number_format($child['row_count']) }}</small>
+                                                </span>
                                             </a>
                                         @endforeach
                                     </div>
@@ -4451,12 +4648,16 @@
                                             <div>
                                                 <h3>Identitas</h3>
                                             </div>
-                                        </div>
-                                        <div class="form-grid">
-                                            <div class="field">
-                                                <label for="tunnel-kode-aset">Kode Aset</label>
-                                                <input id="tunnel-kode-aset" name="kode_aset" type="text">
-                                            </div>
+	                                        </div>
+	                                        <div class="form-grid">
+	                                            <div class="field">
+	                                                <label for="tunnel-id-display">Tunnel ID</label>
+	                                                <input id="tunnel-id-display" name="tunnel_id_display" type="text" disabled data-tunnel-id-display>
+	                                            </div>
+	                                            <div class="field">
+	                                                <label for="tunnel-kode-aset">Kode Aset</label>
+	                                                <input id="tunnel-kode-aset" name="kode_aset" type="text">
+	                                            </div>
                                             <div class="field">
                                                 <label for="tunnel-nomor-bh">No. BH</label>
                                                 <input id="tunnel-nomor-bh" name="nomor_bh" type="text">
@@ -4467,11 +4668,21 @@
                                             </div>
                                             <div class="field">
                                                 <label for="tunnel-wilayah">Wilayah Kerja</label>
-                                                <input id="tunnel-wilayah" name="id_wilayah_kerja" type="text">
+                                                <select id="tunnel-wilayah" name="id_wilayah_kerja">
+                                                    <option value="">Pilih Wilayah Kerja</option>
+                                                    @foreach (($masterDataPage['lookup_options']['id_wilayah_kerja'] ?? []) as $option)
+                                                        <option value="{{ $option['value'] }}">{{ $option['label'] }}</option>
+                                                    @endforeach
+                                                </select>
                                             </div>
                                             <div class="field">
                                                 <label for="tunnel-lintas">Lintas</label>
-                                                <input id="tunnel-lintas" name="id_lintas" type="text">
+                                                <select id="tunnel-lintas" name="id_lintas">
+                                                    <option value="">Pilih Lintas</option>
+                                                    @foreach (($masterDataPage['lookup_options']['id_lintas'] ?? []) as $option)
+                                                        <option value="{{ $option['value'] }}">{{ $option['label'] }}</option>
+                                                    @endforeach
+                                                </select>
                                             </div>
                                             <div class="field">
                                                 <label for="tunnel-kmhm">KM/HM</label>
@@ -4487,20 +4698,26 @@
                                             </div>
                                         </div>
                                         <div class="coordinate-input-grid">
-                                            <div class="field">
-                                                <label for="tunnel-lat">Latitude</label>
-                                                <input id="tunnel-lat" name="lat" type="number" min="-90" max="90" step="0.0000001">
-                                            </div>
-                                            <div class="field">
-                                                <label for="tunnel-long">Longitude</label>
-                                                <input id="tunnel-long" name="long" type="number" min="-180" max="180" step="0.0000001">
-                                            </div>
-                                            <div class="field coordinate-action-field">
-                                                <label>&nbsp;</label>
-                                                <button class="action-button" type="button" data-tunnel-coordinate-open>Koordinat</button>
-                                            </div>
-                                        </div>
-                                        <div class="form-grid" style="margin-top: 12px;">
+	                                            <div class="field">
+	                                                <label for="tunnel-lat">Latitude</label>
+	                                                <input id="tunnel-lat" name="lat" type="number" min="-90" max="90" step="0.0000001">
+	                                                <p class="field-hint">Dipakai sebagai titik pointing pada peta.</p>
+	                                            </div>
+	                                            <div class="field">
+	                                                <label for="tunnel-long">Longitude</label>
+	                                                <input id="tunnel-long" name="long" type="number" min="-180" max="180" step="0.0000001">
+	                                                <p class="field-hint">Dipakai bersama latitude untuk marker lokasi.</p>
+	                                            </div>
+	                                            <div class="field coordinate-action-field">
+	                                                <label>&nbsp;</label>
+	                                                <button class="action-button coordinate-pulse-button" type="button" data-tunnel-coordinate-open>
+	                                                    <svg class="icon" viewBox="0 0 24 24"><path d="M12 21s7-4.4 7-11a7 7 0 1 0-14 0c0 6.6 7 11 7 11z"/><circle cx="12" cy="10" r="2"/></svg>
+	                                                    <span>Koordinat</span>
+	                                                </button>
+	                                                <p class="field-hint">&nbsp;</p>
+	                                            </div>
+	                                        </div>
+	                                        <div class="form-grid">
                                             <div class="field">
                                                 <label for="tunnel-panjang">Panjang (m)</label>
                                                 <input id="tunnel-panjang" name="panjang_m" type="number" min="0" step="0.01">
@@ -4552,21 +4769,33 @@
                                                 <h3>Detail Tambahan</h3>
                                             </div>
                                         </div>
-                                        <div class="form-grid">
-                                            <div class="field full">
-                                                <label for="tunnel-structure-json">Structure JSON</label>
-                                                <textarea id="tunnel-structure-json" name="structure_json" spellcheck="false">{}</textarea>
-                                            </div>
-                                            <div class="field full">
-                                                <label for="tunnel-specs-json">Specs JSON</label>
-                                                <textarea id="tunnel-specs-json" name="specs_json" spellcheck="false">{}</textarea>
-                                            </div>
-                                            <div class="field full">
-                                                <label for="tunnel-docs-json">Docs JSON</label>
-                                                <textarea id="tunnel-docs-json" name="docs_json" spellcheck="false">{}</textarea>
-                                            </div>
-                                        </div>
-                                    </section>
+	                                        <div class="nested-detail-grid">
+	                                            <div class="nested-detail-card">
+	                                                <div>
+	                                                    <h4>Struktur</h4>
+	                                                    <p>Isi data pada tabel m_tunnel_structures.</p>
+	                                                </div>
+	                                                <span class="nested-detail-summary" data-tunnel-nested-summary="structure">Belum diisi</span>
+	                                                <button class="action-button" type="button" data-tunnel-nested-open="structure">Isi Struktur</button>
+	                                            </div>
+	                                            <div class="nested-detail-card">
+	                                                <div>
+	                                                    <h4>Spesifikasi</h4>
+	                                                    <p>Isi data teknis pada tabel m_tunnel_specs.</p>
+	                                                </div>
+	                                                <span class="nested-detail-summary" data-tunnel-nested-summary="specs">Belum diisi</span>
+	                                                <button class="action-button" type="button" data-tunnel-nested-open="specs">Isi Spesifikasi</button>
+	                                            </div>
+	                                            <div class="nested-detail-card">
+	                                                <div>
+	                                                    <h4>Dokumen</h4>
+	                                                    <p>Isi nomor dan referensi dokumen pada tabel m_tunnel_docs.</p>
+	                                                </div>
+	                                                <span class="nested-detail-summary" data-tunnel-nested-summary="docs">Belum diisi</span>
+	                                                <button class="action-button" type="button" data-tunnel-nested-open="docs">Isi Dokumen</button>
+	                                            </div>
+	                                        </div>
+	                                    </section>
                                 </div>
                             </div>
                             <div class="modal-actions">
@@ -4574,10 +4803,34 @@
                                 <button class="action-button primary" type="submit" data-tunnel-form-submit>Simpan</button>
                             </div>
                         </form>
-                    </div>
-                </div>
+	                    </div>
+	                </div>
 
-                <div class="modal" data-tunnel-coordinate-modal aria-hidden="true">
+	                <div class="modal" data-tunnel-nested-modal aria-hidden="true">
+	                    <div class="modal-backdrop" data-modal-close></div>
+	                    <div class="modal-panel modal-panel-xl">
+	                        <div class="modal-head">
+	                            <div>
+	                                <h2 data-tunnel-nested-title>Detail Terowongan</h2>
+	                                <p data-tunnel-nested-subtitle>Isi data tabel terkait tanpa JSON manual.</p>
+	                            </div>
+	                            <button class="icon-button" type="button" data-modal-close aria-label="Tutup detail terkait">
+	                                <svg class="icon" viewBox="0 0 24 24"><path d="M6 6 18 18"/><path d="M18 6 6 18"/></svg>
+	                            </button>
+	                        </div>
+	                        <form data-tunnel-nested-form>
+	                            <div class="modal-body">
+	                                <div class="form-grid" data-tunnel-nested-fields></div>
+	                            </div>
+	                            <div class="modal-actions">
+	                                <button class="action-button" type="button" data-modal-close>Batal</button>
+	                                <button class="action-button primary" type="submit">Simpan Detail</button>
+	                            </div>
+	                        </form>
+	                    </div>
+	                </div>
+
+	                <div class="modal" data-tunnel-coordinate-modal aria-hidden="true">
                     <div class="modal-backdrop" data-modal-close></div>
                     <div class="modal-panel modal-panel-xl">
                         <div class="modal-head">
@@ -4781,6 +5034,49 @@
                             <button class="action-button primary" type="submit" data-tunnel-source-table-form-submit>Simpan</button>
                         </div>
                     </form>
+                </div>
+            </div>
+
+            <div class="modal" data-tunnel-source-table-coordinate-modal aria-hidden="true">
+                <div class="modal-backdrop" data-modal-close></div>
+                <div class="modal-panel modal-panel-xl">
+                    <div class="modal-head">
+                        <div>
+                            <h2>Pilih Koordinat</h2>
+                            <p>Geser peta sampai titik berada di lokasi terowongan.</p>
+                        </div>
+                        <button class="icon-button" type="button" data-modal-close aria-label="Tutup selector koordinat">
+                            <svg class="icon" viewBox="0 0 24 24"><path d="M6 6 18 18"/><path d="M18 6 6 18"/></svg>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="coordinate-picker">
+                            <form class="coordinate-search" data-tunnel-source-table-coordinate-search-form>
+                                <label class="search-field">
+                                    <svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+                                    <input type="search" placeholder="Cari alamat atau lokasi" data-tunnel-source-table-coordinate-search-input>
+                                </label>
+                                <button class="action-button" type="submit">Cari</button>
+                            </form>
+                            <div class="feedback" data-tunnel-source-table-coordinate-feedback hidden></div>
+                            <div class="coordinate-map-shell">
+                                <div class="coordinate-map" data-tunnel-source-table-coordinate-map></div>
+                                <div class="coordinate-spotlight" aria-hidden="true">
+                                    <span></span>
+                                </div>
+                                <div class="coordinate-live">
+                                    <span>Lat</span>
+                                    <strong data-tunnel-source-table-coordinate-live-lat>-</strong>
+                                    <span>Lon</span>
+                                    <strong data-tunnel-source-table-coordinate-live-lon>-</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-actions">
+                        <button class="action-button" type="button" data-modal-close>Batal</button>
+                        <button class="action-button primary" type="button" data-tunnel-source-table-coordinate-apply>Terapkan</button>
+                    </div>
                 </div>
             </div>
         @endif
@@ -6147,6 +6443,14 @@
         const coordinateApplyButton = coordinateModal?.querySelector('[data-coordinate-apply]');
         const coordinateLiveLat = coordinateModal?.querySelector('[data-coordinate-live-lat]');
         const coordinateLiveLon = coordinateModal?.querySelector('[data-coordinate-live-lon]');
+        const nestedModal = document.querySelector('[data-tunnel-nested-modal]');
+        const nestedForm = nestedModal?.querySelector('[data-tunnel-nested-form]');
+        const nestedTitle = nestedModal?.querySelector('[data-tunnel-nested-title]');
+        const nestedSubtitle = nestedModal?.querySelector('[data-tunnel-nested-subtitle]');
+        const nestedFields = nestedModal?.querySelector('[data-tunnel-nested-fields]');
+        const nestedSummaryNodes = formModal
+            ? Object.fromEntries(Array.from(formModal.querySelectorAll('[data-tunnel-nested-summary]')).map((node) => [node.dataset.tunnelNestedSummary, node]))
+            : {};
 
         const state = {
             page: 1,
@@ -6164,6 +6468,12 @@
         let searchTimer = null;
         let editingTunnelId = null;
         let coordinateMap = null;
+        let activeNestedKey = null;
+        let nestedState = {
+            structure: {},
+            specs: {},
+            docs: {},
+        };
 
         const escapeHtml = (value) => String(value ?? '')
             .replaceAll('&', '&amp;')
@@ -6249,13 +6559,270 @@
             return formatText(value);
         };
 
+        const iconMarkup = (name) => {
+            const icons = {
+                tunnel: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18V9a8 8 0 0 1 16 0v9"/><path d="M8 18V9a4 4 0 0 1 8 0v9"/><path d="M3 18h18"/></svg>',
+                map: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3 6 6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14"/><path d="M15 6v14"/></svg>',
+                route: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="18" r="2"/><circle cx="18" cy="6" r="2"/><path d="M8 18h4a6 6 0 0 0 6-6V8"/></svg>',
+                structure: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16"/><path d="M6 19V9l6-4 6 4v10"/><path d="M9 19v-7h6v7"/></svg>',
+                specs: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h10"/><path d="M8 4v16"/><path d="M16 4v9"/></svg>',
+                documents: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><path d="M8 13h8"/><path d="M8 17h5"/></svg>',
+                database: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="7" ry="3"/><path d="M5 5v14c0 1.7 3.1 3 7 3s7-1.3 7-3V5"/><path d="M5 12c0 1.7 3.1 3 7 3s7-1.3 7-3"/></svg>',
+            };
+
+            return icons[name] || icons.database;
+        };
+
+        const nestedConfigs = {
+            structure: {
+                title: 'Struktur Terowongan',
+                subtitle: 'Data disimpan ke tabel m_tunnel_structures.',
+                fields: [
+                    { name: 'jenis_struktur', label: 'Jenis Struktur' },
+                    { name: 'material_struktur', label: 'Material Struktur' },
+                    { name: 'material_lining', label: 'Material Lining' },
+                    { name: 'material_portal', label: 'Material Portal' },
+                    { name: 'material_invert', label: 'Material Invert' },
+                    { name: 'metode_konstruksi', label: 'Metode Konstruksi' },
+                    { name: 'waterproofing', label: 'Waterproofing' },
+                    { name: 'tahun_rehabilitasi_terakhir', label: 'Tahun Rehabilitasi Terakhir', type: 'number', min: 1800 },
+                ],
+            },
+            specs: {
+                title: 'Spesifikasi Terowongan',
+                subtitle: 'Data disimpan ke tabel m_tunnel_specs.',
+                fields: [
+                    { name: 'jumlah_jalur', label: 'Jumlah Jalur', type: 'number', min: 1 },
+                    { name: 'jenis_jalur', label: 'Jenis Jalur' },
+                    { name: 'gauge_m', label: 'Gauge (m)', type: 'number', min: 0, step: '0.001' },
+                    { name: 'lebar_bersih_m', label: 'Lebar Bersih (m)', type: 'number', min: 0, step: '0.01' },
+                    { name: 'tinggi_bersih_m', label: 'Tinggi Bersih (m)', type: 'number', min: 0, step: '0.01' },
+                    { name: 'clearance_horizontal_mm', label: 'Clearance Horizontal (mm)', type: 'number', min: 1 },
+                    { name: 'clearance_vertikal_mm', label: 'Clearance Vertikal (mm)', type: 'number', min: 1 },
+                    { name: 'bentuk_penampang', label: 'Bentuk Penampang' },
+                    { name: 'gradien_persen', label: 'Gradien (%)', type: 'number', min: 0, step: '0.01' },
+                    { name: 'radius_lengkung_m', label: 'Radius Lengkung (m)', type: 'number', min: 0, step: '0.01' },
+                    { name: 'catatan_teknis', label: 'Catatan Teknis', type: 'textarea', full: true },
+                ],
+            },
+            docs: {
+                title: 'Dokumen Terowongan',
+                subtitle: 'Upload file PDF atau image, lalu path disimpan ke tabel m_tunnel_docs.',
+                fields: [
+                    { name: 'no_ded_bed_kajian_teknis', label: 'No. DED/BED/Kajian Teknis' },
+                    { name: 'ded_bed_kajian_teknis', label: 'File DED/BED/Kajian Teknis', type: 'file', docObject: true, full: true },
+                    { name: 'no_spesifikasi_teknis', label: 'No. Spesifikasi Teknis' },
+                    { name: 'spesifikasi_teknis', label: 'File Spesifikasi Teknis', type: 'file', docObject: true, full: true },
+                    { name: 'no_shop_drawing', label: 'No. Shop Drawing' },
+                    { name: 'shop_drawing', label: 'File Shop Drawing', type: 'file', docObject: true, full: true },
+                    { name: 'no_as_built_drawing', label: 'No. As Built Drawing' },
+                    { name: 'as_built_drawing', label: 'File As Built Drawing', type: 'file', docObject: true, full: true },
+                    { name: 'no_dok_hasil_uji', label: 'No. Dokumen Hasil Uji' },
+                    { name: 'dok_hasil_uji', label: 'File Dokumen Hasil Uji', type: 'file', docObject: true, full: true },
+                ],
+            },
+        };
+        const documentFileFields = ['ded_bed_kajian_teknis', 'spesifikasi_teknis', 'shop_drawing', 'as_built_drawing', 'dok_hasil_uji'];
+
+        const generateDisplayUlid = () => {
+            const alphabet = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+            let time = Date.now();
+            const chars = Array(26).fill('0');
+
+            for (let index = 9; index >= 0; index -= 1) {
+                chars[index] = alphabet[time % 32];
+                time = Math.floor(time / 32);
+            }
+
+            const random = new Uint8Array(16);
+
+            if (window.crypto?.getRandomValues) {
+                window.crypto.getRandomValues(random);
+            } else {
+                for (let index = 0; index < random.length; index += 1) {
+                    random[index] = Math.floor(Math.random() * 256);
+                }
+            }
+
+            for (let index = 10; index < 26; index += 1) {
+                chars[index] = alphabet[random[index - 10] % 32];
+            }
+
+            return chars.join('');
+        };
+
+        const visibleDocValue = (value) => {
+            if (value === null || value === undefined || value === '') {
+                return '';
+            }
+
+            if (typeof value !== 'object') {
+                return String(value);
+            }
+
+            if (Array.isArray(value)) {
+                return value.map(visibleDocValue).filter(Boolean).join(', ');
+            }
+
+            return String(value.value ?? value.file_name ?? value.name ?? value.path ?? value.url ?? Object.values(value).filter((item) => typeof item !== 'object').join(', ') ?? '');
+        };
+
+        const cleanNestedPayload = (value) => {
+            if (!value || typeof value !== 'object') {
+                return {};
+            }
+
+            return Object.fromEntries(Object.entries(value).filter(([, item]) => (
+                item !== null
+                && item !== undefined
+                && item !== ''
+                && !(typeof item === 'object' && !Array.isArray(item) && Object.keys(item).length === 0)
+            )));
+        };
+
+        const updateNestedSummaries = () => {
+            Object.entries(nestedConfigs).forEach(([key, config]) => {
+                const node = nestedSummaryNodes[key];
+
+                if (!node) {
+                    return;
+                }
+
+                const filled = Object.keys(cleanNestedPayload(nestedState[key] || {})).length;
+                node.textContent = filled ? `${filled} field terisi` : 'Belum diisi';
+                node.classList.toggle('is-filled', filled > 0);
+            });
+        };
+
+        const nestedFieldValue = (key, field) => {
+            const value = nestedState[key]?.[field.name];
+
+            return field.docObject ? visibleDocValue(value) : (value ?? '');
+        };
+
+        const renderNestedFields = (key) => {
+            const config = nestedConfigs[key];
+
+            if (!config || !nestedFields) {
+                return;
+            }
+
+            nestedFields.innerHTML = config.fields.map((field) => {
+                const id = `tunnel-nested-${key}-${field.name}`;
+                const value = escapeHtml(nestedFieldValue(key, field));
+                const fieldClass = field.full || field.type === 'textarea' ? 'field full' : 'field';
+
+                if (field.type === 'file') {
+                    const existing = nestedState[key]?.[field.name];
+                    const existingLabel = escapeHtml(visibleDocValue(existing) || 'Belum ada file tersimpan');
+
+                    return `
+                        <div class="${fieldClass}">
+                            <label for="${id}">${escapeHtml(field.label)}</label>
+                            <input id="${id}" name="${escapeHtml(field.name)}" type="file" accept="application/pdf,image/*" data-doc-file="true">
+                            <p class="field-hint">${existingLabel}</p>
+                        </div>
+                    `;
+                }
+
+                if (field.type === 'textarea') {
+                    return `
+                        <div class="${fieldClass}">
+                            <label for="${id}">${escapeHtml(field.label)}</label>
+                            <textarea id="${id}" name="${escapeHtml(field.name)}" data-doc-object="${field.docObject ? 'true' : 'false'}">${value}</textarea>
+                        </div>
+                    `;
+                }
+
+                return `
+                    <div class="${fieldClass}">
+                        <label for="${id}">${escapeHtml(field.label)}</label>
+                        <input id="${id}" name="${escapeHtml(field.name)}" type="${escapeHtml(field.type || 'text')}" value="${value}"${field.min !== undefined ? ` min="${escapeHtml(field.min)}"` : ''}${field.step ? ` step="${escapeHtml(field.step)}"` : ''}>
+                    </div>
+                `;
+            }).join('');
+        };
+
+        const openNestedModal = (key) => {
+            const config = nestedConfigs[key];
+
+            if (!config || !nestedModal) {
+                return;
+            }
+
+            activeNestedKey = key;
+
+            if (nestedTitle) {
+                nestedTitle.textContent = config.title;
+            }
+
+            if (nestedSubtitle) {
+                nestedSubtitle.textContent = config.subtitle;
+            }
+
+            renderNestedFields(key);
+            openModal(nestedModal);
+        };
+
+        const saveNestedModal = () => {
+            const config = nestedConfigs[activeNestedKey];
+
+            if (!config || !nestedForm || !activeNestedKey) {
+                return;
+            }
+
+            const nextValue = {};
+
+            config.fields.forEach((field) => {
+                const input = nestedForm.querySelector(`[name="${field.name}"]`);
+
+                if (field.type === 'file') {
+                    const file = input?.files?.[0] || null;
+                    const existing = nestedState[activeNestedKey]?.[field.name];
+
+                    if (file) {
+                        nextValue[field.name] = {
+                            ...(existing && typeof existing === 'object' && !Array.isArray(existing) ? existing : {}),
+                            file,
+                            file_name: file.name,
+                            mime_type: file.type,
+                            size: file.size,
+                            pending_upload: true,
+                        };
+                    } else if (existing !== null && existing !== undefined && existing !== '') {
+                        nextValue[field.name] = existing;
+                    }
+
+                    return;
+                }
+
+                const value = toNullable(input?.value);
+
+                if (value === null) {
+                    return;
+                }
+
+                nextValue[field.name] = field.docObject ? { value } : value;
+            });
+
+            nestedState = {
+                ...nestedState,
+                [activeNestedKey]: nextValue,
+            };
+
+            updateNestedSummaries();
+            closeModal(nestedModal);
+            activeNestedKey = null;
+        };
+
         const fetchJson = async (url, options = {}) => {
+            const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
             const response = await fetch(url, {
                 ...options,
                 headers: {
                     Accept: 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
-                    ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+                    ...(options.body && !isFormData ? { 'Content-Type': 'application/json' } : {}),
                     ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {}),
                     ...(options.headers || {}),
                 },
@@ -6283,6 +6850,75 @@
             }
 
             return payload.message || 'Terjadi kesalahan saat memproses data terowongan.';
+        };
+
+        const hasPendingDocumentUpload = (payload) => Boolean(payload.docs && documentFileFields.some((field) => payload.docs?.[field]?.file instanceof File));
+
+        const withoutUploadInternals = (value) => {
+            if (value instanceof File) {
+                return undefined;
+            }
+
+            if (Array.isArray(value)) {
+                return value.map(withoutUploadInternals).filter((item) => item !== undefined);
+            }
+
+            if (value && typeof value === 'object') {
+                return Object.fromEntries(Object.entries(value)
+                    .filter(([key]) => !['file', 'pending_upload'].includes(key))
+                    .map(([key, item]) => [key, withoutUploadInternals(item)])
+                    .filter(([, item]) => item !== undefined));
+            }
+
+            return value;
+        };
+
+        const appendFormData = (formData, key, value) => {
+            if (value === null || value === undefined) {
+                return;
+            }
+
+            if (Array.isArray(value)) {
+                value.forEach((item, index) => appendFormData(formData, `${key}[${index}]`, item));
+                return;
+            }
+
+            if (typeof value === 'object') {
+                Object.entries(value).forEach(([childKey, item]) => appendFormData(formData, `${key}[${childKey}]`, item));
+                return;
+            }
+
+            formData.append(key, value);
+        };
+
+        const buildRequestBody = (payload) => {
+            if (!hasPendingDocumentUpload(payload)) {
+                return {
+                    body: JSON.stringify(payload),
+                    method: editingTunnelId ? 'PATCH' : 'POST',
+                };
+            }
+
+            const formData = new FormData();
+
+            documentFileFields.forEach((field) => {
+                const file = payload.docs?.[field]?.file;
+
+                if (file instanceof File) {
+                    formData.append(`docs_files[${field}]`, file);
+                }
+            });
+
+            Object.entries(withoutUploadInternals(payload)).forEach(([key, value]) => appendFormData(formData, key, value));
+
+            if (editingTunnelId) {
+                formData.append('_method', 'PATCH');
+            }
+
+            return {
+                body: formData,
+                method: editingTunnelId ? 'POST' : 'POST',
+            };
         };
 
         const setLoadingState = (loading) => {
@@ -6323,19 +6959,15 @@
             return trimmed === '' ? null : trimmed;
         };
 
-        const parseJsonField = (name) => {
-            const raw = String(getField(name)?.value ?? '').trim();
-
-            if (raw === '') {
-                return {};
-            }
-
-            return JSON.parse(raw);
-        };
-
         const resetForm = () => {
             form?.reset();
             editingTunnelId = null;
+            nestedState = {
+                structure: {},
+                specs: {},
+                docs: {},
+            };
+            setField('tunnel_id_display', generateDisplayUlid());
 
             if (formTitle) {
                 formTitle.textContent = `Tambah ${config.label || 'Terowongan'}`;
@@ -6345,14 +6977,7 @@
                 formSubtitle.textContent = 'Data disimpan ke prasarana_tunnel.';
             }
 
-            ['structure_json', 'specs_json', 'docs_json'].forEach((name) => {
-                const field = getField(name);
-
-                if (field) {
-                    field.value = '{}';
-                }
-            });
-
+            updateNestedSummaries();
             clearFormFeedback();
         };
 
@@ -6361,6 +6986,10 @@
 
             if (!field) {
                 return;
+            }
+
+            if (field.tagName === 'SELECT' && value !== null && value !== undefined && value !== '' && !Array.from(field.options).some((option) => option.value === String(value))) {
+                field.add(new Option(String(value).toUpperCase(), String(value)));
             }
 
             field.value = value ?? '';
@@ -6403,9 +7032,13 @@
                     : (record[name] ?? ''));
             });
 
-            setField('structure_json', JSON.stringify(cleanNested(record.structure), null, 2));
-            setField('specs_json', JSON.stringify(cleanNested(record.specs), null, 2));
-            setField('docs_json', JSON.stringify(cleanNested(record.docs), null, 2));
+            setField('tunnel_id_display', record.tunnel_id || editingTunnelId || '');
+            nestedState = {
+                structure: cleanNested(record.structure),
+                specs: cleanNested(record.specs),
+                docs: cleanNested(record.docs),
+            };
+            updateNestedSummaries();
         };
 
         const buildPayload = () => {
@@ -6427,9 +7060,9 @@
                 kondisi_terakhir: toNullable(getField('kondisi_terakhir')?.value),
                 tgl_inspeksi_terakhir: toNullable(getField('tgl_inspeksi_terakhir')?.value),
             };
-            const structure = parseJsonField('structure_json');
-            const specs = parseJsonField('specs_json');
-            const docs = parseJsonField('docs_json');
+            const structure = cleanNestedPayload(nestedState.structure);
+            const specs = cleanNestedPayload(nestedState.specs);
+            const docs = cleanNestedPayload(nestedState.docs);
 
             if (Object.keys(structure).length) {
                 payload.structure = structure;
@@ -6523,11 +7156,15 @@
 
             const center = coordinateCenter();
 
-            if (!coordinateMap) {
-                coordinateMap = window.L.map(coordinateMapCanvas, {
-                    zoomControl: true,
-                    attributionControl: true,
-                }).setView([center.lat, center.lon], center.zoom);
+	            if (!coordinateMap) {
+	                coordinateMap = window.L.map(coordinateMapCanvas, {
+	                    zoomControl: true,
+	                    attributionControl: true,
+	                    zoomSnap: 0.5,
+	                    zoomDelta: 0.5,
+	                    wheelDebounceTime: 140,
+	                    wheelPxPerZoomLevel: 240,
+	                }).setView([center.lat, center.lon], center.zoom);
 
                 window.L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
                     attribution: 'Tiles &copy; Esri',
@@ -6653,7 +7290,12 @@
                             <td>
                                 <div class="row-title">
                                     <strong>${escapeHtml(formatValue(value, column))}</strong>
-                                    <span>${escapeHtml([row.nomor_bh, row.kode_aset, row.km_hm].filter(Boolean).join(' | ') || row.tunnel_id || '-')}</span>
+                                    <span>${escapeHtml([
+                                        row.tunnel_id ? `ID: ${row.tunnel_id}` : null,
+                                        row.nomor_bh,
+                                        row.kode_aset,
+                                        row.km_hm,
+                                    ].filter(Boolean).join(' | ') || '-')}</span>
                                 </div>
                             </td>
                         `;
@@ -6665,8 +7307,8 @@
                 return `
                     <tr>
                         ${cells}
-                        <td>
-                            <div class="inline-actions">
+                        <td class="tunnel-actions-cell">
+                            <div class="inline-actions tunnel-row-actions">
                                 <button class="inline-button" type="button" data-tunnel-row-action="view" data-tunnel-id="${escapeHtml(row.tunnel_id)}">Lihat</button>
                                 <button class="inline-button" type="button" data-tunnel-row-action="edit" data-tunnel-id="${escapeHtml(row.tunnel_id)}">Edit</button>
                             </div>
@@ -6758,15 +7400,14 @@
             return window.dashboardDetailMap?.wrapEntries(rows, tableHtml) || tableHtml;
         };
 
-        const renderSection = (title, body) => `
+        const renderSection = (title, iconName, body, chip = null) => `
             <section class="detail-section">
                 <div class="detail-section-head">
                     <div class="detail-section-title">
-                        <span class="detail-section-icon">
-                            <svg class="icon" viewBox="0 0 24 24"><path d="M4 18V9a8 8 0 0 1 16 0v9"/><path d="M8 18V9a4 4 0 0 1 8 0v9"/><path d="M3 18h18"/></svg>
-                        </span>
+                        <span class="detail-section-icon">${iconMarkup(iconName)}</span>
                         <div><h4>${escapeHtml(title)}</h4></div>
                     </div>
+                    ${chip ? `<span class="detail-chip"><svg class="tag-icon" viewBox="0 0 24 24"><path d="M20 10 14 4H5v9l6 6z"/><path d="M8 8h.01"/></svg><span class="tag-label">Info</span><span class="tag-value">${escapeHtml(chip)}</span></span>` : ''}
                 </div>
                 ${body}
             </section>
@@ -6779,81 +7420,104 @@
 
             viewSubtitle.textContent = `${formatValue(record.nama_terowongan, 'nama_terowongan')} · ${record.nomor_bh || record.tunnel_id || '-'}`;
             const coordinates = record.coordinates || {};
+            const structure = record.structure || {};
+            const specs = record.specs || {};
+            const docs = record.docs || {};
+            const coordinateSummary = [coordinates.lat, coordinates.long]
+                .filter((value) => value !== null && value !== undefined && value !== '')
+                .join(', ') || '-';
+
+            const summaryTag = (label, value, icon) => `
+                <span class="bridge-summary-tag">
+                    <span class="tag-icon-circle">${icon}</span>
+                    <span class="tag-label">${escapeHtml(label)}</span>
+                    <span class="tag-value">${escapeHtml(formatText(value))}</span>
+                </span>
+            `;
+
+            const identityRows = [
+                ['Tunnel ID', record.tunnel_id, 'tunnel_id'],
+                ['Kode Aset', record.kode_aset, 'kode_aset'],
+                ['Nama Terowongan', record.nama_terowongan, 'nama_terowongan'],
+                ['Nomor BH', record.nomor_bh, 'nomor_bh'],
+                ['KM/HM', record.km_hm, 'km_hm'],
+                ['Wilayah Kerja', record.id_wilayah_kerja, 'id_wilayah_kerja'],
+                ['Lintas', record.id_lintas, 'id_lintas'],
+                ['Latitude', coordinates.lat, 'lat'],
+                ['Longitude', coordinates.long, 'long'],
+                ['Dibuat', record.created_at, 'created_at'],
+                ['Diperbarui', record.updated_at, 'updated_at'],
+            ];
+
+            const operationRows = [
+                ['Panjang', record.panjang_m, 'panjang_m'],
+                ['Tahun Bangunan', record.tahun_bangunan, 'tahun_bangunan'],
+                ['Tahun Operasi', record.tahun_operasi, 'tahun_operasi'],
+                ['Umur', record.umur_tahun, 'umur_tahun'],
+                ['Status Operasi', record.status_operasi, 'status_operasi'],
+                ['Status Aset', record.status_aset, 'status_aset'],
+                ['Kondisi Terakhir', record.kondisi_terakhir, 'kondisi_terakhir'],
+                ['Tanggal Inspeksi Terakhir', record.tgl_inspeksi_terakhir, 'tgl_inspeksi_terakhir'],
+            ];
 
             viewContent.innerHTML = `
-                <div class="detail-grid">
-                    <div class="detail-item full">
-                        <span>Nama Terowongan</span>
-                        <strong>${escapeHtml(formatValue(record.nama_terowongan, 'nama_terowongan'))}</strong>
+                <section class="detail-hero bridge-summary-hero">
+                    <div class="bridge-summary-row bridge-summary-primary">
+                        <span class="detail-hero-icon">${iconMarkup('tunnel')}</span>
+                        <div class="bridge-summary-copy">
+                            <span class="detail-eyebrow">Source m_tunnels</span>
+                            <h3>${escapeHtml(formatValue(record.nama_terowongan || record.nomor_bh || record.tunnel_id || 'Detail Terowongan', 'nama_terowongan'))}</h3>
+                            <span class="bridge-summary-route">${escapeHtml([record.nomor_bh, record.km_hm].filter(Boolean).join(' | ') || '-')}</span>
+                        </div>
                     </div>
-                    <div class="detail-item">
-                        <span>No. BH</span>
-                        <strong>${escapeHtml(formatText(record.nomor_bh))}</strong>
+                    <div class="bridge-summary-row bridge-summary-tags">
+                        ${summaryTag('ID', record.tunnel_id || '-', '<svg class="tag-icon" viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M8 9h8"/><path d="M8 13h5"/></svg>')}
+                        ${summaryTag('Status Operasi', record.status_operasi || '-', '<svg class="tag-icon" viewBox="0 0 24 24"><path d="M12 3 4 7v5c0 5 3.4 9.4 8 10 4.6-.6 8-5 8-10V7z"/><path d="m9 12 2 2 4-5"/></svg>')}
+                        ${summaryTag('Status Aset', record.status_aset || '-', '<svg class="tag-icon" viewBox="0 0 24 24"><path d="M4 18h16"/><path d="M6 18V9l3-3 3 3 3-3 3 3v9"/></svg>')}
+                        ${summaryTag('Panjang', formatValue(record.panjang_m, 'panjang_m'), '<svg class="tag-icon" viewBox="0 0 24 24"><path d="M4 12h16"/><path d="m7 9-3 3 3 3"/><path d="m17 9 3 3-3 3"/></svg>')}
+                        ${summaryTag('Koordinat', coordinateSummary, '<svg class="tag-icon" viewBox="0 0 24 24"><path d="M12 21s7-4.4 7-11a7 7 0 1 0-14 0c0 6.6 7 11 7 11z"/><circle cx="12" cy="10" r="2"/></svg>')}
                     </div>
-                    <div class="detail-item">
-                        <span>KM/HM</span>
-                        <strong>${escapeHtml(formatText(record.km_hm))}</strong>
-                    </div>
-                    <div class="detail-item">
-                        <span>Status Operasi</span>
-                        <strong>${escapeHtml(formatText(record.status_operasi))}</strong>
-                    </div>
-                    <div class="detail-item">
-                        <span>Status Aset</span>
-                        <strong>${escapeHtml(formatText(record.status_aset))}</strong>
-                    </div>
+                </section>
+
+                <div class="detail-stack">
+                    ${renderSection('Identitas & Lokasi', 'map', renderKeyValueTable(identityRows))}
+                    ${renderSection('Operasional', 'route', renderKeyValueTable(operationRows), record.kondisi_terakhir || null)}
+                    ${renderSection('Struktur', 'structure', renderKeyValueTable([
+                        ['Jenis Struktur', structure.jenis_struktur, 'jenis_struktur'],
+                        ['Material Struktur', structure.material_struktur, 'material_struktur'],
+                        ['Material Lining', structure.material_lining, 'material_lining'],
+                        ['Material Portal', structure.material_portal, 'material_portal'],
+                        ['Material Invert', structure.material_invert, 'material_invert'],
+                        ['Metode Konstruksi', structure.metode_konstruksi, 'metode_konstruksi'],
+                        ['Waterproofing', structure.waterproofing, 'waterproofing'],
+                        ['Rehabilitasi Terakhir', structure.tahun_rehabilitasi_terakhir, 'tahun_rehabilitasi_terakhir'],
+                    ]))}
+                    ${renderSection('Spesifikasi', 'specs', renderKeyValueTable([
+                        ['Jumlah Jalur', specs.jumlah_jalur, 'jumlah_jalur'],
+                        ['Jenis Jalur', specs.jenis_jalur, 'jenis_jalur'],
+                        ['Gauge', specs.gauge_m, 'gauge_m'],
+                        ['Lebar Bersih', specs.lebar_bersih_m, 'lebar_bersih_m'],
+                        ['Tinggi Bersih', specs.tinggi_bersih_m, 'tinggi_bersih_m'],
+                        ['Clearance Horizontal', specs.clearance_horizontal_mm, 'clearance_horizontal_mm'],
+                        ['Clearance Vertikal', specs.clearance_vertikal_mm, 'clearance_vertikal_mm'],
+                        ['Bentuk Penampang', specs.bentuk_penampang, 'bentuk_penampang'],
+                        ['Gradien', specs.gradien_persen, 'gradien_persen'],
+                        ['Radius Lengkung', specs.radius_lengkung_m, 'radius_lengkung_m'],
+                        ['Catatan Teknis', specs.catatan_teknis, 'catatan_teknis'],
+                    ]))}
+                    ${renderSection('Dokumen', 'documents', renderKeyValueTable([
+                        ['No. DED/BED/Kajian Teknis', docs.no_ded_bed_kajian_teknis, 'no_ded_bed_kajian_teknis'],
+                        ['DED/BED/Kajian Teknis', docs.ded_bed_kajian_teknis, 'ded_bed_kajian_teknis'],
+                        ['No. Spesifikasi Teknis', docs.no_spesifikasi_teknis, 'no_spesifikasi_teknis'],
+                        ['Spesifikasi Teknis', docs.spesifikasi_teknis, 'spesifikasi_teknis'],
+                        ['No. Shop Drawing', docs.no_shop_drawing, 'no_shop_drawing'],
+                        ['Shop Drawing', docs.shop_drawing, 'shop_drawing'],
+                        ['No. As Built Drawing', docs.no_as_built_drawing, 'no_as_built_drawing'],
+                        ['As Built Drawing', docs.as_built_drawing, 'as_built_drawing'],
+                        ['No. Dokumen Hasil Uji', docs.no_dok_hasil_uji, 'no_dok_hasil_uji'],
+                        ['Dokumen Hasil Uji', docs.dok_hasil_uji, 'dok_hasil_uji'],
+                    ]))}
                 </div>
-                ${renderSection('Data Utama', renderKeyValueTable([
-                    ['Tunnel ID', record.tunnel_id, 'tunnel_id'],
-                    ['Kode Aset', record.kode_aset, 'kode_aset'],
-                    ['Nomor BH', record.nomor_bh, 'nomor_bh'],
-                    ['Wilayah Kerja', record.id_wilayah_kerja, 'id_wilayah_kerja'],
-                    ['Lintas', record.id_lintas, 'id_lintas'],
-                    ['Panjang', record.panjang_m, 'panjang_m'],
-                    ['Tahun Bangunan', record.tahun_bangunan, 'tahun_bangunan'],
-                    ['Tahun Operasi', record.tahun_operasi, 'tahun_operasi'],
-                    ['Umur', record.umur_tahun, 'umur_tahun'],
-                    ['Latitude', coordinates.lat, 'lat'],
-                    ['Longitude', coordinates.long, 'long'],
-                    ['Kondisi Terakhir', record.kondisi_terakhir, 'kondisi_terakhir'],
-                    ['Tanggal Inspeksi Terakhir', record.tgl_inspeksi_terakhir, 'tgl_inspeksi_terakhir'],
-                    ['Diperbarui', record.updated_at, 'updated_at'],
-                ]))}
-                ${renderSection('Struktur', renderKeyValueTable([
-                    ['Jenis Struktur', record.structure?.jenis_struktur, 'jenis_struktur'],
-                    ['Material Struktur', record.structure?.material_struktur, 'material_struktur'],
-                    ['Material Lining', record.structure?.material_lining, 'material_lining'],
-                    ['Material Portal', record.structure?.material_portal, 'material_portal'],
-                    ['Material Invert', record.structure?.material_invert, 'material_invert'],
-                    ['Metode Konstruksi', record.structure?.metode_konstruksi, 'metode_konstruksi'],
-                    ['Waterproofing', record.structure?.waterproofing, 'waterproofing'],
-                    ['Rehabilitasi Terakhir', record.structure?.tahun_rehabilitasi_terakhir, 'tahun_rehabilitasi_terakhir'],
-                ]))}
-                ${renderSection('Spesifikasi', renderKeyValueTable([
-                    ['Jumlah Jalur', record.specs?.jumlah_jalur, 'jumlah_jalur'],
-                    ['Jenis Jalur', record.specs?.jenis_jalur, 'jenis_jalur'],
-                    ['Gauge', record.specs?.gauge_m, 'gauge_m'],
-                    ['Lebar Bersih', record.specs?.lebar_bersih_m, 'lebar_bersih_m'],
-                    ['Tinggi Bersih', record.specs?.tinggi_bersih_m, 'tinggi_bersih_m'],
-                    ['Clearance Horizontal', record.specs?.clearance_horizontal_mm, 'clearance_horizontal_mm'],
-                    ['Clearance Vertikal', record.specs?.clearance_vertikal_mm, 'clearance_vertikal_mm'],
-                    ['Bentuk Penampang', record.specs?.bentuk_penampang, 'bentuk_penampang'],
-                    ['Gradien', record.specs?.gradien_persen, 'gradien_persen'],
-                    ['Radius Lengkung', record.specs?.radius_lengkung_m, 'radius_lengkung_m'],
-                    ['Catatan Teknis', record.specs?.catatan_teknis, 'catatan_teknis'],
-                ]))}
-                ${renderSection('Dokumen', renderKeyValueTable([
-                    ['No. DED/BED/Kajian Teknis', record.docs?.no_ded_bed_kajian_teknis, 'no_ded_bed_kajian_teknis'],
-                    ['DED/BED/Kajian Teknis', record.docs?.ded_bed_kajian_teknis, 'ded_bed_kajian_teknis'],
-                    ['No. Spesifikasi Teknis', record.docs?.no_spesifikasi_teknis, 'no_spesifikasi_teknis'],
-                    ['Spesifikasi Teknis', record.docs?.spesifikasi_teknis, 'spesifikasi_teknis'],
-                    ['No. Shop Drawing', record.docs?.no_shop_drawing, 'no_shop_drawing'],
-                    ['Shop Drawing', record.docs?.shop_drawing, 'shop_drawing'],
-                    ['No. As Built Drawing', record.docs?.no_as_built_drawing, 'no_as_built_drawing'],
-                    ['As Built Drawing', record.docs?.as_built_drawing, 'as_built_drawing'],
-                    ['No. Dokumen Hasil Uji', record.docs?.no_dok_hasil_uji, 'no_dok_hasil_uji'],
-                    ['Dokumen Hasil Uji', record.docs?.dok_hasil_uji, 'dok_hasil_uji'],
-                ]))}
             `;
         };
 
@@ -6970,20 +7634,29 @@
             searchCoordinate(coordinateSearchInput?.value || '');
         });
 
-        coordinateApplyButton?.addEventListener('click', applyCoordinate);
+	        coordinateApplyButton?.addEventListener('click', applyCoordinate);
 
-        form?.addEventListener('submit', async (event) => {
-            event.preventDefault();
+	        formModal?.querySelectorAll('[data-tunnel-nested-open]').forEach((button) => {
+	            button.addEventListener('click', () => openNestedModal(button.dataset.tunnelNestedOpen));
+	        });
+
+	        nestedForm?.addEventListener('submit', (event) => {
+	            event.preventDefault();
+	            saveNestedModal();
+	        });
+
+	        form?.addEventListener('submit', async (event) => {
+	            event.preventDefault();
             clearFormFeedback();
 
             let payload = {};
 
-            try {
-                payload = buildPayload();
-            } catch {
-                showFormFeedback('Structure JSON, Specs JSON, atau Docs JSON tidak valid.');
-                return;
-            }
+	            try {
+	                payload = buildPayload();
+	            } catch {
+	                showFormFeedback('Data detail terowongan belum valid.');
+	                return;
+	            }
 
             setLoadingState(true);
 
@@ -6991,9 +7664,11 @@
                 const endpoint = editingTunnelId && config.update_endpoint
                     ? config.update_endpoint.replace('__tunnel__', encodeURIComponent(editingTunnelId))
                     : config.store_endpoint;
+                const requestBody = buildRequestBody(payload);
+
                 await fetchJson(endpoint, {
-                    method: editingTunnelId ? 'PATCH' : 'POST',
-                    body: JSON.stringify(payload),
+                    method: requestBody.method,
+                    body: requestBody.body,
                 });
                 closeModal(formModal);
                 resetForm();
@@ -7030,16 +7705,21 @@
             button.addEventListener('click', () => closeModal(formModal));
         });
 
-        coordinateModal?.querySelectorAll('[data-modal-close]').forEach((button) => {
-            button.addEventListener('click', () => closeModal(coordinateModal));
-        });
+	        coordinateModal?.querySelectorAll('[data-modal-close]').forEach((button) => {
+	            button.addEventListener('click', () => closeModal(coordinateModal));
+	        });
 
-        document.addEventListener('keydown', (event) => {
-            if (event.key === 'Escape') {
-                closeModal(viewModal);
-                closeModal(coordinateModal);
-                closeModal(formModal);
-            }
+	        nestedModal?.querySelectorAll('[data-modal-close]').forEach((button) => {
+	            button.addEventListener('click', () => closeModal(nestedModal));
+	        });
+
+	        document.addEventListener('keydown', (event) => {
+	            if (event.key === 'Escape') {
+	                closeModal(viewModal);
+	                closeModal(nestedModal);
+	                closeModal(coordinateModal);
+	                closeModal(formModal);
+	            }
         });
     })();
 
@@ -8653,6 +9333,16 @@
         const formFields = formModal?.querySelector('[data-tunnel-source-table-form-fields]');
         const formFeedback = formModal?.querySelector('[data-tunnel-source-table-form-feedback]');
         const submitButton = formModal?.querySelector('[data-tunnel-source-table-form-submit]');
+        const coordinateModal = document.querySelector('[data-tunnel-source-table-coordinate-modal]');
+        const coordinateMapCanvas = coordinateModal?.querySelector('[data-tunnel-source-table-coordinate-map]');
+        const coordinateSearchForm = coordinateModal?.querySelector('[data-tunnel-source-table-coordinate-search-form]');
+        const coordinateSearchInput = coordinateModal?.querySelector('[data-tunnel-source-table-coordinate-search-input]');
+        const coordinateFeedback = coordinateModal?.querySelector('[data-tunnel-source-table-coordinate-feedback]');
+        const coordinateApplyButton = coordinateModal?.querySelector('[data-tunnel-source-table-coordinate-apply]');
+        const coordinateLiveLat = coordinateModal?.querySelector('[data-tunnel-source-table-coordinate-live-lat]');
+        const coordinateLiveLon = coordinateModal?.querySelector('[data-tunnel-source-table-coordinate-live-lon]');
+        const isTunnelMasterTable = config.table === 'm_tunnels';
+        const lookupOptions = config.lookup_options && typeof config.lookup_options === 'object' ? config.lookup_options : {};
         const state = {
             page: 1,
             perPage: Number(gridPerPage?.value || 10),
@@ -8668,6 +9358,7 @@
         };
         let searchTimer = null;
         let editingRowKey = null;
+        let coordinateMap = null;
 
         const escapeHtml = (value) => String(value ?? '')
             .replaceAll('&', '&amp;')
@@ -8711,6 +9402,45 @@
         const isTextColumn = (column) => /text|json/i.test(String(column.type || ''));
         const isDateColumn = (column) => /date|timestamp|datetime/i.test(String(column.type || ''));
         const isNumberColumn = (column) => /int|decimal|double|float/i.test(String(column.type || ''));
+        const isCoordinateColumn = (name) => ['lat', 'long'].includes(name);
+        const getFormField = (name) => form?.querySelector(`[name="${name}"]`);
+
+        const generateDisplayUlid = () => {
+            const alphabet = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+            let time = Date.now();
+            const chars = Array(26).fill('0');
+
+            for (let index = 9; index >= 0; index -= 1) {
+                chars[index] = alphabet[time % 32];
+                time = Math.floor(time / 32);
+            }
+
+            const random = new Uint8Array(16);
+
+            if (window.crypto?.getRandomValues) {
+                window.crypto.getRandomValues(random);
+            } else {
+                for (let index = 0; index < random.length; index += 1) {
+                    random[index] = Math.floor(Math.random() * 256);
+                }
+            }
+
+            for (let index = 10; index < 26; index += 1) {
+                chars[index] = alphabet[random[index - 10] % 32];
+            }
+
+            return chars.join('');
+        };
+
+        const setFormField = (name, value) => {
+            const field = getFormField(name);
+
+            if (!field) {
+                return;
+            }
+
+            field.value = value ?? '';
+        };
 
         const fetchJson = async (url, options = {}) => {
             const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
@@ -8890,10 +9620,77 @@
             return 'identity';
         };
 
+        const renderSelectField = (column, options) => {
+            const name = column.name || '';
+            const required = Array.isArray(config.required_columns) && config.required_columns.includes(name);
+
+            return `
+                <div class="field">
+                    <label for="tunnel-table-${escapeHtml(name)}">${escapeHtml(prettify(name))}${required ? ' *' : ''}</label>
+                    <select id="tunnel-table-${escapeHtml(name)}" name="${escapeHtml(name)}" ${required ? 'required' : ''}>
+                        <option value="">Pilih ${escapeHtml(prettify(name))}</option>
+                        ${options.map((option) => `<option value="${escapeHtml(option.value)}">${escapeHtml(option.label)}</option>`).join('')}
+                    </select>
+                </div>
+            `;
+        };
+
+        const renderCoordinateFields = (columnsForGroup) => {
+            const latColumn = columnsForGroup.find((column) => column.name === 'lat');
+            const longColumn = columnsForGroup.find((column) => column.name === 'long');
+            const latRequired = latColumn && Array.isArray(config.required_columns) && config.required_columns.includes('lat');
+            const longRequired = longColumn && Array.isArray(config.required_columns) && config.required_columns.includes('long');
+
+            if (!latColumn && !longColumn) {
+                return '';
+            }
+
+            return `
+                <div class="coordinate-input-grid">
+                    ${latColumn ? `
+                        <div class="field">
+                            <label for="tunnel-table-lat">Latitude${latRequired ? ' *' : ''}</label>
+                            <input id="tunnel-table-lat" name="lat" type="number" min="-90" max="90" step="0.0000001" ${latRequired ? 'required' : ''}>
+                            <p class="field-hint">Dipakai sebagai titik pointing pada peta.</p>
+                        </div>
+                    ` : ''}
+                    ${longColumn ? `
+                        <div class="field">
+                            <label for="tunnel-table-long">Longitude${longRequired ? ' *' : ''}</label>
+                            <input id="tunnel-table-long" name="long" type="number" min="-180" max="180" step="0.0000001" ${longRequired ? 'required' : ''}>
+                            <p class="field-hint">Dipakai bersama latitude untuk marker lokasi.</p>
+                        </div>
+                    ` : ''}
+                    <div class="field coordinate-action-field">
+                        <label>&nbsp;</label>
+                        <button class="action-button coordinate-pulse-button" type="button" data-tunnel-source-table-coordinate-open>
+                            <svg class="icon" viewBox="0 0 24 24"><path d="M12 21s7-4.4 7-11a7 7 0 1 0-14 0c0 6.6 7 11 7 11z"/><circle cx="12" cy="10" r="2"/></svg>
+                            <span>Koordinat</span>
+                        </button>
+                        <p class="field-hint">&nbsp;</p>
+                    </div>
+                </div>
+            `;
+        };
+
         const renderInputField = (column) => {
                 const name = column.name || '';
                 const required = Array.isArray(config.required_columns) && config.required_columns.includes(name);
                 const inputType = isDateColumn(column) ? 'date' : (isNumberColumn(column) ? 'number' : 'text');
+                const options = Array.isArray(lookupOptions[name]) ? lookupOptions[name] : [];
+
+                if (isTunnelMasterTable && name === 'tunnel_id') {
+                    return `
+                        <div class="field">
+                            <label for="tunnel-table-tunnel-id">Tunnel ID${required ? ' *' : ''}</label>
+                            <input id="tunnel-table-tunnel-id" name="tunnel_id" type="text" disabled data-tunnel-source-table-generated-id>
+                        </div>
+                    `;
+                }
+
+                if (options.length) {
+                    return renderSelectField(column, options);
+                }
 
                 if (isTextColumn(column)) {
                     return `
@@ -8931,18 +9728,28 @@
 
             formFields.innerHTML = groups
                 .filter((group) => group.columns.length)
-                .map((group) => `
-                    <section class="form-section">
-                        <div class="section-header compact">
-                            <div>
-                                <h3>${escapeHtml(group.title)}</h3>
+                .map((group) => {
+                    const renderedColumns = isTunnelMasterTable
+                        ? group.columns.filter((column) => !isCoordinateColumn(column.name || ''))
+                        : group.columns;
+                    const coordinateFields = isTunnelMasterTable ? renderCoordinateFields(group.columns) : '';
+
+                    return `
+                        <section class="form-section">
+                            <div class="section-header compact">
+                                <div>
+                                    <h3>${escapeHtml(group.title)}</h3>
+                                </div>
                             </div>
-                        </div>
-                        <div class="form-grid">
-                            ${group.columns.map(renderInputField).join('')}
-                        </div>
-                    </section>
-                `)
+                            ${renderedColumns.length ? `
+                                <div class="form-grid">
+                                    ${renderedColumns.map(renderInputField).join('')}
+                                </div>
+                            ` : ''}
+                            ${coordinateFields}
+                        </section>
+                    `;
+                })
                 .join('');
         };
 
@@ -8990,6 +9797,10 @@
             form?.reset();
             renderFormFields();
             clearFormFeedback();
+
+            if (isTunnelMasterTable) {
+                setFormField('tunnel_id', generateDisplayUlid());
+            }
 
             if (formTitle) {
                 formTitle.textContent = `Tambah ${config.table || 'Tabel Terowongan'}`;
@@ -9059,6 +9870,125 @@
             }
 
             openModal(formModal);
+        };
+
+        const coordinateCenter = () => {
+            const lat = Number(getFormField('lat')?.value || NaN);
+            const lon = Number(getFormField('long')?.value || NaN);
+
+            if (Number.isFinite(lat) && Number.isFinite(lon) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) {
+                return { lat, lon, zoom: 17 };
+            }
+
+            return { lat: -6.175392, lon: 106.827153, zoom: 6 };
+        };
+
+        const showCoordinateFeedback = (message) => {
+            if (!coordinateFeedback) {
+                return;
+            }
+
+            coordinateFeedback.hidden = !message;
+            coordinateFeedback.textContent = message || '';
+        };
+
+        const updateCoordinateLive = () => {
+            if (!coordinateMap) {
+                return;
+            }
+
+            const center = coordinateMap.getCenter();
+
+            if (coordinateLiveLat) {
+                coordinateLiveLat.textContent = center.lat.toFixed(7);
+            }
+
+            if (coordinateLiveLon) {
+                coordinateLiveLon.textContent = center.lng.toFixed(7);
+            }
+        };
+
+        const initCoordinateMap = () => {
+            if (!window.L || !coordinateMapCanvas) {
+                showCoordinateFeedback('Peta belum siap dimuat.');
+                return;
+            }
+
+            const center = coordinateCenter();
+
+            if (!coordinateMap) {
+                coordinateMap = window.L.map(coordinateMapCanvas, {
+                    zoomControl: true,
+                    attributionControl: true,
+                    zoomSnap: 0.5,
+                    zoomDelta: 0.5,
+                    wheelDebounceTime: 140,
+                    wheelPxPerZoomLevel: 240,
+                }).setView([center.lat, center.lon], center.zoom);
+
+                window.L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                    attribution: 'Tiles &copy; Esri',
+                    maxZoom: 19,
+                    maxNativeZoom: 19,
+                }).addTo(coordinateMap);
+
+                coordinateMap.on('move', updateCoordinateLive);
+                coordinateMap.on('moveend', updateCoordinateLive);
+            } else {
+                coordinateMap.setView([center.lat, center.lon], center.zoom);
+            }
+
+            window.setTimeout(() => {
+                coordinateMap?.invalidateSize();
+                updateCoordinateLive();
+            }, 120);
+        };
+
+        const openCoordinatePicker = () => {
+            showCoordinateFeedback('');
+            openModal(coordinateModal);
+            initCoordinateMap();
+        };
+
+        const searchCoordinate = async (query) => {
+            const keyword = query.trim();
+
+            if (!keyword) {
+                return;
+            }
+
+            showCoordinateFeedback('Mencari lokasi...');
+
+            try {
+                const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(keyword)}`, {
+                    headers: {
+                        Accept: 'application/json',
+                    },
+                });
+                const payload = await response.json();
+                const result = Array.isArray(payload) ? payload[0] : null;
+
+                if (!result) {
+                    showCoordinateFeedback('Alamat tidak ditemukan.');
+                    return;
+                }
+
+                coordinateMap?.setView([Number(result.lat), Number(result.lon)], 17);
+                showCoordinateFeedback('');
+            } catch {
+                showCoordinateFeedback('Pencarian alamat gagal. Coba lagi beberapa saat.');
+            }
+        };
+
+        const applyCoordinate = () => {
+            if (!coordinateMap) {
+                return;
+            }
+
+            const center = coordinateMap.getCenter();
+            setFormField('lat', center.lat.toFixed(7));
+            setFormField('long', center.lng.toFixed(7));
+            closeModal(coordinateModal);
         };
 
         const importCsv = async (file) => {
@@ -9219,6 +10149,21 @@
             importCsv(event.target.files?.[0] || null);
         });
 
+        formModal?.addEventListener('click', (event) => {
+            const coordinateTrigger = event.target.closest('[data-tunnel-source-table-coordinate-open]');
+
+            if (coordinateTrigger) {
+                openCoordinatePicker();
+            }
+        });
+
+        coordinateSearchForm?.addEventListener('submit', (event) => {
+            event.preventDefault();
+            searchCoordinate(coordinateSearchInput?.value || '');
+        });
+
+        coordinateApplyButton?.addEventListener('click', applyCoordinate);
+
         root.addEventListener('click', (event) => {
             const editTrigger = event.target.closest('[data-tunnel-source-table-edit]');
 
@@ -9277,9 +10222,14 @@
             });
         });
 
+        coordinateModal?.querySelectorAll('[data-modal-close]').forEach((button) => {
+            button.addEventListener('click', () => closeModal(coordinateModal));
+        });
+
         document.addEventListener('keydown', (event) => {
             if (event.key === 'Escape') {
                 closeModal(viewModal);
+                closeModal(coordinateModal);
                 closeModal(formModal);
             }
         });

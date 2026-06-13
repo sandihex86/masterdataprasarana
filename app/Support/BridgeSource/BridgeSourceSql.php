@@ -167,6 +167,19 @@ class BridgeSourceSql
         ];
     }
 
+    public function tableKind(string $table): string
+    {
+        if ($table === 'm_jembatan') {
+            return 'master';
+        }
+
+        if (in_array($table, ['m_provinsi', 'm_kabkot', 'm_lintas', 'm_stasiun', 'm_wilayah_kerja', 'm_wilayah_operasi'], true)) {
+            return 'lookup';
+        }
+
+        return 'detail';
+    }
+
     /**
      * @param  array<int, string>|null  $tables
      * @return array<string, string>
@@ -279,7 +292,7 @@ class BridgeSourceSql
 
     public function dataPath(): string
     {
-        $configuredPath = base_path((string) config('master-data.bridge_source.dump_path', 'database/struktur/data_jembatan.sql'));
+        $configuredPath = base_path((string) config('master-data.bridge_source.dump_path', 'database/data/data_jembatan.sql'));
 
         return $this->firstExistingPath([
             $configuredPath,

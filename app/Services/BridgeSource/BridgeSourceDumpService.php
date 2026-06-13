@@ -34,6 +34,7 @@ class BridgeSourceDumpService
                 'table' => $table,
                 'label' => $meta['label'],
                 'description' => $meta['description'],
+                'kind' => $this->bridgeSourceSql->tableKind($table),
                 'row_count' => count($this->rows($table)),
                 'href' => route('dashboard.bridge-source.tables.show', ['table' => $table]),
             ];
@@ -54,6 +55,7 @@ class BridgeSourceDumpService
             'table' => $table,
             'label' => $meta['label'],
             'description' => $meta['description'],
+            'kind' => $this->bridgeSourceSql->tableKind($table),
             'row_count' => count($rows),
             'columns' => $columns,
             'list_endpoint' => route('dashboard.bridge-source.tables.rows', ['table' => $table]),

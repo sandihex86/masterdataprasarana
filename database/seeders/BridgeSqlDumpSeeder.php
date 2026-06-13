@@ -17,12 +17,16 @@ class BridgeSqlDumpSeeder extends Seeder
 {
     use WithoutModelEvents;
 
-    public string $dumpPath = 'database/struktur/data_jembatan.sql';
+    public string $dumpPath = '';
 
     public function run(SqlDumpTableReader $reader, MasterDataChecksumService $checksumService): void
     {
         $actorId = $this->resolveActorId();
         $this->ensureBridgeType($actorId);
+
+        $this->dumpPath = $this->dumpPath !== ''
+            ? $this->dumpPath
+            : (string) config('master-data.bridge_source.dump_path', 'database/data/data_jembatan.sql');
 
         $path = base_path($this->dumpPath);
 

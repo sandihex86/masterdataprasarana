@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Api\V1;
 
 use App\Models\Tunnel;
+use App\Services\TunnelDocumentUploadService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -48,6 +49,7 @@ class UpdateTunnelRequest extends FormRequest
             'structure' => ['nullable', 'array'],
             'specs' => ['nullable', 'array'],
             'docs' => ['nullable', 'array'],
+            ...TunnelDocumentUploadService::validationRules(),
             ...TunnelDetailRules::structure('structure.', $nextYear),
             ...TunnelDetailRules::specs('specs.'),
             ...TunnelDetailRules::docs('docs.'),

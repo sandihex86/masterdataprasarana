@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Api\V1;
 
+use App\Services\TunnelDocumentUploadService;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpsertTunnelDocRequest extends FormRequest
@@ -13,6 +14,9 @@ class UpsertTunnelDocRequest extends FormRequest
 
     public function rules(): array
     {
-        return TunnelDetailRules::docs('');
+        return [
+            ...TunnelDetailRules::docs(''),
+            ...TunnelDocumentUploadService::validationRules(),
+        ];
     }
 }

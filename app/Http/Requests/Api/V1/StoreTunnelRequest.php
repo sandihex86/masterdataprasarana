@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Api\V1;
 
+use App\Services\TunnelDocumentUploadService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -37,6 +38,7 @@ class StoreTunnelRequest extends FormRequest
             'structure' => ['nullable', 'array'],
             'specs' => ['nullable', 'array'],
             'docs' => ['nullable', 'array'],
+            ...TunnelDocumentUploadService::validationRules(),
             ...TunnelDetailRules::structure('structure.', $nextYear),
             ...TunnelDetailRules::specs('specs.'),
             ...TunnelDetailRules::docs('docs.'),

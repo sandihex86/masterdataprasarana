@@ -33,6 +33,18 @@ class TunnelSourceTableService
             'label' => 'Dokumen Terowongan',
             'description' => 'Nomor dan metadata dokumen teknis terowongan.',
         ],
+        'm_tunnel_lookup_lintas' => [
+            'label' => 'Lookup Lintasan',
+            'description' => 'Referensi lintasan untuk modul dan database Terowongan.',
+        ],
+        'm_tunnel_lookup_wilayah_kerja' => [
+            'label' => 'Lookup Wilayah Kerja',
+            'description' => 'Referensi wilayah kerja/BTP untuk modul dan database Terowongan.',
+        ],
+        'm_tunnel_lookup_wilayah_operasi' => [
+            'label' => 'Lookup Wilayah Operasi',
+            'description' => 'Referensi wilayah operasi/DAOP untuk modul dan database Terowongan.',
+        ],
     ];
 
     /**
@@ -44,6 +56,7 @@ class TunnelSourceTableService
             ->map(fn (string $table): array => [
                 ...$this->tableMeta($table),
                 'table' => $table,
+                'kind' => $this->tableKind($table),
                 'href' => route('dashboard.tunnel-source.tables.show', ['table' => $table]),
                 'row_count' => $this->countRows($table),
             ])
@@ -60,15 +73,28 @@ class TunnelSourceTableService
 
         return [
             ...$schema,
+            'kind' => $this->tableKind($table),
             'columns' => $this->visibleColumns($schema['columns']),
             'schema_columns' => $schema['columns'],
             'form_columns' => $this->formColumns($schema['columns']),
+            'lookup_options' => $this->lookupOptions($table),
             'list_endpoint' => route('dashboard.tunnel-source.tables.rows', ['table' => $table]),
             'store_endpoint' => route('dashboard.tunnel-source.tables.rows.store', ['table' => $table]),
             'update_endpoint' => route('dashboard.tunnel-source.tables.rows.update', ['table' => $table, 'rowKey' => '__row__']),
             'template_endpoint' => route('dashboard.tunnel-source.tables.template', ['table' => $table]),
             'import_endpoint' => route('dashboard.tunnel-source.tables.import', ['table' => $table]),
             'export_endpoint' => route('dashboard.tunnel-source.tables.export', ['table' => $table]),
+        ];
+    }
+
+    /**
+     * @return array<string, array<int, array{value: string, label: string, kode: string|null, nama: string}>>
+     */
+    public function tunnelLookupOptions(): array
+    {
+        return [
+            'id_wilayah_kerja' => $this->lookupRows('m_tunnel_lookup_wilayah_kerja'),
+            'id_lintas' => $this->lookupRows('m_tunnel_lookup_lintas'),
         ];
     }
 
@@ -380,6 +406,70 @@ class TunnelSourceTableService
         ];
     }
 
+    private function tableKind(string $table): string
+    {
+        if (str_starts_with($table, 'm_tunnel_lookup_')) {
+            return 'lookup';
+        }
+
+        return $table === 'm_tunnels' ? 'master' : 'detail';
+    }
+
+    /**
+     * @return array<string, array<int, array{value: string, label: string, kode: string|null, nama: string}>>
+     */
+    private function lookupOptions(string $table): array
+    {
+        if ($table !== 'm_tunnels') {
+            return [];
+        }
+
+        return $this->tunnelLookupOptions();
+    }
+
+    /**
+     * @return array<int, array{value: string, label: string, kode: string|null, nama: string}>
+     */
+    private function lookupRows(string $table): array
+    {
+        if (! Schema::connection($this->connectionName())->hasTable($table)) {
+            return [];
+        }
+
+        $columns = $this->columnNames($table);
+        $query = DB::connection($this->connectionName())->table($table);
+
+        if (in_array('deleted_at', $columns, true)) {
+            $query->whereNull('deleted_at');
+        }
+
+        if (in_array('active', $columns, true)) {
+            $query->where('active', 1);
+        }
+
+        $this->applyDefaultOrdering($query, $columns);
+
+        return $query
+            ->get()
+            ->map(function (object $row): array {
+                $data = (array) $row;
+                $id = (string) ($data['id'] ?? '');
+                $kode = filled($data['kode'] ?? null) ? (string) $data['kode'] : null;
+                $nama = (string) ($data['nama'] ?? $id);
+                $label = trim(collect([$kode, $nama])->filter()->join(' - '));
+
+                return [
+                    'value' => $id,
+                    'label' => Str::upper($label !== '' ? $label : $id),
+                    'kode' => $kode,
+                    'nama' => $nama,
+                ];
+            })
+            ->filter(fn (array $option): bool => $option['value'] !== '')
+            ->values()
+            ->all();
+    }
+
     /**
      * @return array<int, string>
      */
@@ -450,16 +540,21 @@ class TunnelSourceTableService
     private function sqliteSchema(Connection $connection, string $table): array
     {
         $columns = collect($connection->select('PRAGMA table_info(`'.$table.'`)'))
-            ->map(fn (object $column): array => [
-                'name' => $column->name,
-                'type' => $column->type,
-                'collation' => null,
-                'nullable' => ((int) $column->notnull) === 0,
-                'key' => ((int) $column->pk) > 0 ? 'PRI' : null,
-                'default' => $column->dflt_value,
-                'extra' => ((int) $column->pk) > 0 ? 'auto_increment' : null,
-                'comment' => null,
-            ])
+            ->map(function (object $column): array {
+                $type = strtolower((string) $column->type);
+                $isPrimary = ((int) $column->pk) > 0;
+
+                return [
+                    'name' => $column->name,
+                    'type' => $column->type,
+                    'collation' => null,
+                    'nullable' => ((int) $column->notnull) === 0,
+                    'key' => $isPrimary ? 'PRI' : null,
+                    'default' => $column->dflt_value,
+                    'extra' => $isPrimary && str_contains($type, 'int') ? 'auto_increment' : null,
+                    'comment' => null,
+                ];
+            })
             ->values()
             ->all();
         $primary = collect($columns)
@@ -506,11 +601,23 @@ class TunnelSourceTableService
      */
     private function visibleColumns(array $columns): array
     {
-        $hidden = ['id', 'deleted_at'];
-
         return collect($columns)
+            ->filter(function (array $column): bool {
+                $name = (string) ($column['name'] ?? '');
+                $type = strtolower((string) ($column['type'] ?? ''));
+                $extra = strtolower((string) ($column['extra'] ?? ''));
+
+                if ($name === '' || $name === 'deleted_at') {
+                    return false;
+                }
+
+                if ($name === 'id' && (str_contains($extra, 'auto_increment') || str_contains($type, 'int'))) {
+                    return false;
+                }
+
+                return true;
+            })
             ->pluck('name')
-            ->filter(fn (?string $name): bool => is_string($name) && ! in_array($name, $hidden, true))
             ->take(8)
             ->values()
             ->all();
@@ -597,6 +704,10 @@ class TunnelSourceTableService
             $data['tunnel_id'] = (string) Str::ulid();
         }
 
+        if ($creating && str_starts_with($table, 'm_tunnel_lookup_') && blank($data['id'] ?? null)) {
+            $data['id'] = (string) Str::ulid();
+        }
+
         $timestamp = now();
 
         if ($creating && in_array('created_at', $allowed, true) && ! array_key_exists('created_at', $data)) {
@@ -679,7 +790,7 @@ class TunnelSourceTableService
         $primaryKey = $schema['primary_key'][0] ?? null;
         $connection = DB::connection($this->connectionName());
 
-        if ($primaryKey === 'id') {
+        if ($primaryKey === 'id' && ! str_starts_with($table, 'm_tunnel_lookup_')) {
             return $connection->table($table)->insertGetId($data);
         }
 
@@ -694,7 +805,7 @@ class TunnelSourceTableService
      */
     private function findFromPayload(string $table, array $data): ?array
     {
-        foreach (['tunnel_id', 'kode_aset', 'id'] as $candidate) {
+        foreach (['id', 'tunnel_id', 'kode_aset', 'kode'] as $candidate) {
             if (($data[$candidate] ?? null) === null || $data[$candidate] === '') {
                 continue;
             }
@@ -775,7 +886,7 @@ class TunnelSourceTableService
         $columns = $this->columnNames($table);
 
         return array_values(array_filter(
-            ['id', 'tunnel_id', 'kode_aset'],
+            ['id', 'tunnel_id', 'kode_aset', 'kode'],
             fn (string $column): bool => in_array($column, $columns, true),
         ));
     }
@@ -787,7 +898,7 @@ class TunnelSourceTableService
     {
         return array_values(array_filter(
             $this->keyColumns($table),
-            fn (string $column): bool => $column !== 'id' || ctype_digit($rowKey),
+            fn (string $column): bool => $column !== 'id' || ctype_digit($rowKey) || str_starts_with($table, 'm_tunnel_lookup_'),
         ));
     }
 
@@ -796,7 +907,13 @@ class TunnelSourceTableService
      */
     private function applyDefaultOrdering(\Illuminate\Database\Query\Builder $query, array $columns): void
     {
-        if (in_array('updated_at', $columns, true)) {
+        if (in_array('sort_order', $columns, true)) {
+            $query->orderBy('sort_order');
+
+            if (in_array('nama', $columns, true)) {
+                $query->orderBy('nama');
+            }
+        } elseif (in_array('updated_at', $columns, true)) {
             $query->orderByDesc('updated_at');
         } elseif (in_array('created_at', $columns, true)) {
             $query->orderByDesc('created_at');

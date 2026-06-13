@@ -35,6 +35,7 @@ use App\Services\MasterData\MasterDataQueryService;
 use App\Services\MasterData\MasterDataWriteService;
 use App\Services\SuperAdmin\ApiClientManagementService;
 use App\Services\SuperAdmin\UserManagementService;
+use App\Services\TunnelDocumentUploadService;
 use App\Services\TunnelService;
 use App\Services\TunnelSourceTableService;
 use App\Support\ApiResponse;
@@ -126,6 +127,7 @@ class DashboardController extends Controller
         private readonly ApiClientManagementService $apiClientManagementService,
         private readonly TunnelService $tunnelService,
         private readonly TunnelSourceTableService $tunnelSourceTableService,
+        private readonly TunnelDocumentUploadService $tunnelDocumentUploadService,
     ) {}
 
     public function index(): View
@@ -642,10 +644,11 @@ class DashboardController extends Controller
     public function storeTunnelSourceRecord(StoreTunnelRequest $request): JsonResponse
     {
         $this->ensureOperationalDashboardAccess();
+        $payload = $this->tunnelDocumentUploadService->mergeUploadedFiles($request, $request->validated());
 
         return ApiResponse::success(
             'Data terowongan berhasil dibuat.',
-            TunnelDetailResource::make($this->tunnelService->create($request->validated()))->resolve(),
+            TunnelDetailResource::make($this->tunnelService->create($payload))->resolve(),
             status: 201,
         );
     }
@@ -653,10 +656,11 @@ class DashboardController extends Controller
     public function updateTunnelSourceRecord(UpdateTunnelRequest $request, string $tunnel_id): JsonResponse
     {
         $this->ensureOperationalDashboardAccess();
+        $payload = $this->tunnelDocumentUploadService->mergeUploadedFiles($request, $request->validated());
 
         return ApiResponse::success(
             'Data terowongan berhasil diperbarui.',
-            TunnelDetailResource::make($this->tunnelService->update($tunnel_id, $request->validated()))->resolve(),
+            TunnelDetailResource::make($this->tunnelService->update($tunnel_id, $payload))->resolve(),
         );
     }
 
@@ -900,6 +904,7 @@ class DashboardController extends Controller
                         [
                             'key' => $key.'-records',
                             'type' => 'entity',
+                            'kind' => 'combine',
                             'label' => 'Data '.$config['label'],
                             'href' => route('dashboard.master-data.entity', ['entity' => $key]),
                             'row_count' => $recordCount,
@@ -978,6 +983,7 @@ class DashboardController extends Controller
                 'list_endpoint' => route('dashboard.tunnel-source.records.index'),
                 'store_endpoint' => route('dashboard.tunnel-source.records.store'),
                 'update_endpoint' => route('dashboard.tunnel-source.records.update', ['tunnel_id' => '__tunnel__']),
+                'lookup_options' => $this->tunnelSourceTableService->tunnelLookupOptions(),
                 'import_endpoint' => route('dashboard.tunnel-source.import'),
                 'export_endpoint' => route('dashboard.tunnel-source.export'),
                 'template_endpoint' => route('dashboard.tunnel-source.template'),

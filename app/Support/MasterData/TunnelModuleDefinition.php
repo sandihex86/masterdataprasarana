@@ -47,7 +47,9 @@ final class TunnelModuleDefinition
                 'reference_tables' => [
                     'province' => 'm_provinsi',
                     'city' => 'm_kabkot',
-                    'lintas' => 'm_lintas',
+                    'lintas' => 'm_tunnel_lookup_lintas',
+                    'wilayah_kerja' => 'm_tunnel_lookup_wilayah_kerja',
+                    'wilayah_operasi' => 'm_tunnel_lookup_wilayah_operasi',
                     'station' => 'm_stasiun',
                 ],
                 'detail_tables' => [
