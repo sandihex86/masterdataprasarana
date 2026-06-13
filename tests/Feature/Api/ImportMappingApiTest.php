@@ -33,7 +33,7 @@ class ImportMappingApiTest extends TestCase
             });
         }
 
-        DB::connection('bridge')->table('legacy_stations')->truncate();
+        DB::connection('bridge')->table('legacy_stations')->delete();
         DB::connection('bridge')->table('legacy_stations')->insert([
             [
                 'id_stasiun' => 1,

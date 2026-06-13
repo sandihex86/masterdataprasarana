@@ -31,7 +31,7 @@ Artisan::command('infrastructure:bootstrap', function (InfrastructureBootstrappe
 
         $message = match ($name) {
             'reference' => tap('bootstrap reference selesai.', fn () => $bootstrapper->bootstrapReferenceConnection($name)),
-            'track', 'operational_facility', 'certificate', 'warehouse' => tap('bootstrap domain selesai.', fn () => $bootstrapper->bootstrapOperationalDomainConnection($name)),
+            'tunnel', 'track', 'operational_facility', 'certificate', 'warehouse' => tap('bootstrap domain selesai.', fn () => $bootstrapper->bootstrapOperationalDomainConnection($name)),
             'reporting' => tap('bootstrap reporting selesai.', fn () => $bootstrapper->bootstrapReportingConnection($name)),
             'bridge' => 'dikelola migration source bridge terpisah.',
             'core' => 'dikelola migration aplikasi inti.',

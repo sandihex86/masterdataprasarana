@@ -95,12 +95,14 @@ Perbedaan yang sudah benar-benar diterapkan di aplikasi saat ini:
 - `superadmin` dapat melihat seluruh dashboard, dokumentasi API, JSON sistem, audit log, dan endpoint API
 - `admin` dapat melihat dokumentasi API, group menu `Master Data`, `Import dan Mapping`, serta `Monitoring`
 - `viewer` difokuskan ke dokumentasi API
+- `operator` dapat melihat dashboard operasional terbatas dan group menu `Master Data`
 - role non-admin lain saat ini mengikuti tampilan dokumentasi API pada dashboard web
 - route web tertentu dibatasi oleh middleware role
 
-Untuk menu `Master Data`, `admin` dan `superadmin` saat ini mengakses submenu:
+Untuk menu `Master Data`, `admin`, `superadmin`, dan `operator` saat ini mengakses submenu:
 
 - `Jembatan`
+- `Terowongan`
 - `Jalur`
 - `Fasilitas Operasional`
 - `Sertifikat`
@@ -272,6 +274,7 @@ Ability minimum:
 ### Dashboard
 
 - `viewer`: dokumentasi API dan OpenAPI spec
+- `operator`: dashboard operasional terbatas dan seluruh submenu `Master Data`
 - `admin`: dashboard operasional, dokumentasi API, monitoring, import dan mapping, serta seluruh submenu `Master Data`
 - `superadmin`: seluruh akses `admin` ditambah JSON sistem, audit log, dan endpoint internal khusus
 

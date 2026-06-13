@@ -31,6 +31,8 @@
         <env name="CORE_DB_DATABASE" value=":memory:"/>
         <env name="BRIDGE_DB_CONNECTION" value="sqlite"/>
         <env name="BRIDGE_DB_DATABASE" value=":memory:"/>
+        <env name="TUNNEL_DB_CONNECTION" value="sqlite"/>
+        <env name="TUNNEL_DB_DATABASE" value=":memory:"/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>

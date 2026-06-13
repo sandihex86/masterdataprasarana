@@ -212,6 +212,24 @@
             gap: 6px;
         }
 
+        .nav-toggle-indicator {
+            width: 18px;
+            height: 18px;
+            flex: 0 0 18px;
+            color: var(--muted);
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 1.8;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            transition: transform 160ms ease, color 160ms ease;
+        }
+
+        .nav-group.is-expanded .nav-toggle-indicator {
+            color: var(--accent);
+            transform: rotate(180deg);
+        }
+
         .nav-children {
             display: grid;
             gap: 4px;
@@ -220,6 +238,10 @@
             margin: -2px 0 4px 46px;
             padding-left: 10px;
             border-left: 1px dashed rgba(15, 23, 42, 0.12);
+        }
+
+        .nav-group:not(.is-expanded) > .nav-children {
+            display: none;
         }
 
         .nav-child-link {
@@ -1359,6 +1381,22 @@
             margin: 6px 0 0;
         }
 
+        .coordinate-input-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+            gap: 12px;
+            align-items: end;
+        }
+
+        .coordinate-action-field {
+            min-width: 132px;
+        }
+
+        .coordinate-action-field .action-button {
+            width: 100%;
+            justify-content: center;
+        }
+
         .inline-button.danger {
             border-color: rgba(180, 35, 24, 0.16);
             background: rgba(180, 35, 24, 0.08);
@@ -2313,6 +2351,111 @@
             animation: detailMapBlink 1.15s ease-in-out infinite;
         }
 
+        .coordinate-picker {
+            display: grid;
+            gap: 12px;
+        }
+
+        .coordinate-search {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .coordinate-map-shell {
+            position: relative;
+            min-height: min(62vh, 560px);
+            overflow: hidden;
+            border-radius: 18px;
+            border: 1px solid rgba(15, 23, 42, 0.1);
+            background: #111827;
+        }
+
+        .coordinate-map,
+        .coordinate-map .leaflet-container {
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            width: 100%;
+            height: 100%;
+            background: #111827;
+            font: inherit;
+        }
+
+        .coordinate-spotlight {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            z-index: 3;
+            width: 46px;
+            height: 46px;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+
+        .coordinate-spotlight::before,
+        .coordinate-spotlight::after {
+            content: "";
+            position: absolute;
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 0 18px rgba(37, 99, 235, 0.55);
+        }
+
+        .coordinate-spotlight::before {
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            transform: translateX(-50%);
+        }
+
+        .coordinate-spotlight::after {
+            left: 0;
+            right: 0;
+            top: 50%;
+            height: 2px;
+            transform: translateY(-50%);
+        }
+
+        .coordinate-spotlight span {
+            position: absolute;
+            inset: 11px;
+            border-radius: 999px;
+            border: 2px solid rgba(255, 255, 255, 0.95);
+            box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.18), 0 0 24px rgba(37, 99, 235, 0.68);
+        }
+
+        .coordinate-live {
+            position: absolute;
+            left: 14px;
+            bottom: 14px;
+            z-index: 3;
+            display: grid;
+            grid-template-columns: auto auto;
+            gap: 2px 10px;
+            padding: 10px 12px;
+            border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            background: rgba(15, 23, 42, 0.74);
+            color: #ffffff;
+            backdrop-filter: blur(12px);
+        }
+
+        .coordinate-live span {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.68rem;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .coordinate-live strong {
+            font-size: 0.82rem;
+            line-height: 1.35;
+            font-variant-numeric: tabular-nums;
+        }
+
         @keyframes detailMapRipple {
             0% {
                 opacity: 0.85;
@@ -2528,6 +2671,7 @@
         body.sidebar-collapsed .nav-title,
         body.sidebar-collapsed .nav-subtitle,
         body.sidebar-collapsed .nav-copy,
+        body.sidebar-collapsed .nav-toggle-indicator,
         body.sidebar-collapsed .nav-badge,
         body.sidebar-collapsed .nav-children {
             display: none;
@@ -2668,6 +2812,14 @@
                 grid-template-columns: 1fr;
             }
 
+            .coordinate-input-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .coordinate-action-field {
+                min-width: 0;
+            }
+
             .detail-hero-stats {
                 grid-template-columns: 1fr;
             }
@@ -2704,7 +2856,7 @@
     $isSuperadmin = $user?->hasRole(\App\Enums\UserRole::Superadmin) ?? false;
     $isAdmin = $user?->hasRole(\App\Enums\UserRole::Admin) ?? false;
     $canViewDocumentation = true;
-    $canViewMasterData = $isSuperadmin || $isAdmin;
+    $canViewMasterData = $isSuperadmin || $isAdmin || ($user?->hasRole(\App\Enums\UserRole::Operator) ?? false);
     $canViewMonitoring = $isSuperadmin || $isAdmin;
     $canViewFullDiagnostics = $isSuperadmin;
     $hasOperationalDashboard = $canViewMasterData || $canViewMonitoring;
@@ -2712,16 +2864,14 @@
     $masterDataMenu = $masterDataMenu ?? [];
     $masterDataPage = $masterDataPage ?? null;
     $bridgeSourceTablePage = $bridgeSourceTablePage ?? null;
+    $tunnelSourceTablePage = $tunnelSourceTablePage ?? null;
     $superadminUserPage = $superadminUserPage ?? null;
     $superadminApiClientPage = $superadminApiClientPage ?? null;
-    $activeMasterDataKey = $masterDataPage['key'] ?? $bridgeSourceTablePage['parent_key'] ?? null;
+    $activeMasterDataKey = $masterDataPage['key'] ?? $bridgeSourceTablePage['parent_key'] ?? $tunnelSourceTablePage['parent_key'] ?? null;
     $bridgeModule = $overview['bridge_module'] ?? null;
     $metadataModules = [
         ['key' => 'jembatan', 'label' => 'Jembatan', 'status' => $bridgeModule ? count($bridgeModule['fields']) . ' field' : 'Pending', 'fields' => $bridgeModule['fields'] ?? []],
-        ['key' => 'jalur', 'label' => 'Jalur', 'status' => 'Pending', 'fields' => []],
-        ['key' => 'fasilitas-operasi', 'label' => 'Fasilitas Operasi', 'status' => 'Pending', 'fields' => []],
-        ['key' => 'sertifikat', 'label' => 'Sertifikat', 'status' => 'Pending', 'fields' => []],
-        ['key' => 'gudang', 'label' => 'Gudang', 'status' => 'Pending', 'fields' => []],
+        ['key' => 'terowongan', 'label' => 'Terowongan', 'status' => 'Pending', 'fields' => []],
     ];
     $infrastructureDomains = $overview['infrastructure_domains'] ?? collect();
     $currentPage = $currentPage ?? ($isDocumentationOnly ? 'documentation' : 'overview');
@@ -2755,12 +2905,10 @@
     $pageMeta = [
         'overview' => ['title' => 'Dashboard', 'description' => 'Ringkasan operasional dan data inti.'],
         'documentation' => ['title' => 'Dokumentasi API', 'description' => 'Akses Swagger UI dan spesifikasi OpenAPI.'],
-        'quick-menu' => ['title' => 'Menu Penting', 'description' => 'Akses cepat ke fitur dan endpoint penting.'],
-        'module-status' => ['title' => 'Status Modul', 'description' => 'Status kesiapan modul inti aplikasi.'],
         'master-data' => ['title' => 'Master Data', 'description' => 'Tipe data dan record master data terbaru.'],
         'master-data-entity' => ['title' => $masterDataPage['label'] ?? 'Master Data', 'description' => 'Grid data aktif.'],
         'bridge-source-table' => ['title' => $bridgeSourceTablePage['label'] ?? 'Tabel Source Jembatan', 'description' => $bridgeSourceTablePage['description'] ?? 'Data tabel source dari dump SQL.'],
-        'monitoring' => ['title' => 'Monitoring', 'description' => 'Kesehatan sistem, trafik API, dan observability.'],
+        'tunnel-source-table' => ['title' => $tunnelSourceTablePage['label'] ?? 'Tabel Terowongan', 'description' => $tunnelSourceTablePage['description'] ?? 'Data tabel source Terowongan.'],
         'superadmin-users' => ['title' => $superadminUserPage['label'] ?? 'Manajemen User', 'description' => 'CRUD akun internal, role, dan kontrol akses dashboard.'],
         'superadmin-api-clients' => ['title' => $superadminApiClientPage['label'] ?? 'Bearer Key API', 'description' => 'Kelola client API dan generate bearer token dengan desain dashboard modern.'],
     ];
@@ -2822,20 +2970,6 @@
                             <div class="nav-copy"><strong>Beranda</strong></div>
                         </div>
                     </a>
-                    @if ($canViewMonitoring)
-                        <a class="nav-link {{ $currentPage === 'module-status' ? 'active' : '' }}" href="{{ route('dashboard.module-status') }}">
-                            <div class="nav-main">
-                                <svg class="icon" viewBox="0 0 24 24"><path d="M4 19h16"/><path d="M7 15V9"/><path d="M12 15V5"/><path d="M17 15v-3"/></svg>
-                                <div class="nav-copy"><strong>Status Modul</strong></div>
-                            </div>
-                        </a>
-                    @endif
-                    <a class="nav-link {{ $currentPage === 'quick-menu' ? 'active' : '' }}" href="{{ route('dashboard.quick-menu') }}">
-                        <div class="nav-main">
-                            <svg class="icon" viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h16"/></svg>
-                            <div class="nav-copy"><strong>Menu Penting</strong></div>
-                        </div>
-                    </a>
                 </div>
             @endif
         </div>
@@ -2844,15 +2978,20 @@
             <div class="nav-section">
                 @if ($canViewMasterData)
                     <p class="nav-title">Master Data</p>
-                    <p class="nav-subtitle">Menu Utama</p>
                     <div class="nav-list">
                         @foreach ($masterDataMenu as $item)
-                            <div class="nav-group">
-                                <a class="nav-link {{ in_array($currentPage, ['master-data-entity', 'bridge-source-table'], true) && $activeMasterDataKey === $item['key'] ? 'active' : '' }}" href="{{ $item['href'] }}">
+                            @php
+                                $isActiveMasterItem = in_array($currentPage, ['master-data-entity', 'bridge-source-table', 'tunnel-source-table'], true) && $activeMasterDataKey === $item['key'];
+                            @endphp
+                            <div class="nav-group {{ $isActiveMasterItem ? 'is-expanded' : '' }}" data-master-nav-group data-master-nav-key="{{ $item['key'] }}">
+                                <button class="nav-link {{ $isActiveMasterItem ? 'active' : '' }}" type="button" data-master-nav-toggle aria-expanded="{{ $isActiveMasterItem ? 'true' : 'false' }}">
                                     <div class="nav-main">
                                         @switch($item['key'])
                                             @case('jembatan')
                                                 <svg class="icon" viewBox="0 0 24 24"><path d="M4 18h16"/><path d="M6 18V9l3-3 3 3 3-3 3 3v9"/><path d="M9 12h6"/></svg>
+                                                @break
+                                            @case('terowongan')
+                                                <svg class="icon" viewBox="0 0 24 24"><path d="M4 18V9a8 8 0 0 1 16 0v9"/><path d="M8 18V9a4 4 0 0 1 8 0v9"/><path d="M3 18h18"/><path d="M6 13h12"/></svg>
                                                 @break
                                             @case('jalur')
                                                 <svg class="icon" viewBox="0 0 24 24"><path d="M7 4h10"/><path d="M8 4l-2 16"/><path d="M16 4l2 16"/><path d="M6.5 10h11"/><path d="M5.5 16h13"/></svg>
@@ -2871,12 +3010,22 @@
                                             <span>{{ $item['is_available'] ? number_format($item['record_count']) . ' data' : 'Siap diisi' }}</span>
                                         </div>
                                     </div>
-                                </a>
-                                @if (!empty($item['children']) && $activeMasterDataKey === $item['key'])
+                                    <svg class="nav-toggle-indicator" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"/></svg>
+                                </button>
+                                @if (!empty($item['children']))
                                     <div class="nav-children">
                                         @foreach ($item['children'] as $child)
-                                            <a class="nav-child-link {{ $currentPage === 'bridge-source-table' && ($bridgeSourceTablePage['table'] ?? null) === $child['table'] ? 'active' : '' }}" href="{{ $child['href'] }}">
-                                                {{ $child['table'] }} · {{ number_format($child['row_count']) }}
+                                            @php
+                                                $isPrimaryChild = ($child['type'] ?? null) === 'entity';
+                                                $isActiveChild = $isPrimaryChild
+                                                    ? ($currentPage === 'master-data-entity' && $activeMasterDataKey === $item['key'])
+                                                    : (
+                                                        ($currentPage === 'bridge-source-table' && ($bridgeSourceTablePage['table'] ?? null) === ($child['table'] ?? null))
+                                                        || ($currentPage === 'tunnel-source-table' && ($tunnelSourceTablePage['table'] ?? null) === ($child['table'] ?? null))
+                                                    );
+                                            @endphp
+                                            <a class="nav-child-link {{ $isActiveChild ? 'active' : '' }}" href="{{ $child['href'] }}">
+                                                {{ $child['label'] ?? $child['table'] }} · {{ number_format($child['row_count']) }}
                                             </a>
                                         @endforeach
                                     </div>
@@ -2888,21 +3037,19 @@
             </div>
 
             <div class="nav-section">
-                <p class="nav-title">Integrasi</p>
+                <p class="nav-title">Dokumentasi</p>
                 <div class="nav-list">
-                    @if ($canViewMonitoring)
-                        <a class="nav-link {{ $currentPage === 'monitoring' ? 'active' : '' }}" href="{{ route('dashboard.monitoring') }}">
-                            <div class="nav-main">
-                                <svg class="icon" viewBox="0 0 24 24"><path d="M3 12h4l2.5-6 5 12 2.5-6H21"/></svg>
-                                <div class="nav-copy"><strong>Monitoring</strong></div>
-                            </div>
-                        </a>
-                    @endif
                     @if ($canViewDocumentation)
                         <a class="nav-link {{ $currentPage === 'documentation' ? 'active' : '' }}" href="{{ route('dashboard.documentation') }}">
                             <div class="nav-main">
                                 <svg class="icon" viewBox="0 0 24 24"><path d="M8 4h8"/><path d="M8 20h8"/><path d="M5 8h14"/><path d="M5 16h14"/><path d="M7 8v8"/><path d="M17 8v8"/></svg>
                                 <div class="nav-copy"><strong>Dokumentasi API</strong></div>
+                            </div>
+                        </a>
+                        <a class="nav-link" href="{{ route('docs.openapi') }}" target="_blank" rel="noreferrer">
+                            <div class="nav-main">
+                                <svg class="icon" viewBox="0 0 24 24"><path d="M8 7h8"/><path d="M8 12h8"/><path d="M8 17h5"/><path d="M5 3h14v18H5z"/></svg>
+                                <div class="nav-copy"><strong>OpenAPI Spec</strong></div>
                             </div>
                         </a>
                     @endif
@@ -2936,19 +3083,6 @@
                 </div>
             @endif
         @endif
-
-        <div class="nav-section">
-            <div class="nav-list">
-                @if (! $isDocumentationOnly)
-                    <a class="nav-link" href="{{ route('docs.openapi') }}">
-                        <div class="nav-main">
-                            <svg class="icon" viewBox="0 0 24 24"><path d="M8 7h8"/><path d="M8 12h8"/><path d="M8 17h5"/><path d="M5 3h14v18H5z"/></svg>
-                            <div class="nav-copy"><strong>OpenAPI Spec</strong></div>
-                        </div>
-                    </a>
-                @endif
-            </div>
-        </div>
 
         <div class="sidebar-action">
             <button class="sidebar-toggle" type="button" data-sidebar-toggle aria-label="Collapse sidebar" aria-expanded="true">
@@ -3129,93 +3263,6 @@
                     </div>
                 </section>
             @endif
-        @endif
-
-        @if ($currentPage === 'overview' && $hasOperationalDashboard)
-            <section class="grid stats section" id="beranda">
-                <div class="metric card">
-                    <div class="card-body">
-                        <span>Master data aktif</span>
-                        <strong>{{ number_format($metrics['active_master_data_records']) }}</strong>
-                        <small>{{ number_format($metrics['master_data_types']) }} tipe data tersedia</small>
-                    </div>
-                </div>
-                <div class="metric card">
-                    <div class="card-body">
-                        <span>Client API aktif</span>
-                        <strong>{{ number_format($metrics['active_api_clients']) }}</strong>
-                        <small>{{ number_format($metrics['access_tokens']) }} token tersimpan</small>
-                    </div>
-                </div>
-                <div class="metric card">
-                    <div class="card-body">
-                        <span>Request hari ini</span>
-                        <strong>{{ number_format($metrics['request_logs_today']) }}</strong>
-                        <small>{{ number_format($metrics['audit_logs']) }} audit log tercatat</small>
-                    </div>
-                </div>
-            </section>
-        @endif
-
-        @if ($currentPage === 'overview' && $canViewFullDiagnostics)
-            <section class="section" id="akses-role">
-                <div class="section-header">
-                    <div>
-                        <h2>Matriks Role</h2>
-                    </div>
-                </div>
-                <div class="grid overview-grid">
-                    @foreach ($overview['user_roles'] as $role)
-                        <article class="overview-card">
-                            {!! $tag('User', number_format($role['count']), 'user') !!}
-                            <h3 style="margin-top: 14px;">{{ $role['label'] }}</h3>
-                        </article>
-                    @endforeach
-                </div>
-            </section>
-        @endif
-
-        @if ($currentPage === 'quick-menu')
-            <section class="section" id="menu-penting">
-                <div class="section-header">
-                    <div>
-                        <h2>Menu Penting</h2>
-                    </div>
-                </div>
-                <div class="card">
-                    <div class="card-body menu-list">
-                        @foreach ($quickMenu as $item)
-                            <a class="menu-item" href="{{ $item['href'] }}" @if(\Illuminate\Support\Str::startsWith($item['href'], '/api/')) target="_blank" rel="noreferrer" @endif>
-                                <div class="menu-main"><strong>{{ $item['label'] }}</strong></div>
-                                {!! $tag($item['tag'], null, $item['tag'] === 'API' ? 'api' : ($item['tag'] === 'Docs' ? 'book' : ($item['tag'] === 'Spec' ? 'file' : 'tag'))) !!}
-                            </a>
-                        @endforeach
-                    </div>
-                </div>
-            </section>
-        @endif
-
-        @if ($currentPage === 'module-status' && $canViewMonitoring)
-            <section class="section" id="status-modul">
-                <div class="section-header">
-                    <div>
-                        <h2>Status Modul</h2>
-                    </div>
-                </div>
-                <div class="grid overview-grid">
-                    @foreach ($overview['modules'] as $module)
-                        <article class="overview-card">
-                            {!! $tag('Status', $module['status'], $module['status'] === 'ready' ? 'check' : 'clock', 'status '.$module['status']) !!}
-                            <strong>{{ $module['percentage'] }}%</strong>
-                            <h3 style="margin-top: 12px;">{{ $module['label'] }}</h3>
-                            <div class="meter">
-                                <span style="width: {{ $module['percentage'] }}%"></span>
-                            </div>
-                            <small>{{ $module['completed'] }} dari {{ $module['total'] }} indikator terpenuhi</small>
-                        </article>
-                    @endforeach
-                </div>
-            </section>
         @endif
 
         @if ($currentPage === 'superadmin-users' && $isSuperadmin && $superadminUserPage)
@@ -3503,6 +3550,58 @@
                         </div>
                     </div>
                 </section>
+            @elseif (($masterDataPage['mode'] ?? 'master-data') === 'tunnel-source')
+                <section class="section">
+                    <div class="table-card" data-tunnel-source-app='@json($masterDataPage)'>
+                        <div class="master-data-toolbar">
+                            <div class="master-data-toolbar-main">
+                                <label class="search-field" aria-label="Cari data terowongan">
+                                    <svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+                                    <input type="search" placeholder="Cari nama, nomor BH, kode aset, atau KM/HM" data-grid-search>
+                                </label>
+                            </div>
+                            <div class="toolbar-actions">
+                                {!! $tag('Data', number_format($masterDataPage['records_count']), 'data', 'menu-tag', ' data-grid-count') !!}
+                                {!! $tag('DB', 'prasarana_tunnel', 'data') !!}
+                            </div>
+                        </div>
+
+                        <div class="table-body">
+                            <div class="master-data-table-wrap">
+                                <table class="master-data-table compact-data-table">
+                                    <thead data-grid-head></thead>
+                                    <tbody data-grid-body>
+                                        <tr>
+                                            <td colspan="10" class="grid-loading">Memuat data terowongan...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="pagination-bar">
+                            <div class="pagination-meta">
+                                <div class="rows-per-page">
+                                    <span class="rows-label">Baris</span>
+                                    <label class="rows-select-wrap" aria-label="Jumlah data per halaman">
+                                        <select class="rows-select" data-grid-per-page>
+                                            <option value="10">10</option>
+                                            <option value="25">25</option>
+                                            <option value="50">50</option>
+                                        </select>
+                                        <svg class="rows-select-icon" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                    </label>
+                                </div>
+                                <div class="helper-text" data-grid-summary>Menyiapkan data terowongan...</div>
+                            </div>
+                            <div class="pagination-controls">
+                                <button class="pagination-button" type="button" data-grid-prev>Sebelumnya</button>
+                                <span class="pagination-page" data-grid-page>Halaman 1</span>
+                                <button class="pagination-button" type="button" data-grid-next>Berikutnya</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
             @else
                 <section class="section">
                     <div class="table-card" data-master-data-app='@json($masterDataPage)'>
@@ -3629,10 +3728,80 @@
             </section>
         @endif
 
-        @if ($currentPage === 'monitoring' && $hasOperationalDashboard)
+        @if ($currentPage === 'tunnel-source-table' && $canViewMasterData && $tunnelSourceTablePage)
+            <section class="section">
+                <div class="card" style="margin-bottom: 14px;">
+                    <div class="card-body">
+                        <div class="section-header">
+                            <div>
+                                <h2>{{ $tunnelSourceTablePage['table'] }}</h2>
+                                <p>{{ $tunnelSourceTablePage['description'] }}</p>
+                            </div>
+                            {!! $tag('Baris', number_format($tunnelSourceTablePage['row_count']), 'table') !!}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-card" data-tunnel-source-table-app='@json($tunnelSourceTablePage)'>
+                    <div class="master-data-toolbar">
+                        <div class="master-data-toolbar-main">
+                            <label class="search-field" aria-label="Cari baris tabel terowongan">
+                                <svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+                                <input type="search" placeholder="Cari nilai pada tabel ini" data-grid-search>
+                            </label>
+                        </div>
+                        <div class="toolbar-actions">
+                            {!! $tag('Data', number_format($tunnelSourceTablePage['row_count']), 'data', 'menu-tag', ' data-grid-count') !!}
+                            <a class="action-button" href="{{ $tunnelSourceTablePage['template_endpoint'] }}">Template CSV</a>
+                            <button class="action-button" type="button" data-tunnel-table-import-trigger>Import CSV</button>
+                            <a class="action-button" href="{{ $tunnelSourceTablePage['export_endpoint'] }}">Export CSV</a>
+                            <button class="action-button primary" type="button" data-grid-create>Tambah</button>
+                            <input type="file" accept=".csv,text/csv" data-tunnel-table-import-file hidden>
+                        </div>
+                    </div>
+
+                    <div class="table-body">
+                        <div class="master-data-table-wrap">
+                            <table class="master-data-table compact-data-table">
+                                <thead data-grid-head></thead>
+                                <tbody data-grid-body>
+                                    <tr>
+                                        <td colspan="8" class="grid-loading">Memuat data tabel terowongan...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="pagination-bar">
+                        <div class="pagination-meta">
+                            <div class="rows-per-page">
+                                <span class="rows-label">Baris</span>
+                                <label class="rows-select-wrap" aria-label="Jumlah data per halaman">
+                                    <select class="rows-select" data-grid-per-page>
+                                        <option value="10">10</option>
+                                        <option value="25">25</option>
+                                        <option value="50">50</option>
+                                    </select>
+                                    <svg class="rows-select-icon" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                </label>
+                            </div>
+                            <div class="helper-text" data-grid-summary>Menyiapkan data...</div>
+                        </div>
+                        <div class="pagination-controls">
+                            <button class="pagination-button" type="button" data-grid-prev>Sebelumnya</button>
+                            <span class="pagination-page" data-grid-page>Halaman 1</span>
+                            <button class="pagination-button" type="button" data-grid-next>Berikutnya</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        @endif
+
+        @if ($currentPage === 'overview' && $hasOperationalDashboard)
         <section class="grid workspace section">
-            <div class="stack">
-                @if ($currentPage === 'monitoring' && $canViewMonitoring)
+            @if ($canViewMonitoring)
+                <div class="stack">
                     <div class="card" id="monitoring">
                         <div class="card-body">
                             <div class="section-header">
@@ -3678,12 +3847,11 @@
                             </div>
                         </div>
                     </div>
-                @endif
-
-            </div>
+                </div>
+            @endif
 
             <div class="stack">
-                @if ($currentPage === 'monitoring' && $canViewMonitoring)
+                @if ($canViewMonitoring)
                     <div class="table-card">
                         <div class="table-head">
                             <div>
@@ -3767,67 +3935,27 @@
                             </table>
                         </div>
                     </div>
+
+                    <div class="card" id="menu-penting">
+                        <div class="card-body">
+                            <div class="section-header">
+                                <div>
+                                    <h2>Menu Penting</h2>
+                                </div>
+                            </div>
+                            <div class="menu-list">
+                                @foreach ($quickMenu as $item)
+                                    <a class="menu-item" href="{{ $item['href'] }}" @if(\Illuminate\Support\Str::startsWith($item['href'], '/api/')) target="_blank" rel="noreferrer" @endif>
+                                        <div class="menu-main"><strong>{{ $item['label'] }}</strong></div>
+                                        {!! $tag($item['tag'], null, $item['tag'] === 'API' ? 'api' : ($item['tag'] === 'Docs' ? 'book' : ($item['tag'] === 'Spec' ? 'file' : 'tag'))) !!}
+                                    </a>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
                 @endif
             </div>
         </section>
-        @endif
-
-        @if ($currentPage === 'overview' && $canViewFullDiagnostics)
-            <section class="section">
-                <div class="table-card">
-                    <div class="table-head">
-                        <div>
-                            <h2>Audit Log dan Endpoint API</h2>
-                        </div>
-                        {!! $tag('Route', $overview['api_routes']->count(), 'route') !!}
-                    </div>
-                    <div class="table-body">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Audit</th>
-                                    <th>Objek</th>
-                                    <th>Request ID</th>
-                                    <th>Waktu</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse ($overview['recent_audits'] as $audit)
-                                    <tr>
-                                        <td class="mono">{{ $audit['action'] }}</td>
-                                        <td>{{ $audit['auditable_type'] }} #{{ $audit['auditable_id'] }}</td>
-                                        <td class="mono">{{ $audit['request_id'] ?? '-' }}</td>
-                                        <td>{{ optional($audit['created_at'])->diffForHumans() }}</td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="4" class="empty">Belum ada audit log yang tercatat.</td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-
-                        <table style="margin-top: 8px;">
-                            <thead>
-                                <tr>
-                                    <th>Method</th>
-                                    <th>URI</th>
-                                    <th>Route Name</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach ($overview['api_routes'] as $route)
-                                    <tr>
-                                        <td class="mono">{{ implode(', ', $route['methods']) }}</td>
-                                        <td class="mono">{{ $route['uri'] }}</td>
-                                        <td>{{ $route['name'] }}</td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
         @endif
 
         @if ($currentPage === 'superadmin-users' && $isSuperadmin && $superadminUserPage)
@@ -4285,6 +4413,212 @@
                         </form>
                     </div>
                 </div>
+            @elseif (($masterDataPage['mode'] ?? 'master-data') === 'tunnel-source')
+                <div class="modal" data-tunnel-view-modal aria-hidden="true">
+                    <div class="modal-backdrop" data-modal-close></div>
+                    <div class="modal-panel modal-panel-xl">
+                        <div class="modal-head">
+                            <div>
+                                <h2>Detail {{ $masterDataPage['label'] }}</h2>
+                                <p data-tunnel-view-subtitle>Memuat data...</p>
+                            </div>
+                            <button class="icon-button" type="button" data-modal-close aria-label="Tutup detail">
+                                <svg class="icon" viewBox="0 0 24 24"><path d="M6 6 18 18"/><path d="M18 6 6 18"/></svg>
+                            </button>
+                        </div>
+                        <div class="modal-body" data-tunnel-view-content></div>
+                    </div>
+                </div>
+
+                <div class="modal" data-tunnel-form-modal aria-hidden="true">
+                    <div class="modal-backdrop" data-modal-close></div>
+                    <div class="modal-panel modal-panel-xl">
+                        <div class="modal-head">
+                            <div>
+                                <h2 data-tunnel-form-title>Tambah {{ $masterDataPage['label'] }}</h2>
+                                <p data-tunnel-form-subtitle>Data disimpan ke prasarana_tunnel.</p>
+                            </div>
+                            <button class="icon-button" type="button" data-modal-close aria-label="Tutup form">
+                                <svg class="icon" viewBox="0 0 24 24"><path d="M6 6 18 18"/><path d="M18 6 6 18"/></svg>
+                            </button>
+                        </div>
+                        <form data-tunnel-source-form>
+                            <div class="modal-body">
+                                <div class="feedback" data-tunnel-form-feedback hidden></div>
+                                <div class="form-stack">
+                                    <section class="form-section">
+                                        <div class="section-header compact">
+                                            <div>
+                                                <h3>Identitas</h3>
+                                            </div>
+                                        </div>
+                                        <div class="form-grid">
+                                            <div class="field">
+                                                <label for="tunnel-kode-aset">Kode Aset</label>
+                                                <input id="tunnel-kode-aset" name="kode_aset" type="text">
+                                            </div>
+                                            <div class="field">
+                                                <label for="tunnel-nomor-bh">No. BH</label>
+                                                <input id="tunnel-nomor-bh" name="nomor_bh" type="text">
+                                            </div>
+                                            <div class="field full">
+                                                <label for="tunnel-nama">Nama Terowongan</label>
+                                                <input id="tunnel-nama" name="nama_terowongan" type="text" required>
+                                            </div>
+                                            <div class="field">
+                                                <label for="tunnel-wilayah">Wilayah Kerja</label>
+                                                <input id="tunnel-wilayah" name="id_wilayah_kerja" type="text">
+                                            </div>
+                                            <div class="field">
+                                                <label for="tunnel-lintas">Lintas</label>
+                                                <input id="tunnel-lintas" name="id_lintas" type="text">
+                                            </div>
+                                            <div class="field">
+                                                <label for="tunnel-kmhm">KM/HM</label>
+                                                <input id="tunnel-kmhm" name="km_hm" type="text">
+                                            </div>
+                                        </div>
+                                    </section>
+
+                                    <section class="form-section">
+                                        <div class="section-header compact">
+                                            <div>
+                                                <h3>Lokasi dan Dimensi</h3>
+                                            </div>
+                                        </div>
+                                        <div class="coordinate-input-grid">
+                                            <div class="field">
+                                                <label for="tunnel-lat">Latitude</label>
+                                                <input id="tunnel-lat" name="lat" type="number" min="-90" max="90" step="0.0000001">
+                                            </div>
+                                            <div class="field">
+                                                <label for="tunnel-long">Longitude</label>
+                                                <input id="tunnel-long" name="long" type="number" min="-180" max="180" step="0.0000001">
+                                            </div>
+                                            <div class="field coordinate-action-field">
+                                                <label>&nbsp;</label>
+                                                <button class="action-button" type="button" data-tunnel-coordinate-open>Koordinat</button>
+                                            </div>
+                                        </div>
+                                        <div class="form-grid" style="margin-top: 12px;">
+                                            <div class="field">
+                                                <label for="tunnel-panjang">Panjang (m)</label>
+                                                <input id="tunnel-panjang" name="panjang_m" type="number" min="0" step="0.01">
+                                            </div>
+                                            <div class="field">
+                                                <label for="tunnel-tahun-bangunan">Tahun Bangunan</label>
+                                                <input id="tunnel-tahun-bangunan" name="tahun_bangunan" type="number" min="1800">
+                                            </div>
+                                            <div class="field">
+                                                <label for="tunnel-tahun-operasi">Tahun Operasi</label>
+                                                <input id="tunnel-tahun-operasi" name="tahun_operasi" type="number" min="1800">
+                                            </div>
+                                            <div class="field">
+                                                <label for="tunnel-umur">Umur</label>
+                                                <input id="tunnel-umur" name="umur_tahun" type="number" min="0">
+                                            </div>
+                                        </div>
+                                    </section>
+
+                                    <section class="form-section">
+                                        <div class="section-header compact">
+                                            <div>
+                                                <h3>Status</h3>
+                                            </div>
+                                        </div>
+                                        <div class="form-grid">
+                                            <div class="field">
+                                                <label for="tunnel-status-operasi">Status Operasi</label>
+                                                <input id="tunnel-status-operasi" name="status_operasi" type="text">
+                                            </div>
+                                            <div class="field">
+                                                <label for="tunnel-status-aset">Status Aset</label>
+                                                <input id="tunnel-status-aset" name="status_aset" type="text">
+                                            </div>
+                                            <div class="field">
+                                                <label for="tunnel-kondisi">Kondisi Terakhir</label>
+                                                <input id="tunnel-kondisi" name="kondisi_terakhir" type="text">
+                                            </div>
+                                            <div class="field">
+                                                <label for="tunnel-inspeksi">Tanggal Inspeksi</label>
+                                                <input id="tunnel-inspeksi" name="tgl_inspeksi_terakhir" type="date">
+                                            </div>
+                                        </div>
+                                    </section>
+
+                                    <section class="form-section">
+                                        <div class="section-header compact">
+                                            <div>
+                                                <h3>Detail Tambahan</h3>
+                                            </div>
+                                        </div>
+                                        <div class="form-grid">
+                                            <div class="field full">
+                                                <label for="tunnel-structure-json">Structure JSON</label>
+                                                <textarea id="tunnel-structure-json" name="structure_json" spellcheck="false">{}</textarea>
+                                            </div>
+                                            <div class="field full">
+                                                <label for="tunnel-specs-json">Specs JSON</label>
+                                                <textarea id="tunnel-specs-json" name="specs_json" spellcheck="false">{}</textarea>
+                                            </div>
+                                            <div class="field full">
+                                                <label for="tunnel-docs-json">Docs JSON</label>
+                                                <textarea id="tunnel-docs-json" name="docs_json" spellcheck="false">{}</textarea>
+                                            </div>
+                                        </div>
+                                    </section>
+                                </div>
+                            </div>
+                            <div class="modal-actions">
+                                <button class="action-button" type="button" data-modal-close>Batal</button>
+                                <button class="action-button primary" type="submit" data-tunnel-form-submit>Simpan</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="modal" data-tunnel-coordinate-modal aria-hidden="true">
+                    <div class="modal-backdrop" data-modal-close></div>
+                    <div class="modal-panel modal-panel-xl">
+                        <div class="modal-head">
+                            <div>
+                                <h2>Koordinat</h2>
+                                <p>Pilih posisi dari center peta.</p>
+                            </div>
+                            <button class="icon-button" type="button" data-modal-close aria-label="Tutup peta koordinat">
+                                <svg class="icon" viewBox="0 0 24 24"><path d="M6 6 18 18"/><path d="M18 6 6 18"/></svg>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="coordinate-picker">
+                                <form class="coordinate-search" data-coordinate-search-form>
+                                    <label class="search-field" aria-label="Cari alamat">
+                                        <svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+                                        <input type="search" placeholder="Cari alamat atau lokasi" data-coordinate-search-input>
+                                    </label>
+                                    <button class="action-button" type="submit">Cari</button>
+                                </form>
+                                <div class="feedback" data-coordinate-feedback hidden></div>
+                                <div class="coordinate-map-shell">
+                                    <div class="coordinate-map" data-coordinate-map></div>
+                                    <div class="coordinate-spotlight" aria-hidden="true">
+                                        <span></span>
+                                    </div>
+                                    <div class="coordinate-live">
+                                        <span>Lat</span>
+                                        <strong data-coordinate-live-lat>-</strong>
+                                        <span>Lon</span>
+                                        <strong data-coordinate-live-lon>-</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-actions">
+                            <button class="action-button" type="button" data-modal-close>Batal</button>
+                            <button class="action-button primary" type="button" data-coordinate-apply>Terapkan</button>
+                        </div>
+                    </div>
+                </div>
             @else
                 <div class="modal" data-view-modal aria-hidden="true">
                     <div class="modal-backdrop" data-modal-close></div>
@@ -4404,6 +4738,49 @@
                         </button>
                     </div>
                     <div class="modal-body" data-bridge-source-table-view-content></div>
+                </div>
+            </div>
+        @endif
+
+        @if ($currentPage === 'tunnel-source-table' && $canViewMasterData && $tunnelSourceTablePage)
+            <div class="modal" data-tunnel-source-table-view-modal aria-hidden="true">
+                <div class="modal-backdrop" data-modal-close></div>
+                <div class="modal-panel modal-panel-xl">
+                    <div class="modal-head">
+                        <div>
+                            <h2>Detail {{ $tunnelSourceTablePage['table'] }}</h2>
+                            <p data-tunnel-source-table-view-subtitle>Memuat data...</p>
+                        </div>
+                        <button class="icon-button" type="button" data-modal-close aria-label="Tutup detail">
+                            <svg class="icon" viewBox="0 0 24 24"><path d="M6 6 18 18"/><path d="M18 6 6 18"/></svg>
+                        </button>
+                    </div>
+                    <div class="modal-body" data-tunnel-source-table-view-content></div>
+                </div>
+            </div>
+
+            <div class="modal" data-tunnel-source-table-form-modal aria-hidden="true">
+                <div class="modal-backdrop" data-modal-close></div>
+                <div class="modal-panel modal-panel-xl">
+                    <div class="modal-head">
+                        <div>
+                            <h2 data-tunnel-source-table-form-title>Tambah {{ $tunnelSourceTablePage['table'] }}</h2>
+                            <p data-tunnel-source-table-form-subtitle>Input row baru langsung ke database prasarana_tunnel.</p>
+                        </div>
+                        <button class="icon-button" type="button" data-modal-close aria-label="Tutup form">
+                            <svg class="icon" viewBox="0 0 24 24"><path d="M6 6 18 18"/><path d="M18 6 6 18"/></svg>
+                        </button>
+                    </div>
+                    <form data-tunnel-source-table-form>
+                        <div class="modal-body">
+                            <div class="feedback" data-tunnel-source-table-form-feedback hidden></div>
+                            <div class="form-stack" data-tunnel-source-table-form-fields></div>
+                        </div>
+                        <div class="modal-actions">
+                            <button class="action-button" type="button" data-modal-close>Batal</button>
+                            <button class="action-button primary" type="submit" data-tunnel-source-table-form-submit>Simpan</button>
+                        </div>
+                    </form>
                 </div>
             </div>
         @endif
@@ -4678,6 +5055,47 @@
         const userMenu = document.querySelector('.user-menu');
         const desktopBreakpoint = window.matchMedia('(min-width: 1181px)');
         const storageKey = 'dashboard-sidebar-collapsed';
+        const masterNavStorageKey = 'dashboard-master-nav-expanded';
+        const masterNavGroups = Array.from(document.querySelectorAll('[data-master-nav-group]'));
+
+        const readMasterNavState = () => {
+            try {
+                const parsed = JSON.parse(window.localStorage.getItem(masterNavStorageKey) || '{}');
+
+                return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+            } catch {
+                return {};
+            }
+        };
+
+        const writeMasterNavState = (state) => {
+            window.localStorage.setItem(masterNavStorageKey, JSON.stringify(state));
+        };
+
+        const syncMasterNavGroup = (group, expanded) => {
+            group.classList.toggle('is-expanded', expanded);
+            group.querySelector('[data-master-nav-toggle]')?.setAttribute('aria-expanded', String(expanded));
+        };
+
+        if (masterNavGroups.length) {
+            const masterNavState = readMasterNavState();
+
+            masterNavGroups.forEach((group) => {
+                const key = group.dataset.masterNavKey || '';
+                const toggle = group.querySelector('[data-master-nav-toggle]');
+                const hasSavedState = Object.prototype.hasOwnProperty.call(masterNavState, key);
+                const expanded = hasSavedState ? masterNavState[key] === true : group.classList.contains('is-expanded');
+
+                syncMasterNavGroup(group, expanded);
+
+                toggle?.addEventListener('click', () => {
+                    const nextExpanded = !group.classList.contains('is-expanded');
+                    masterNavState[key] = nextExpanded;
+                    writeMasterNavState(masterNavState);
+                    syncMasterNavGroup(group, nextExpanded);
+                });
+            });
+        }
 
         const syncSidebarState = (collapsed) => {
             body.classList.toggle('sidebar-collapsed', collapsed && desktopBreakpoint.matches);
@@ -4909,6 +5327,8 @@
             updated_at: 'Diperbarui',
             synced_at: 'Sinkron',
             'data.bridge_number': 'No. Jembatan',
+            'data.tunnel_number': 'No. Terowongan',
+            'data.tunnel_kind': 'Jenis Terowongan',
             'data.lintas_code': 'Lintas',
             'data.km_hm': 'KM/HM',
         };
@@ -5313,12 +5733,13 @@
         };
 
         const fetchJson = async (url, options = {}) => {
+            const isFormData = options.body instanceof FormData;
             const response = await fetch(url, {
                 ...options,
                 headers: {
                     Accept: 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
-                    ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+                    ...(options.body && !isFormData ? { 'Content-Type': 'application/json' } : {}),
                     ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {}),
                     ...(options.headers || {}),
                 },
@@ -5659,6 +6080,965 @@
                 showFormFeedback(extractErrorMessage(errorPayload));
             } finally {
                 setLoadingState(false);
+            }
+        });
+    })();
+
+    (() => {
+        const root = document.querySelector('[data-tunnel-source-app]');
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        const body = document.body;
+
+        if (!root) {
+            return;
+        }
+
+        const config = JSON.parse(root.dataset.tunnelSourceApp || '{}');
+        const columns = Array.isArray(config.columns) && config.columns.length > 0
+            ? config.columns
+            : ['nama_terowongan', 'nomor_bh', 'km_hm', 'status_operasi', 'updated_at'];
+        const columnLabels = {
+            tunnel_id: 'Tunnel ID',
+            kode_aset: 'Kode Aset',
+            nomor_bh: 'No. BH',
+            nama_terowongan: 'Nama Terowongan',
+            id_wilayah_kerja: 'Wilayah Kerja',
+            id_lintas: 'Lintas',
+            km_hm: 'KM/HM',
+            panjang_m: 'Panjang (m)',
+            tahun_bangunan: 'Tahun Bangunan',
+            tahun_operasi: 'Tahun Operasi',
+            umur_tahun: 'Umur',
+            status_operasi: 'Status Operasi',
+            status_aset: 'Status Aset',
+            kondisi_terakhir: 'Kondisi',
+            tgl_inspeksi_terakhir: 'Inspeksi Terakhir',
+            created_at: 'Dibuat',
+            updated_at: 'Diperbarui',
+        };
+
+        const gridHead = root.querySelector('[data-grid-head]');
+        const gridBody = root.querySelector('[data-grid-body]');
+        const gridSearch = root.querySelector('[data-grid-search]');
+        const gridPerPage = root.querySelector('[data-grid-per-page]');
+        const gridCount = root.querySelector('[data-grid-count]');
+        const gridSummary = root.querySelector('[data-grid-summary]');
+        const gridPage = root.querySelector('[data-grid-page]');
+        const prevButton = root.querySelector('[data-grid-prev]');
+        const nextButton = root.querySelector('[data-grid-next]');
+        const createButton = root.querySelector('[data-grid-create]');
+        const importButton = root.querySelector('[data-tunnel-import-trigger]');
+        const importFile = root.querySelector('[data-tunnel-import-file]');
+        const viewModal = document.querySelector('[data-tunnel-view-modal]');
+        const viewSubtitle = viewModal?.querySelector('[data-tunnel-view-subtitle]');
+        const viewContent = viewModal?.querySelector('[data-tunnel-view-content]');
+        const formModal = document.querySelector('[data-tunnel-form-modal]');
+        const form = formModal?.querySelector('[data-tunnel-source-form]');
+        const formTitle = formModal?.querySelector('[data-tunnel-form-title]');
+        const formSubtitle = formModal?.querySelector('[data-tunnel-form-subtitle]');
+        const formFeedback = formModal?.querySelector('[data-tunnel-form-feedback]');
+        const submitButton = formModal?.querySelector('[data-tunnel-form-submit]');
+        const coordinateButton = formModal?.querySelector('[data-tunnel-coordinate-open]');
+        const coordinateModal = document.querySelector('[data-tunnel-coordinate-modal]');
+        const coordinateMapCanvas = coordinateModal?.querySelector('[data-coordinate-map]');
+        const coordinateSearchForm = coordinateModal?.querySelector('[data-coordinate-search-form]');
+        const coordinateSearchInput = coordinateModal?.querySelector('[data-coordinate-search-input]');
+        const coordinateFeedback = coordinateModal?.querySelector('[data-coordinate-feedback]');
+        const coordinateApplyButton = coordinateModal?.querySelector('[data-coordinate-apply]');
+        const coordinateLiveLat = coordinateModal?.querySelector('[data-coordinate-live-lat]');
+        const coordinateLiveLon = coordinateModal?.querySelector('[data-coordinate-live-lon]');
+
+        const state = {
+            page: 1,
+            perPage: Number(gridPerPage?.value || 10),
+            search: '',
+            loading: false,
+            rows: [],
+            pagination: {
+                current_page: 1,
+                last_page: 1,
+                total: Number(config.records_count || 0),
+                per_page: Number(gridPerPage?.value || 10),
+            },
+        };
+        let searchTimer = null;
+        let editingTunnelId = null;
+        let coordinateMap = null;
+
+        const escapeHtml = (value) => String(value ?? '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#039;');
+
+        const prettify = (field) => columnLabels[field]
+            || field.replaceAll('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
+
+        const isNameKey = (key) => key === 'nama' || key.startsWith('nama_') || key.includes('.nama_');
+
+        const getValue = (object, path) => path.split('.').reduce((carry, segment) => {
+            if (carry === null || carry === undefined) {
+                return null;
+            }
+
+            return carry[segment] ?? null;
+        }, object);
+
+        const formatText = (value) => {
+            if (value === null || value === undefined || value === '') {
+                return '-';
+            }
+
+            if (typeof value === 'object') {
+                return JSON.stringify(value);
+            }
+
+            return String(value);
+        };
+
+        const formatNumber = (value, suffix = '') => {
+            if (value === null || value === undefined || value === '') {
+                return '-';
+            }
+
+            const number = Number(value);
+
+            if (Number.isNaN(number)) {
+                return String(value);
+            }
+
+            return `${new Intl.NumberFormat('id-ID', { maximumFractionDigits: 2 }).format(number)}${suffix}`;
+        };
+
+        const formatDate = (value) => {
+            if (!value) {
+                return '-';
+            }
+
+            const date = new Date(value);
+
+            if (Number.isNaN(date.getTime())) {
+                return String(value);
+            }
+
+            return new Intl.DateTimeFormat('id-ID', {
+                dateStyle: 'medium',
+                timeStyle: value.length > 10 ? 'short' : undefined,
+                timeZone: 'UTC',
+            }).format(date);
+        };
+
+        const formatValue = (value, key = '') => {
+            if (isNameKey(key) && value !== null && value !== undefined && value !== '') {
+                return String(value).toUpperCase();
+            }
+
+            if (key === 'panjang_m') {
+                return formatNumber(value, ' m');
+            }
+
+            if (key === 'lat' || key === 'long') {
+                return formatNumber(value);
+            }
+
+            if (key.endsWith('_at') || key.startsWith('tgl_')) {
+                return formatDate(value);
+            }
+
+            return formatText(value);
+        };
+
+        const fetchJson = async (url, options = {}) => {
+            const response = await fetch(url, {
+                ...options,
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+                    ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {}),
+                    ...(options.headers || {}),
+                },
+            });
+            const payload = await response.json().catch(() => null);
+
+            if (!response.ok || (payload && payload.success === false)) {
+                throw payload || { message: 'Permintaan gagal.' };
+            }
+
+            return payload;
+        };
+
+        const extractErrorMessage = (payload) => {
+            if (!payload) {
+                return 'Terjadi kesalahan saat memproses data terowongan.';
+            }
+
+            if (payload.error?.details && typeof payload.error.details === 'object') {
+                return Object.values(payload.error.details).flat().join('\n');
+            }
+
+            if (payload.errors && typeof payload.errors === 'object') {
+                return Object.values(payload.errors).flat().join('\n');
+            }
+
+            return payload.message || 'Terjadi kesalahan saat memproses data terowongan.';
+        };
+
+        const setLoadingState = (loading) => {
+            state.loading = loading;
+
+            if (submitButton) {
+                submitButton.disabled = loading;
+            }
+
+            if (importButton) {
+                importButton.disabled = loading;
+            }
+        };
+
+        const clearFormFeedback = () => {
+            if (!formFeedback) {
+                return;
+            }
+
+            formFeedback.hidden = true;
+            formFeedback.textContent = '';
+        };
+
+        const showFormFeedback = (message) => {
+            if (!formFeedback) {
+                return;
+            }
+
+            formFeedback.hidden = false;
+            formFeedback.textContent = message;
+        };
+
+        const getField = (name) => form?.querySelector(`[name="${name}"]`);
+
+        const toNullable = (value) => {
+            const trimmed = String(value ?? '').trim();
+
+            return trimmed === '' ? null : trimmed;
+        };
+
+        const parseJsonField = (name) => {
+            const raw = String(getField(name)?.value ?? '').trim();
+
+            if (raw === '') {
+                return {};
+            }
+
+            return JSON.parse(raw);
+        };
+
+        const resetForm = () => {
+            form?.reset();
+            editingTunnelId = null;
+
+            if (formTitle) {
+                formTitle.textContent = `Tambah ${config.label || 'Terowongan'}`;
+            }
+
+            if (formSubtitle) {
+                formSubtitle.textContent = 'Data disimpan ke prasarana_tunnel.';
+            }
+
+            ['structure_json', 'specs_json', 'docs_json'].forEach((name) => {
+                const field = getField(name);
+
+                if (field) {
+                    field.value = '{}';
+                }
+            });
+
+            clearFormFeedback();
+        };
+
+        const setField = (name, value) => {
+            const field = getField(name);
+
+            if (!field) {
+                return;
+            }
+
+            field.value = value ?? '';
+        };
+
+        const cleanNested = (value) => {
+            if (!value || typeof value !== 'object') {
+                return {};
+            }
+
+            const copy = { ...value };
+            ['id', 'tunnel_id', 'created_at', 'updated_at', 'deleted_at'].forEach((key) => {
+                delete copy[key];
+            });
+
+            return copy;
+        };
+
+        const fillForm = (record) => {
+            [
+                'kode_aset',
+                'nomor_bh',
+                'nama_terowongan',
+                'id_wilayah_kerja',
+                'id_lintas',
+                'km_hm',
+                'panjang_m',
+                'tahun_bangunan',
+                'tahun_operasi',
+                'umur_tahun',
+                'lat',
+                'long',
+                'status_operasi',
+                'status_aset',
+                'kondisi_terakhir',
+                'tgl_inspeksi_terakhir',
+            ].forEach((name) => {
+                setField(name, name === 'lat' || name === 'long'
+                    ? (record.coordinates?.[name] ?? record[name] ?? '')
+                    : (record[name] ?? ''));
+            });
+
+            setField('structure_json', JSON.stringify(cleanNested(record.structure), null, 2));
+            setField('specs_json', JSON.stringify(cleanNested(record.specs), null, 2));
+            setField('docs_json', JSON.stringify(cleanNested(record.docs), null, 2));
+        };
+
+        const buildPayload = () => {
+            const payload = {
+                kode_aset: toNullable(getField('kode_aset')?.value),
+                nomor_bh: toNullable(getField('nomor_bh')?.value),
+                nama_terowongan: toNullable(getField('nama_terowongan')?.value),
+                id_wilayah_kerja: toNullable(getField('id_wilayah_kerja')?.value),
+                id_lintas: toNullable(getField('id_lintas')?.value),
+                km_hm: toNullable(getField('km_hm')?.value),
+                panjang_m: toNullable(getField('panjang_m')?.value),
+                tahun_bangunan: toNullable(getField('tahun_bangunan')?.value),
+                tahun_operasi: toNullable(getField('tahun_operasi')?.value),
+                umur_tahun: toNullable(getField('umur_tahun')?.value),
+                lat: toNullable(getField('lat')?.value),
+                long: toNullable(getField('long')?.value),
+                status_operasi: toNullable(getField('status_operasi')?.value),
+                status_aset: toNullable(getField('status_aset')?.value),
+                kondisi_terakhir: toNullable(getField('kondisi_terakhir')?.value),
+                tgl_inspeksi_terakhir: toNullable(getField('tgl_inspeksi_terakhir')?.value),
+            };
+            const structure = parseJsonField('structure_json');
+            const specs = parseJsonField('specs_json');
+            const docs = parseJsonField('docs_json');
+
+            if (Object.keys(structure).length) {
+                payload.structure = structure;
+            }
+
+            if (Object.keys(specs).length) {
+                payload.specs = specs;
+            }
+
+            if (Object.keys(docs).length) {
+                payload.docs = docs;
+            }
+
+            return Object.fromEntries(Object.entries(payload).filter(([, value]) => value !== null));
+        };
+
+        const openCreateForm = () => {
+            resetForm();
+            openModal(formModal);
+        };
+
+        const openEditForm = async (tunnelId) => {
+            if (!tunnelId) {
+                return;
+            }
+
+            resetForm();
+            editingTunnelId = tunnelId;
+
+            if (formTitle) {
+                formTitle.textContent = `Edit ${config.label || 'Terowongan'}`;
+            }
+
+            if (formSubtitle) {
+                formSubtitle.textContent = `Memperbarui ${tunnelId}.`;
+            }
+
+            openModal(formModal);
+            setLoadingState(true);
+
+            try {
+                const payload = await fetchJson(`${config.list_endpoint}/${encodeURIComponent(tunnelId)}`);
+                fillForm(payload.data || {});
+            } catch (errorPayload) {
+                showFormFeedback(extractErrorMessage(errorPayload));
+            } finally {
+                setLoadingState(false);
+            }
+        };
+
+        const coordinateCenter = () => {
+            const lat = Number(getField('lat')?.value || NaN);
+            const lon = Number(getField('long')?.value || NaN);
+
+            if (Number.isFinite(lat) && Number.isFinite(lon) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) {
+                return { lat, lon, zoom: 17 };
+            }
+
+            return { lat: -6.175392, lon: 106.827153, zoom: 6 };
+        };
+
+        const showCoordinateFeedback = (message) => {
+            if (!coordinateFeedback) {
+                return;
+            }
+
+            coordinateFeedback.hidden = !message;
+            coordinateFeedback.textContent = message || '';
+        };
+
+        const updateCoordinateLive = () => {
+            if (!coordinateMap) {
+                return;
+            }
+
+            const center = coordinateMap.getCenter();
+
+            if (coordinateLiveLat) {
+                coordinateLiveLat.textContent = center.lat.toFixed(7);
+            }
+
+            if (coordinateLiveLon) {
+                coordinateLiveLon.textContent = center.lng.toFixed(7);
+            }
+        };
+
+        const initCoordinateMap = () => {
+            if (!window.L || !coordinateMapCanvas) {
+                return;
+            }
+
+            const center = coordinateCenter();
+
+            if (!coordinateMap) {
+                coordinateMap = window.L.map(coordinateMapCanvas, {
+                    zoomControl: true,
+                    attributionControl: true,
+                }).setView([center.lat, center.lon], center.zoom);
+
+                window.L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                    attribution: 'Tiles &copy; Esri',
+                    maxZoom: 19,
+                    maxNativeZoom: 19,
+                }).addTo(coordinateMap);
+
+                coordinateMap.on('move', updateCoordinateLive);
+                coordinateMap.on('moveend', updateCoordinateLive);
+            } else {
+                coordinateMap.setView([center.lat, center.lon], center.zoom);
+            }
+
+            window.setTimeout(() => {
+                coordinateMap?.invalidateSize();
+                updateCoordinateLive();
+            }, 120);
+        };
+
+        const openCoordinatePicker = () => {
+            showCoordinateFeedback('');
+            openModal(coordinateModal);
+            initCoordinateMap();
+        };
+
+        const searchCoordinate = async (query) => {
+            const keyword = query.trim();
+
+            if (!keyword) {
+                return;
+            }
+
+            showCoordinateFeedback('Mencari lokasi...');
+
+            try {
+                const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(keyword)}`, {
+                    headers: {
+                        Accept: 'application/json',
+                    },
+                });
+                const payload = await response.json();
+                const result = Array.isArray(payload) ? payload[0] : null;
+
+                if (!result) {
+                    showCoordinateFeedback('Alamat tidak ditemukan.');
+                    return;
+                }
+
+                coordinateMap?.setView([Number(result.lat), Number(result.lon)], 17);
+                showCoordinateFeedback('');
+            } catch {
+                showCoordinateFeedback('Pencarian alamat gagal. Coba lagi beberapa saat.');
+            }
+        };
+
+        const applyCoordinate = () => {
+            if (!coordinateMap) {
+                return;
+            }
+
+            const center = coordinateMap.getCenter();
+            setField('lat', center.lat.toFixed(7));
+            setField('long', center.lng.toFixed(7));
+            closeModal(coordinateModal);
+        };
+
+        const importCsv = async (file) => {
+            if (!file || !config.import_endpoint) {
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+            setLoadingState(true);
+            renderRows([]);
+
+            try {
+                await fetchJson(config.import_endpoint, {
+                    method: 'POST',
+                    body: formData,
+                });
+                state.page = 1;
+                await loadRecords();
+            } catch (errorPayload) {
+                setLoadingState(false);
+                gridBody.innerHTML = `<tr><td colspan="${columns.length + 1}" class="grid-empty">${escapeHtml(extractErrorMessage(errorPayload))}</td></tr>`;
+                renderPagination();
+            } finally {
+                if (importFile) {
+                    importFile.value = '';
+                }
+            }
+        };
+
+        const renderHeader = () => {
+            gridHead.innerHTML = `
+                <tr>
+                    ${columns.map((column) => `<th>${escapeHtml(prettify(column))}</th>`).join('')}
+                    <th>Aksi</th>
+                </tr>
+            `;
+        };
+
+        const renderRows = (rows) => {
+            const totalColumns = columns.length + 1;
+
+            if (state.loading) {
+                gridBody.innerHTML = `<tr><td colspan="${totalColumns}" class="grid-loading">Memuat data terowongan...</td></tr>`;
+                return;
+            }
+
+            if (!rows.length) {
+                gridBody.innerHTML = `<tr><td colspan="${totalColumns}" class="grid-empty">Belum ada data terowongan di prasarana_tunnel.</td></tr>`;
+                return;
+            }
+
+            gridBody.innerHTML = rows.map((row) => {
+                const cells = columns.map((column, index) => {
+                    const value = getValue(row, column);
+
+                    if (index === 0) {
+                        return `
+                            <td>
+                                <div class="row-title">
+                                    <strong>${escapeHtml(formatValue(value, column))}</strong>
+                                    <span>${escapeHtml([row.nomor_bh, row.kode_aset, row.km_hm].filter(Boolean).join(' | ') || row.tunnel_id || '-')}</span>
+                                </div>
+                            </td>
+                        `;
+                    }
+
+                    return `<td>${escapeHtml(formatValue(value, column))}</td>`;
+                }).join('');
+
+                return `
+                    <tr>
+                        ${cells}
+                        <td>
+                            <div class="inline-actions">
+                                <button class="inline-button" type="button" data-tunnel-row-action="view" data-tunnel-id="${escapeHtml(row.tunnel_id)}">Lihat</button>
+                                <button class="inline-button" type="button" data-tunnel-row-action="edit" data-tunnel-id="${escapeHtml(row.tunnel_id)}">Edit</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        };
+
+        const renderPagination = () => {
+            const total = Number(state.pagination.total || 0);
+            const currentPage = Number(state.pagination.current_page || 1);
+            const lastPage = Number(state.pagination.last_page || 1);
+            const perPage = Number(state.pagination.per_page || state.perPage || 10);
+            const start = total === 0 ? 0 : ((currentPage - 1) * perPage) + 1;
+            const end = total === 0 ? 0 : Math.min(currentPage * perPage, total);
+
+            if (gridCount) {
+                window.dashboardFillStaticTag(gridCount, 'Data', new Intl.NumberFormat('id-ID').format(total), 'data');
+            }
+
+            if (gridSummary) {
+                gridSummary.textContent = total === 0
+                    ? 'Belum ada data.'
+                    : `Menampilkan ${new Intl.NumberFormat('id-ID').format(start)}-${new Intl.NumberFormat('id-ID').format(end)} dari ${new Intl.NumberFormat('id-ID').format(total)} data`;
+            }
+
+            if (gridPage) {
+                gridPage.textContent = `Halaman ${currentPage} / ${lastPage}`;
+            }
+
+            if (prevButton) {
+                prevButton.disabled = currentPage <= 1 || state.loading;
+            }
+
+            if (nextButton) {
+                nextButton.disabled = currentPage >= lastPage || state.loading;
+            }
+        };
+
+        const openModal = (modal) => {
+            if (!modal) {
+                return;
+            }
+
+            modal.classList.add('is-open');
+            modal.setAttribute('aria-hidden', 'false');
+            body.classList.add('modal-open');
+
+            requestAnimationFrame(() => window.dashboardDetailMap?.init(modal));
+        };
+
+        const closeModal = (modal) => {
+            if (!modal) {
+                return;
+            }
+
+            window.dashboardModalA11y?.prepareClose(modal);
+            modal.classList.remove('is-open');
+            modal.setAttribute('aria-hidden', 'true');
+
+            if (!document.querySelector('.modal.is-open')) {
+                body.classList.remove('modal-open');
+            }
+        };
+
+        const renderKeyValueTable = (entries) => {
+            const rows = entries.filter(([, value]) => value !== undefined);
+
+            if (!rows.length) {
+                return '<div class="detail-empty">Belum ada data pada bagian ini.</div>';
+            }
+
+            const tableHtml = `
+                <div class="detail-table-wrap">
+                    <table class="detail-kv-table">
+                        <tbody>
+                            ${rows.map(([label, value, key]) => `
+                                <tr>
+                                    <th>${escapeHtml(label)}</th>
+                                    <td>${escapeHtml(formatValue(value, key || ''))}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            return window.dashboardDetailMap?.wrapEntries(rows, tableHtml) || tableHtml;
+        };
+
+        const renderSection = (title, body) => `
+            <section class="detail-section">
+                <div class="detail-section-head">
+                    <div class="detail-section-title">
+                        <span class="detail-section-icon">
+                            <svg class="icon" viewBox="0 0 24 24"><path d="M4 18V9a8 8 0 0 1 16 0v9"/><path d="M8 18V9a4 4 0 0 1 8 0v9"/><path d="M3 18h18"/></svg>
+                        </span>
+                        <div><h4>${escapeHtml(title)}</h4></div>
+                    </div>
+                </div>
+                ${body}
+            </section>
+        `;
+
+        const renderDetail = (record) => {
+            if (!viewContent || !viewSubtitle) {
+                return;
+            }
+
+            viewSubtitle.textContent = `${formatValue(record.nama_terowongan, 'nama_terowongan')} · ${record.nomor_bh || record.tunnel_id || '-'}`;
+            const coordinates = record.coordinates || {};
+
+            viewContent.innerHTML = `
+                <div class="detail-grid">
+                    <div class="detail-item full">
+                        <span>Nama Terowongan</span>
+                        <strong>${escapeHtml(formatValue(record.nama_terowongan, 'nama_terowongan'))}</strong>
+                    </div>
+                    <div class="detail-item">
+                        <span>No. BH</span>
+                        <strong>${escapeHtml(formatText(record.nomor_bh))}</strong>
+                    </div>
+                    <div class="detail-item">
+                        <span>KM/HM</span>
+                        <strong>${escapeHtml(formatText(record.km_hm))}</strong>
+                    </div>
+                    <div class="detail-item">
+                        <span>Status Operasi</span>
+                        <strong>${escapeHtml(formatText(record.status_operasi))}</strong>
+                    </div>
+                    <div class="detail-item">
+                        <span>Status Aset</span>
+                        <strong>${escapeHtml(formatText(record.status_aset))}</strong>
+                    </div>
+                </div>
+                ${renderSection('Data Utama', renderKeyValueTable([
+                    ['Tunnel ID', record.tunnel_id, 'tunnel_id'],
+                    ['Kode Aset', record.kode_aset, 'kode_aset'],
+                    ['Nomor BH', record.nomor_bh, 'nomor_bh'],
+                    ['Wilayah Kerja', record.id_wilayah_kerja, 'id_wilayah_kerja'],
+                    ['Lintas', record.id_lintas, 'id_lintas'],
+                    ['Panjang', record.panjang_m, 'panjang_m'],
+                    ['Tahun Bangunan', record.tahun_bangunan, 'tahun_bangunan'],
+                    ['Tahun Operasi', record.tahun_operasi, 'tahun_operasi'],
+                    ['Umur', record.umur_tahun, 'umur_tahun'],
+                    ['Latitude', coordinates.lat, 'lat'],
+                    ['Longitude', coordinates.long, 'long'],
+                    ['Kondisi Terakhir', record.kondisi_terakhir, 'kondisi_terakhir'],
+                    ['Tanggal Inspeksi Terakhir', record.tgl_inspeksi_terakhir, 'tgl_inspeksi_terakhir'],
+                    ['Diperbarui', record.updated_at, 'updated_at'],
+                ]))}
+                ${renderSection('Struktur', renderKeyValueTable([
+                    ['Jenis Struktur', record.structure?.jenis_struktur, 'jenis_struktur'],
+                    ['Material Struktur', record.structure?.material_struktur, 'material_struktur'],
+                    ['Material Lining', record.structure?.material_lining, 'material_lining'],
+                    ['Material Portal', record.structure?.material_portal, 'material_portal'],
+                    ['Material Invert', record.structure?.material_invert, 'material_invert'],
+                    ['Metode Konstruksi', record.structure?.metode_konstruksi, 'metode_konstruksi'],
+                    ['Waterproofing', record.structure?.waterproofing, 'waterproofing'],
+                    ['Rehabilitasi Terakhir', record.structure?.tahun_rehabilitasi_terakhir, 'tahun_rehabilitasi_terakhir'],
+                ]))}
+                ${renderSection('Spesifikasi', renderKeyValueTable([
+                    ['Jumlah Jalur', record.specs?.jumlah_jalur, 'jumlah_jalur'],
+                    ['Jenis Jalur', record.specs?.jenis_jalur, 'jenis_jalur'],
+                    ['Gauge', record.specs?.gauge_m, 'gauge_m'],
+                    ['Lebar Bersih', record.specs?.lebar_bersih_m, 'lebar_bersih_m'],
+                    ['Tinggi Bersih', record.specs?.tinggi_bersih_m, 'tinggi_bersih_m'],
+                    ['Clearance Horizontal', record.specs?.clearance_horizontal_mm, 'clearance_horizontal_mm'],
+                    ['Clearance Vertikal', record.specs?.clearance_vertikal_mm, 'clearance_vertikal_mm'],
+                    ['Bentuk Penampang', record.specs?.bentuk_penampang, 'bentuk_penampang'],
+                    ['Gradien', record.specs?.gradien_persen, 'gradien_persen'],
+                    ['Radius Lengkung', record.specs?.radius_lengkung_m, 'radius_lengkung_m'],
+                    ['Catatan Teknis', record.specs?.catatan_teknis, 'catatan_teknis'],
+                ]))}
+                ${renderSection('Dokumen', renderKeyValueTable([
+                    ['No. DED/BED/Kajian Teknis', record.docs?.no_ded_bed_kajian_teknis, 'no_ded_bed_kajian_teknis'],
+                    ['DED/BED/Kajian Teknis', record.docs?.ded_bed_kajian_teknis, 'ded_bed_kajian_teknis'],
+                    ['No. Spesifikasi Teknis', record.docs?.no_spesifikasi_teknis, 'no_spesifikasi_teknis'],
+                    ['Spesifikasi Teknis', record.docs?.spesifikasi_teknis, 'spesifikasi_teknis'],
+                    ['No. Shop Drawing', record.docs?.no_shop_drawing, 'no_shop_drawing'],
+                    ['Shop Drawing', record.docs?.shop_drawing, 'shop_drawing'],
+                    ['No. As Built Drawing', record.docs?.no_as_built_drawing, 'no_as_built_drawing'],
+                    ['As Built Drawing', record.docs?.as_built_drawing, 'as_built_drawing'],
+                    ['No. Dokumen Hasil Uji', record.docs?.no_dok_hasil_uji, 'no_dok_hasil_uji'],
+                    ['Dokumen Hasil Uji', record.docs?.dok_hasil_uji, 'dok_hasil_uji'],
+                ]))}
+            `;
+        };
+
+        const loadRecords = async () => {
+            setLoadingState(true);
+            renderRows([]);
+            renderPagination();
+
+            const params = new URLSearchParams({
+                page: String(state.page),
+                per_page: String(state.perPage),
+                sort_by: 'updated_at',
+                sort_dir: 'desc',
+            });
+
+            if (state.search) {
+                params.set('search', state.search);
+            }
+
+            try {
+                const payload = await fetchJson(`${config.list_endpoint}?${params.toString()}`);
+                state.pagination = payload.meta?.pagination || state.pagination;
+                state.rows = Array.isArray(payload.data) ? payload.data : [];
+                setLoadingState(false);
+                renderRows(state.rows);
+                renderPagination();
+            } catch (errorPayload) {
+                setLoadingState(false);
+                state.rows = [];
+                state.pagination = {
+                    current_page: 1,
+                    last_page: 1,
+                    total: 0,
+                    per_page: state.perPage,
+                };
+                gridBody.innerHTML = `<tr><td colspan="${columns.length + 1}" class="grid-empty">${escapeHtml(extractErrorMessage(errorPayload))}</td></tr>`;
+                renderPagination();
+            }
+        };
+
+        const openDetail = async (tunnelId) => {
+            if (viewContent) {
+                viewContent.innerHTML = '<div class="grid-loading">Memuat detail terowongan...</div>';
+            }
+
+            if (viewSubtitle) {
+                viewSubtitle.textContent = 'Memuat data...';
+            }
+
+            openModal(viewModal);
+
+            try {
+                const payload = await fetchJson(`${config.list_endpoint}/${encodeURIComponent(tunnelId)}`);
+                renderDetail(payload.data || {});
+            } catch (errorPayload) {
+                if (viewContent) {
+                    viewContent.innerHTML = `<div class="feedback">${escapeHtml(extractErrorMessage(errorPayload))}</div>`;
+                }
+            }
+        };
+
+        renderHeader();
+        renderPagination();
+        loadRecords();
+
+        gridSearch?.addEventListener('input', (event) => {
+            window.clearTimeout(searchTimer);
+            state.search = event.target.value.trim();
+            searchTimer = window.setTimeout(() => {
+                state.page = 1;
+                loadRecords();
+            }, 280);
+        });
+
+        gridPerPage?.addEventListener('change', (event) => {
+            state.perPage = Number(event.target.value || 10);
+            state.page = 1;
+            loadRecords();
+        });
+
+        prevButton?.addEventListener('click', () => {
+            if (state.page <= 1) {
+                return;
+            }
+
+            state.page -= 1;
+            loadRecords();
+        });
+
+        nextButton?.addEventListener('click', () => {
+            if (state.page >= Number(state.pagination.last_page || 1)) {
+                return;
+            }
+
+            state.page += 1;
+            loadRecords();
+        });
+
+        createButton?.addEventListener('click', openCreateForm);
+
+        importButton?.addEventListener('click', () => {
+            importFile?.click();
+        });
+
+        importFile?.addEventListener('change', (event) => {
+            const file = event.target.files?.[0] || null;
+            importCsv(file);
+        });
+
+        coordinateButton?.addEventListener('click', openCoordinatePicker);
+
+        coordinateSearchForm?.addEventListener('submit', (event) => {
+            event.preventDefault();
+            searchCoordinate(coordinateSearchInput?.value || '');
+        });
+
+        coordinateApplyButton?.addEventListener('click', applyCoordinate);
+
+        form?.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            clearFormFeedback();
+
+            let payload = {};
+
+            try {
+                payload = buildPayload();
+            } catch {
+                showFormFeedback('Structure JSON, Specs JSON, atau Docs JSON tidak valid.');
+                return;
+            }
+
+            setLoadingState(true);
+
+            try {
+                const endpoint = editingTunnelId && config.update_endpoint
+                    ? config.update_endpoint.replace('__tunnel__', encodeURIComponent(editingTunnelId))
+                    : config.store_endpoint;
+                await fetchJson(endpoint, {
+                    method: editingTunnelId ? 'PATCH' : 'POST',
+                    body: JSON.stringify(payload),
+                });
+                closeModal(formModal);
+                resetForm();
+                state.page = 1;
+                await loadRecords();
+            } catch (errorPayload) {
+                showFormFeedback(extractErrorMessage(errorPayload));
+            } finally {
+                setLoadingState(false);
+            }
+        });
+
+        root.addEventListener('click', (event) => {
+            const trigger = event.target.closest('[data-tunnel-row-action]');
+
+            if (!trigger) {
+                return;
+            }
+
+            if (trigger.dataset.tunnelRowAction === 'view') {
+                openDetail(trigger.dataset.tunnelId);
+            }
+
+            if (trigger.dataset.tunnelRowAction === 'edit') {
+                openEditForm(trigger.dataset.tunnelId);
+            }
+        });
+
+        viewModal?.querySelectorAll('[data-modal-close]').forEach((button) => {
+            button.addEventListener('click', () => closeModal(viewModal));
+        });
+
+        formModal?.querySelectorAll('[data-modal-close]').forEach((button) => {
+            button.addEventListener('click', () => closeModal(formModal));
+        });
+
+        coordinateModal?.querySelectorAll('[data-modal-close]').forEach((button) => {
+            button.addEventListener('click', () => closeModal(coordinateModal));
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                closeModal(viewModal);
+                closeModal(coordinateModal);
+                closeModal(formModal);
             }
         });
     })();
@@ -7235,6 +8615,672 @@
         document.addEventListener('keydown', (event) => {
             if (event.key === 'Escape') {
                 closeModal(viewModal);
+            }
+        });
+    })();
+
+    (() => {
+        const root = document.querySelector('[data-tunnel-source-table-app]');
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        const body = document.body;
+
+        if (!root) {
+            return;
+        }
+
+        const config = JSON.parse(root.dataset.tunnelSourceTableApp || '{}');
+        const columns = Array.isArray(config.columns) && config.columns.length ? config.columns : ['row_key'];
+        const formColumns = Array.isArray(config.form_columns) ? config.form_columns : [];
+        const gridHead = root.querySelector('[data-grid-head]');
+        const gridBody = root.querySelector('[data-grid-body]');
+        const gridSearch = root.querySelector('[data-grid-search]');
+        const gridPerPage = root.querySelector('[data-grid-per-page]');
+        const gridCount = root.querySelector('[data-grid-count]');
+        const gridSummary = root.querySelector('[data-grid-summary]');
+        const gridPage = root.querySelector('[data-grid-page]');
+        const prevButton = root.querySelector('[data-grid-prev]');
+        const nextButton = root.querySelector('[data-grid-next]');
+        const createButton = root.querySelector('[data-grid-create]');
+        const importButton = root.querySelector('[data-tunnel-table-import-trigger]');
+        const importFile = root.querySelector('[data-tunnel-table-import-file]');
+        const viewModal = document.querySelector('[data-tunnel-source-table-view-modal]');
+        const viewSubtitle = viewModal?.querySelector('[data-tunnel-source-table-view-subtitle]');
+        const viewContent = viewModal?.querySelector('[data-tunnel-source-table-view-content]');
+        const formModal = document.querySelector('[data-tunnel-source-table-form-modal]');
+        const form = formModal?.querySelector('[data-tunnel-source-table-form]');
+        const formTitle = formModal?.querySelector('[data-tunnel-source-table-form-title]');
+        const formSubtitle = formModal?.querySelector('[data-tunnel-source-table-form-subtitle]');
+        const formFields = formModal?.querySelector('[data-tunnel-source-table-form-fields]');
+        const formFeedback = formModal?.querySelector('[data-tunnel-source-table-form-feedback]');
+        const submitButton = formModal?.querySelector('[data-tunnel-source-table-form-submit]');
+        const state = {
+            page: 1,
+            perPage: Number(gridPerPage?.value || 10),
+            search: '',
+            rows: [],
+            loading: false,
+            pagination: {
+                current_page: 1,
+                last_page: 1,
+                total: Number(config.row_count || 0),
+                per_page: Number(gridPerPage?.value || 10),
+            },
+        };
+        let searchTimer = null;
+        let editingRowKey = null;
+
+        const escapeHtml = (value) => String(value ?? '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#039;');
+
+        const prettify = (key) => key.replaceAll('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
+        const isNameKey = (key) => key === 'nama' || key.startsWith('nama_') || key.includes('.nama_');
+
+        const formatValue = (value, key = '') => {
+            if (value === null || value === undefined || value === '') {
+                return '-';
+            }
+
+            if (isNameKey(key)) {
+                return String(value).toUpperCase();
+            }
+
+            if (typeof value === 'object') {
+                return JSON.stringify(value);
+            }
+
+            if (key.endsWith('_at') || key.startsWith('tgl_')) {
+                const date = new Date(value);
+
+                if (!Number.isNaN(date.getTime())) {
+                    return new Intl.DateTimeFormat('id-ID', {
+                        dateStyle: 'medium',
+                        timeStyle: key.endsWith('_at') ? 'short' : undefined,
+                        timeZone: 'UTC',
+                    }).format(date);
+                }
+            }
+
+            return String(value);
+        };
+
+        const isJsonColumn = (column) => String(column.type || '').toLowerCase().includes('json');
+        const isTextColumn = (column) => /text|json/i.test(String(column.type || ''));
+        const isDateColumn = (column) => /date|timestamp|datetime/i.test(String(column.type || ''));
+        const isNumberColumn = (column) => /int|decimal|double|float/i.test(String(column.type || ''));
+
+        const fetchJson = async (url, options = {}) => {
+            const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
+            const response = await fetch(url, {
+                ...options,
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    ...(options.body && !isFormData ? { 'Content-Type': 'application/json' } : {}),
+                    ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {}),
+                    ...(options.headers || {}),
+                },
+            });
+            const payload = await response.json().catch(() => null);
+
+            if (!response.ok || (payload && payload.success === false)) {
+                throw payload || { message: 'Permintaan gagal.' };
+            }
+
+            return payload;
+        };
+
+        const extractErrorMessage = (payload) => {
+            if (!payload) {
+                return 'Terjadi kesalahan saat memproses tabel terowongan.';
+            }
+
+            if (payload.error?.details && typeof payload.error.details === 'object') {
+                return Object.values(payload.error.details).flat().map((item) => {
+                    if (typeof item === 'object') {
+                        return JSON.stringify(item);
+                    }
+
+                    return String(item);
+                }).join('\n');
+            }
+
+            if (payload.errors && typeof payload.errors === 'object') {
+                return Object.values(payload.errors).flat().join('\n');
+            }
+
+            return payload.message || 'Terjadi kesalahan saat memproses tabel terowongan.';
+        };
+
+        const setLoadingState = (loading) => {
+            state.loading = loading;
+
+            if (submitButton) {
+                submitButton.disabled = loading;
+            }
+
+            if (importButton) {
+                importButton.disabled = loading;
+            }
+        };
+
+        const renderHeader = () => {
+            gridHead.innerHTML = `
+                <tr>
+                    ${columns.map((column) => `<th>${escapeHtml(prettify(column))}</th>`).join('')}
+                    <th>Aksi</th>
+                </tr>
+            `;
+        };
+
+        const renderRows = () => {
+            const totalColumns = columns.length + 1;
+
+            if (state.loading) {
+                gridBody.innerHTML = `<tr><td colspan="${totalColumns}" class="grid-loading">Memuat data...</td></tr>`;
+                return;
+            }
+
+            if (!state.rows.length) {
+                gridBody.innerHTML = `<tr><td colspan="${totalColumns}" class="grid-empty">Belum ada data pada tabel ${escapeHtml(config.table || 'terowongan')}.</td></tr>`;
+                return;
+            }
+
+            gridBody.innerHTML = state.rows.map((row) => {
+                const data = row.data || {};
+
+                return `
+                    <tr>
+                        ${columns.map((column, index) => {
+                            const value = data[column] ?? row[column] ?? null;
+
+                            if (index === 0) {
+                                return `
+                                    <td>
+                                        <div class="row-title">
+                                            <strong>${escapeHtml(formatValue(value, column))}</strong>
+                                            <span>${escapeHtml(formatValue(data.tunnel_id ?? data.kode_aset ?? row.row_key))}</span>
+                                        </div>
+                                    </td>
+                                `;
+                            }
+
+                            return `<td>${escapeHtml(formatValue(value, column))}</td>`;
+                        }).join('')}
+                        <td>
+                            <div class="inline-actions">
+                                <button class="inline-button" type="button" data-tunnel-source-table-view="${escapeHtml(row.row_key)}">Lihat</button>
+                                <button class="inline-button" type="button" data-tunnel-source-table-edit="${escapeHtml(row.row_key)}">Edit</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        };
+
+        const renderPagination = () => {
+            const total = Number(state.pagination.total || 0);
+            const currentPage = Number(state.pagination.current_page || 1);
+            const lastPage = Number(state.pagination.last_page || 1);
+            const perPage = Number(state.pagination.per_page || state.perPage || 10);
+            const start = total === 0 ? 0 : ((currentPage - 1) * perPage) + 1;
+            const end = total === 0 ? 0 : Math.min(currentPage * perPage, total);
+
+            if (gridCount) {
+                window.dashboardFillStaticTag(gridCount, 'Data', new Intl.NumberFormat('id-ID').format(total), 'data');
+            }
+
+            if (gridSummary) {
+                gridSummary.textContent = total === 0
+                    ? 'Belum ada data.'
+                    : `Menampilkan ${new Intl.NumberFormat('id-ID').format(start)}-${new Intl.NumberFormat('id-ID').format(end)} dari ${new Intl.NumberFormat('id-ID').format(total)} data`;
+            }
+
+            if (gridPage) {
+                gridPage.textContent = `Halaman ${currentPage} / ${lastPage}`;
+            }
+
+            if (prevButton) {
+                prevButton.disabled = currentPage <= 1 || state.loading;
+            }
+
+            if (nextButton) {
+                nextButton.disabled = currentPage >= lastPage || state.loading;
+            }
+        };
+
+        const openModal = (modal) => {
+            if (!modal) {
+                return;
+            }
+
+            modal.classList.add('is-open');
+            modal.setAttribute('aria-hidden', 'false');
+            body.classList.add('modal-open');
+
+            requestAnimationFrame(() => window.dashboardDetailMap?.init(modal));
+        };
+
+        const closeModal = (modal) => {
+            if (!modal) {
+                return;
+            }
+
+            window.dashboardModalA11y?.prepareClose(modal);
+            modal.classList.remove('is-open');
+            modal.setAttribute('aria-hidden', 'true');
+
+            if (!document.querySelector('.modal.is-open')) {
+                body.classList.remove('modal-open');
+            }
+        };
+
+        const formFieldGroup = (name) => {
+            if (/dok|drawing|spesifikasi_teknis|kajian|uji|catatan|file|path/i.test(name)) {
+                return 'documents';
+            }
+
+            if (/tahun|status|kondisi|jenis|material|metode|waterproofing|jumlah|gauge|lebar|tinggi|clearance|gradien|radius|panjang|km_hm|lat|long/i.test(name)) {
+                return 'technical';
+            }
+
+            return 'identity';
+        };
+
+        const renderInputField = (column) => {
+                const name = column.name || '';
+                const required = Array.isArray(config.required_columns) && config.required_columns.includes(name);
+                const inputType = isDateColumn(column) ? 'date' : (isNumberColumn(column) ? 'number' : 'text');
+
+                if (isTextColumn(column)) {
+                    return `
+                        <div class="field full">
+                            <label for="tunnel-table-${escapeHtml(name)}">${escapeHtml(prettify(name))}${required ? ' *' : ''}</label>
+                            <textarea id="tunnel-table-${escapeHtml(name)}" name="${escapeHtml(name)}" ${required ? 'required' : ''} spellcheck="false">${isJsonColumn(column) ? '{}' : ''}</textarea>
+                        </div>
+                    `;
+                }
+
+                return `
+                    <div class="field">
+                        <label for="tunnel-table-${escapeHtml(name)}">${escapeHtml(prettify(name))}${required ? ' *' : ''}</label>
+                        <input id="tunnel-table-${escapeHtml(name)}" name="${escapeHtml(name)}" type="${inputType}" ${isNumberColumn(column) ? 'step="any"' : ''} ${required ? 'required' : ''}>
+                    </div>
+                `;
+        };
+
+        const renderFormFields = () => {
+            if (!formFields) {
+                return;
+            }
+
+            const groups = [
+                { key: 'identity', title: 'Identitas', columns: [] },
+                { key: 'technical', title: 'Teknis dan Operasional', columns: [] },
+                { key: 'documents', title: 'Dokumen dan Catatan', columns: [] },
+            ];
+            const groupMap = Object.fromEntries(groups.map((group) => [group.key, group]));
+
+            formColumns.forEach((column) => {
+                const name = column.name || '';
+                groupMap[formFieldGroup(name)]?.columns.push(column);
+            });
+
+            formFields.innerHTML = groups
+                .filter((group) => group.columns.length)
+                .map((group) => `
+                    <section class="form-section">
+                        <div class="section-header compact">
+                            <div>
+                                <h3>${escapeHtml(group.title)}</h3>
+                            </div>
+                        </div>
+                        <div class="form-grid">
+                            ${group.columns.map(renderInputField).join('')}
+                        </div>
+                    </section>
+                `)
+                .join('');
+        };
+
+        const clearFormFeedback = () => {
+            if (!formFeedback) {
+                return;
+            }
+
+            formFeedback.hidden = true;
+            formFeedback.textContent = '';
+        };
+
+        const showFormFeedback = (message) => {
+            if (!formFeedback) {
+                return;
+            }
+
+            formFeedback.hidden = false;
+            formFeedback.textContent = message;
+        };
+
+        const buildPayload = () => {
+            const data = {};
+
+            formColumns.forEach((column) => {
+                const field = form?.querySelector(`[name="${column.name}"]`);
+                const raw = field?.value?.trim() ?? '';
+
+                if (raw === '') {
+                    return;
+                }
+
+                if (isJsonColumn(column)) {
+                    JSON.parse(raw);
+                }
+
+                data[column.name] = raw;
+            });
+
+            return { data };
+        };
+
+        const openCreateForm = () => {
+            editingRowKey = null;
+            form?.reset();
+            renderFormFields();
+            clearFormFeedback();
+
+            if (formTitle) {
+                formTitle.textContent = `Tambah ${config.table || 'Tabel Terowongan'}`;
+            }
+
+            if (formSubtitle) {
+                formSubtitle.textContent = 'Input row baru langsung ke database prasarana_tunnel.';
+            }
+
+            openModal(formModal);
+        };
+
+        const fieldValueForForm = (value, column) => {
+            if (value === null || value === undefined) {
+                return '';
+            }
+
+            if (isJsonColumn(column)) {
+                if (typeof value === 'object') {
+                    return JSON.stringify(value, null, 2);
+                }
+
+                try {
+                    return JSON.stringify(JSON.parse(String(value)), null, 2);
+                } catch {
+                    return String(value);
+                }
+            }
+
+            if (isDateColumn(column) && String(value).length >= 10) {
+                return String(value).slice(0, 10);
+            }
+
+            return String(value);
+        };
+
+        const openEditForm = (rowKey) => {
+            const record = state.rows.find((row) => String(row.row_key) === String(rowKey));
+
+            if (!record) {
+                return;
+            }
+
+            editingRowKey = rowKey;
+            form?.reset();
+            renderFormFields();
+            clearFormFeedback();
+
+            const data = record.data || {};
+
+            formColumns.forEach((column) => {
+                const field = form?.querySelector(`[name="${column.name}"]`);
+
+                if (!field) {
+                    return;
+                }
+
+                field.value = fieldValueForForm(data[column.name], column);
+            });
+
+            if (formTitle) {
+                formTitle.textContent = `Edit ${config.table || 'Tabel Terowongan'}`;
+            }
+
+            if (formSubtitle) {
+                formSubtitle.textContent = `${config.table || 'table'} · ${rowKey}`;
+            }
+
+            openModal(formModal);
+        };
+
+        const importCsv = async (file) => {
+            if (!file || !config.import_endpoint) {
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+            setLoadingState(true);
+            renderRows();
+            renderPagination();
+
+            try {
+                await fetchJson(config.import_endpoint, {
+                    method: 'POST',
+                    body: formData,
+                });
+                state.page = 1;
+                await loadRows();
+            } catch (errorPayload) {
+                state.rows = [];
+                state.pagination = {
+                    current_page: 1,
+                    last_page: 1,
+                    total: 0,
+                    per_page: state.perPage,
+                };
+                gridBody.innerHTML = `<tr><td colspan="${columns.length + 1}" class="grid-empty">${escapeHtml(extractErrorMessage(errorPayload))}</td></tr>`;
+                renderPagination();
+            } finally {
+                setLoadingState(false);
+
+                if (importFile) {
+                    importFile.value = '';
+                }
+            }
+        };
+
+        const renderFieldTable = (record) => {
+            const data = record.data || record || {};
+            const entries = Object.entries(data);
+
+            if (!entries.length) {
+                return '<div class="detail-empty">Tidak ada field yang bisa ditampilkan.</div>';
+            }
+
+            const tableHtml = `
+                <div class="detail-table-wrap">
+                    <table class="detail-kv-table">
+                        <tbody>
+                            ${entries.map(([key, value]) => `
+                                <tr>
+                                    <th>${escapeHtml(prettify(key))}</th>
+                                    <td>${escapeHtml(formatValue(value, key))}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            return window.dashboardDetailMap?.wrapEntries(entries.map(([key, value]) => [key, value, key]), tableHtml) || tableHtml;
+        };
+
+        const openDetail = (rowKey) => {
+            const record = state.rows.find((row) => String(row.row_key) === String(rowKey));
+
+            if (!record || !viewContent || !viewSubtitle) {
+                return;
+            }
+
+            viewSubtitle.textContent = `${config.table || 'table'} · ${record.row_key}`;
+            viewContent.innerHTML = renderFieldTable(record);
+            openModal(viewModal);
+        };
+
+        const loadRows = async () => {
+            setLoadingState(true);
+            renderRows();
+            renderPagination();
+
+            const params = new URLSearchParams({
+                page: String(state.page),
+                per_page: String(state.perPage),
+            });
+
+            if (state.search) {
+                params.set('search', state.search);
+            }
+
+            try {
+                const payload = await fetchJson(`${config.list_endpoint}?${params.toString()}`);
+                state.rows = Array.isArray(payload.data) ? payload.data : [];
+                state.pagination = payload.meta?.pagination || state.pagination;
+            } catch (errorPayload) {
+                state.rows = [];
+                state.pagination = {
+                    current_page: 1,
+                    last_page: 1,
+                    total: 0,
+                    per_page: state.perPage,
+                };
+                gridBody.innerHTML = `<tr><td colspan="${columns.length + 1}" class="grid-empty">${escapeHtml(extractErrorMessage(errorPayload))}</td></tr>`;
+            } finally {
+                setLoadingState(false);
+                renderRows();
+                renderPagination();
+            }
+        };
+
+        renderHeader();
+        renderFormFields();
+        renderRows();
+        renderPagination();
+        loadRows();
+
+        gridSearch?.addEventListener('input', (event) => {
+            window.clearTimeout(searchTimer);
+            state.search = event.target.value.trim();
+            searchTimer = window.setTimeout(() => {
+                state.page = 1;
+                loadRows();
+            }, 280);
+        });
+
+        gridPerPage?.addEventListener('change', (event) => {
+            state.perPage = Number(event.target.value || 10);
+            state.page = 1;
+            loadRows();
+        });
+
+        prevButton?.addEventListener('click', () => {
+            if (state.page <= 1) {
+                return;
+            }
+
+            state.page -= 1;
+            loadRows();
+        });
+
+        nextButton?.addEventListener('click', () => {
+            if (state.page >= Number(state.pagination.last_page || 1)) {
+                return;
+            }
+
+            state.page += 1;
+            loadRows();
+        });
+
+        createButton?.addEventListener('click', openCreateForm);
+
+        importButton?.addEventListener('click', () => {
+            importFile?.click();
+        });
+
+        importFile?.addEventListener('change', (event) => {
+            importCsv(event.target.files?.[0] || null);
+        });
+
+        root.addEventListener('click', (event) => {
+            const editTrigger = event.target.closest('[data-tunnel-source-table-edit]');
+
+            if (editTrigger) {
+                openEditForm(editTrigger.dataset.tunnelSourceTableEdit);
+                return;
+            }
+
+            const trigger = event.target.closest('[data-tunnel-source-table-view]');
+
+            if (!trigger) {
+                return;
+            }
+
+            openDetail(trigger.dataset.tunnelSourceTableView);
+        });
+
+        form?.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            clearFormFeedback();
+
+            let payload = null;
+
+            try {
+                payload = buildPayload();
+            } catch {
+                showFormFeedback('Kolom JSON harus berisi JSON valid.');
+                return;
+            }
+
+            setLoadingState(true);
+
+            try {
+                const endpoint = editingRowKey && config.update_endpoint
+                    ? config.update_endpoint.replace('__row__', encodeURIComponent(editingRowKey))
+                    : config.store_endpoint;
+                await fetchJson(endpoint, {
+                    method: editingRowKey ? 'PATCH' : 'POST',
+                    body: JSON.stringify(payload),
+                });
+                closeModal(formModal);
+                editingRowKey = null;
+                state.page = 1;
+                await loadRows();
+            } catch (errorPayload) {
+                showFormFeedback(extractErrorMessage(errorPayload));
+            } finally {
+                setLoadingState(false);
+            }
+        });
+
+        document.querySelectorAll('[data-tunnel-source-table-view-modal] [data-modal-close], [data-tunnel-source-table-form-modal] [data-modal-close]').forEach((button) => {
+            button.addEventListener('click', () => {
+                closeModal(viewModal);
+                closeModal(formModal);
+            });
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                closeModal(viewModal);
+                closeModal(formModal);
             }
         });
     })();

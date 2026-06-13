@@ -6,8 +6,11 @@ use App\Enums\MasterDataStatus;
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\ListMasterDataRequest;
+use App\Http\Requests\Api\V1\ListTunnelRequest;
 use App\Http\Requests\Api\V1\StoreMasterDataRequest;
+use App\Http\Requests\Api\V1\StoreTunnelRequest;
 use App\Http\Requests\Api\V1\UpdateMasterDataRequest;
+use App\Http\Requests\Api\V1\UpdateTunnelRequest;
 use App\Http\Requests\Web\GenerateApiClientTokenRequest;
 use App\Http\Requests\Web\ListBridgeSourceRequest;
 use App\Http\Requests\Web\ListSuperadminRecordsRequest;
@@ -18,9 +21,12 @@ use App\Http\Requests\Web\UpdateApiClientRequest;
 use App\Http\Requests\Web\UpdateBridgeSourceRequest;
 use App\Http\Requests\Web\UpdateManagedUserRequest;
 use App\Http\Resources\Api\V1\MasterDataResource;
+use App\Http\Resources\Api\V1\TunnelDetailResource;
+use App\Http\Resources\Api\V1\TunnelResource;
 use App\Models\ApiClient;
 use App\Models\MasterData;
 use App\Models\MasterDataType;
+use App\Models\Tunnel;
 use App\Models\User;
 use App\Services\BridgeSource\BridgeSourceCrudService;
 use App\Services\BridgeSource\BridgeSourceDumpService;
@@ -29,11 +35,20 @@ use App\Services\MasterData\MasterDataQueryService;
 use App\Services\MasterData\MasterDataWriteService;
 use App\Services\SuperAdmin\ApiClientManagementService;
 use App\Services\SuperAdmin\UserManagementService;
+use App\Services\TunnelService;
+use App\Services\TunnelSourceTableService;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DashboardController extends Controller
 {
@@ -42,27 +57,63 @@ class DashboardController extends Controller
             'label' => 'Jembatan',
             'type_code' => 'bridge',
         ],
-        'jalur' => [
-            'label' => 'Jalur',
-            'type_code' => 'railway_track',
-        ],
-        'fasilitas-operasional' => [
-            'label' => 'Fasilitas Operasional',
-            'type_code' => 'operational_facility',
-        ],
-        'sertifikat' => [
-            'label' => 'Sertifikat',
-            'type_code' => 'certificate',
-        ],
-        'gudang' => [
-            'label' => 'Gudang',
-            'type_code' => 'warehouse',
+        'terowongan' => [
+            'label' => 'Terowongan',
+            'type_code' => 'tunnel',
         ],
     ];
 
     private const SUPERADMIN_PAGES = [
         'superadmin-users',
         'superadmin-api-clients',
+    ];
+
+    private const TUNNEL_CSV_COLUMNS = [
+        'kode_aset',
+        'nomor_bh',
+        'nama_terowongan',
+        'id_wilayah_kerja',
+        'id_lintas',
+        'km_hm',
+        'panjang_m',
+        'tahun_bangunan',
+        'tahun_operasi',
+        'umur_tahun',
+        'lat',
+        'long',
+        'status_operasi',
+        'status_aset',
+        'kondisi_terakhir',
+        'tgl_inspeksi_terakhir',
+        'structure.jenis_struktur',
+        'structure.material_struktur',
+        'structure.material_lining',
+        'structure.material_portal',
+        'structure.material_invert',
+        'structure.metode_konstruksi',
+        'structure.waterproofing',
+        'structure.tahun_rehabilitasi_terakhir',
+        'specs.jumlah_jalur',
+        'specs.jenis_jalur',
+        'specs.gauge_m',
+        'specs.lebar_bersih_m',
+        'specs.tinggi_bersih_m',
+        'specs.clearance_horizontal_mm',
+        'specs.clearance_vertikal_mm',
+        'specs.bentuk_penampang',
+        'specs.gradien_persen',
+        'specs.radius_lengkung_m',
+        'specs.catatan_teknis',
+        'docs.no_ded_bed_kajian_teknis',
+        'docs.ded_bed_kajian_teknis',
+        'docs.no_spesifikasi_teknis',
+        'docs.spesifikasi_teknis',
+        'docs.no_shop_drawing',
+        'docs.shop_drawing',
+        'docs.no_as_built_drawing',
+        'docs.as_built_drawing',
+        'docs.no_dok_hasil_uji',
+        'docs.dok_hasil_uji',
     ];
 
     public function __construct(
@@ -73,6 +124,8 @@ class DashboardController extends Controller
         private readonly BridgeSourceDumpService $bridgeSourceDumpService,
         private readonly UserManagementService $userManagementService,
         private readonly ApiClientManagementService $apiClientManagementService,
+        private readonly TunnelService $tunnelService,
+        private readonly TunnelSourceTableService $tunnelSourceTableService,
     ) {}
 
     public function index(): View
@@ -91,14 +144,14 @@ class DashboardController extends Controller
         return $this->renderPage('documentation');
     }
 
-    public function quickMenu(): View
+    public function quickMenu(): RedirectResponse
     {
-        return $this->renderPage('quick-menu');
+        return redirect()->route('dashboard.index');
     }
 
-    public function moduleStatus(): View
+    public function moduleStatus(): RedirectResponse
     {
-        return $this->renderPage('module-status');
+        return redirect()->route('dashboard.index');
     }
 
     public function masterData(): RedirectResponse
@@ -122,9 +175,16 @@ class DashboardController extends Controller
         ]);
     }
 
-    public function monitoring(): View
+    public function tunnelSourceTable(string $table): View
     {
-        return $this->renderPage('monitoring');
+        return $this->renderPage('tunnel-source-table', [
+            'tunnelSourceTablePage' => $this->resolveTunnelSourceTablePage($table),
+        ]);
+    }
+
+    public function monitoring(): RedirectResponse
+    {
+        return redirect()->route('dashboard.index');
     }
 
     public function superadminUsers(): View
@@ -453,6 +513,309 @@ class DashboardController extends Controller
         );
     }
 
+    public function tunnelSourceRecords(ListTunnelRequest $request): JsonResponse
+    {
+        $this->ensureOperationalDashboardAccess();
+        $records = $this->tunnelService->paginate($request->validated());
+
+        return ApiResponse::paginated(
+            'Data terowongan berhasil diambil.',
+            TunnelResource::collection($records->getCollection())->resolve(),
+            $records,
+            [
+                'tunnel_source' => [
+                    'entity' => 'terowongan',
+                    'label' => 'Terowongan',
+                    'main_table' => 'm_tunnels',
+                    'data_mode' => 'database',
+                ],
+            ],
+        );
+    }
+
+    public function tunnelSourceRecord(string $tunnelId): JsonResponse
+    {
+        $this->ensureOperationalDashboardAccess();
+
+        return ApiResponse::success(
+            'Data terowongan berhasil diambil.',
+            TunnelDetailResource::make($this->tunnelService->find($tunnelId))->resolve(),
+        );
+    }
+
+    public function tunnelSourceTableRows(ListBridgeSourceRequest $request, string $table): JsonResponse
+    {
+        $this->ensureOperationalDashboardAccess();
+        $rows = $this->tunnelSourceTableService->paginate($table, $request->validated());
+        $tablePage = $this->resolveTunnelSourceTablePage($table);
+
+        return ApiResponse::paginated(
+            'Data tabel terowongan berhasil diambil.',
+            $rows->items(),
+            $rows,
+            [
+                'tunnel_source_table' => [
+                    'table' => $tablePage['table'],
+                    'label' => $tablePage['label'],
+                ],
+            ],
+        );
+    }
+
+    public function storeTunnelSourceTableRow(Request $request, string $table): JsonResponse
+    {
+        $this->ensureOperationalDashboardAccess();
+
+        return ApiResponse::success(
+            'Data tabel terowongan berhasil dibuat.',
+            $this->tunnelSourceTableService->create($table, $request->validate([
+                'data' => ['required', 'array'],
+            ])),
+            status: 201,
+        );
+    }
+
+    public function updateTunnelSourceTableRow(Request $request, string $table, string $rowKey): JsonResponse
+    {
+        $this->ensureOperationalDashboardAccess();
+
+        return ApiResponse::success(
+            'Data tabel terowongan berhasil diperbarui.',
+            $this->tunnelSourceTableService->update($table, $rowKey, $request->validate([
+                'data' => ['required', 'array'],
+            ])),
+        );
+    }
+
+    public function importTunnelSourceTableRows(Request $request, string $table): JsonResponse
+    {
+        $this->ensureOperationalDashboardAccess();
+
+        $validated = $request->validate([
+            'file' => ['required', 'file', 'mimes:csv,txt', 'max:5120'],
+        ]);
+
+        $file = $validated['file'] ?? null;
+        if (! $file instanceof UploadedFile) {
+            throw ValidationException::withMessages([
+                'file' => ['File CSV tidak valid.'],
+            ]);
+        }
+
+        $result = $this->tunnelSourceTableService->importCsv($table, $file->getRealPath());
+
+        if ($result['errors'] !== []) {
+            return ApiResponse::error(
+                'Sebagian data tabel terowongan gagal diimport.',
+                'TUNNEL_TABLE_CSV_IMPORT_PARTIAL',
+                422,
+                [
+                    'created' => [$result['created'].' data berhasil dibuat.'],
+                    'rows' => $result['errors'],
+                ],
+            );
+        }
+
+        return ApiResponse::success('Import CSV tabel terowongan berhasil.', [
+            'created' => $result['created'],
+        ]);
+    }
+
+    public function exportTunnelSourceTableRows(string $table): StreamedResponse
+    {
+        $this->ensureOperationalDashboardAccess();
+
+        return $this->downloadTunnelCsv($table.'-export-'.now()->format('Ymd-His').'.csv', function ($handle) use ($table): void {
+            $this->tunnelSourceTableService->streamCsv($table, $handle);
+        });
+    }
+
+    public function tunnelSourceTableCsvTemplate(string $table): StreamedResponse
+    {
+        $this->ensureOperationalDashboardAccess();
+
+        return $this->downloadTunnelCsv('template-'.$table.'.csv', function ($handle) use ($table): void {
+            $this->tunnelSourceTableService->streamCsv($table, $handle, includeRows: false);
+        });
+    }
+
+    public function storeTunnelSourceRecord(StoreTunnelRequest $request): JsonResponse
+    {
+        $this->ensureOperationalDashboardAccess();
+
+        return ApiResponse::success(
+            'Data terowongan berhasil dibuat.',
+            TunnelDetailResource::make($this->tunnelService->create($request->validated()))->resolve(),
+            status: 201,
+        );
+    }
+
+    public function updateTunnelSourceRecord(UpdateTunnelRequest $request, string $tunnel_id): JsonResponse
+    {
+        $this->ensureOperationalDashboardAccess();
+
+        return ApiResponse::success(
+            'Data terowongan berhasil diperbarui.',
+            TunnelDetailResource::make($this->tunnelService->update($tunnel_id, $request->validated()))->resolve(),
+        );
+    }
+
+    public function importTunnelSourceRecords(Request $request): JsonResponse
+    {
+        $this->ensureOperationalDashboardAccess();
+
+        $validated = $request->validate([
+            'file' => ['required', 'file', 'mimes:csv,txt', 'max:5120'],
+        ]);
+
+        $file = $validated['file'] ?? null;
+        if (! $file instanceof UploadedFile) {
+            throw ValidationException::withMessages([
+                'file' => ['File CSV tidak valid.'],
+            ]);
+        }
+
+        $handle = fopen($file->getRealPath(), 'r');
+        if ($handle === false) {
+            throw ValidationException::withMessages([
+                'file' => ['File CSV tidak dapat dibaca.'],
+            ]);
+        }
+
+        $created = 0;
+        $errors = [];
+
+        try {
+            $headers = fgetcsv($handle);
+            if (! is_array($headers) || $headers === []) {
+                throw ValidationException::withMessages([
+                    'file' => ['Header CSV tidak ditemukan.'],
+                ]);
+            }
+
+            $headers = array_map(
+                fn (string $header): string => trim(preg_replace('/^\xEF\xBB\xBF/', '', $header) ?? $header),
+                $headers,
+            );
+
+            $rowNumber = 1;
+            while (($row = fgetcsv($handle)) !== false) {
+                $rowNumber++;
+
+                if ($this->csvRowIsEmpty($row)) {
+                    continue;
+                }
+
+                $payload = $this->tunnelPayloadFromCsvRow($headers, $row);
+                $validator = Validator::make($payload, $this->tunnelImportRules());
+
+                if ($validator->fails()) {
+                    $errors[] = [
+                        'row' => $rowNumber,
+                        'messages' => $validator->errors()->all(),
+                    ];
+
+                    continue;
+                }
+
+                $this->tunnelService->create($validator->validated());
+                $created++;
+            }
+        } finally {
+            fclose($handle);
+        }
+
+        if ($errors !== []) {
+            return ApiResponse::error(
+                'Sebagian data terowongan gagal diimport.',
+                'TUNNEL_CSV_IMPORT_PARTIAL',
+                422,
+                [
+                    'created' => [$created.' data berhasil dibuat.'],
+                    'rows' => $errors,
+                ],
+            );
+        }
+
+        return ApiResponse::success('Import CSV terowongan berhasil.', [
+            'created' => $created,
+        ]);
+    }
+
+    public function exportTunnelSourceRecords(): StreamedResponse
+    {
+        $this->ensureOperationalDashboardAccess();
+
+        return $this->downloadTunnelCsv('terowongan-export-'.now()->format('Ymd-His').'.csv', function ($handle): void {
+            fputcsv($handle, self::TUNNEL_CSV_COLUMNS);
+
+            Tunnel::query()
+                ->with(['structure', 'specs', 'docs'])
+                ->orderByDesc('updated_at')
+                ->chunk(200, function ($records) use ($handle): void {
+                    foreach ($records as $record) {
+                        fputcsv($handle, $this->tunnelCsvRow($record));
+                    }
+                });
+        });
+    }
+
+    public function tunnelCsvTemplate(): StreamedResponse
+    {
+        $this->ensureOperationalDashboardAccess();
+
+        return $this->downloadTunnelCsv('template-terowongan.csv', function ($handle): void {
+            fputcsv($handle, self::TUNNEL_CSV_COLUMNS);
+            fputcsv($handle, [
+                'TUN-001',
+                'BH-T-001',
+                'Terowongan Contoh',
+                'WK-01',
+                'LNT-01',
+                'KM 143+144',
+                '949.50',
+                '1902',
+                '1906',
+                '120',
+                '-6.8300000',
+                '107.4800000',
+                'Operasi',
+                'Aktif',
+                'Baik',
+                now()->toDateString(),
+                'Batuan',
+                'Beton',
+                'Beton bertulang',
+                'Beton',
+                'Beton',
+                'NATM',
+                'Membran',
+                '2024',
+                '1',
+                'Tunggal',
+                '1.067',
+                '4.50',
+                '5.20',
+                '3000',
+                '4500',
+                'Tapal kuda',
+                '1.20',
+                '350.00',
+                'Catatan teknis contoh',
+                'DED-001',
+                '{"path":"tunnels/docs/ded.pdf"}',
+                'SPT-001',
+                '{"path":"tunnels/docs/spektek.pdf"}',
+                'SD-001',
+                '{"path":"tunnels/docs/shop-drawing.pdf"}',
+                'ABD-001',
+                '{"path":"tunnels/docs/as-built.pdf"}',
+                'UJI-001',
+                '{"path":"tunnels/docs/uji.pdf"}',
+            ]);
+        });
+    }
+
     private function renderPage(string $page, array $extra = []): View
     {
         $user = request()->user();
@@ -483,7 +846,12 @@ class DashboardController extends Controller
             return $user->hasRole(UserRole::Superadmin);
         }
 
-        return $user->hasRole('superadmin', 'admin');
+        if ($user->hasRole('superadmin', 'admin')) {
+            return true;
+        }
+
+        return $user->hasRole(UserRole::Operator)
+            && in_array($page, ['overview', 'master-data-entity', 'bridge-source-table', 'tunnel-source-table'], true);
     }
 
     /**
@@ -500,26 +868,44 @@ class DashboardController extends Controller
         $bridgeRecordCount = $usesDatabaseSource
             ? $this->bridgeSourceCrudService->count()
             : $this->bridgeSourceDumpService->countCombined();
+        $tunnelRecordCount = $this->tunnelRecordCount();
 
         return collect(self::MASTER_DATA_PAGES)
-            ->map(function (array $config, string $key) use ($typeMap, $bridgeRecordCount): array {
+            ->map(function (array $config, string $key) use ($typeMap, $bridgeRecordCount, $tunnelRecordCount): array {
                 /** @var MasterDataType|null $type */
                 $type = $typeMap->get($config['type_code']);
                 $isBridgeSource = $key === 'jembatan';
-                $children = $isBridgeSource
-                    ? ($this->bridgeSourceCrudService->isDatabaseSourceAvailable()
+                $isTunnelSource = $key === 'terowongan';
+                $sourceChildren = match (true) {
+                    $isBridgeSource => $this->bridgeSourceCrudService->isDatabaseSourceAvailable()
                         ? $this->bridgeSourceCrudService->tableCatalog()
-                        : $this->bridgeSourceDumpService->tables())
-                    : [];
+                        : $this->bridgeSourceDumpService->tables(),
+                    $isTunnelSource => $this->tunnelSourceTableService->catalog(),
+                    default => [],
+                };
+                $recordCount = match (true) {
+                    $isBridgeSource => $bridgeRecordCount,
+                    $isTunnelSource => $tunnelRecordCount,
+                    default => $type?->records_count ?? 0,
+                };
 
                 return [
                     'key' => $key,
                     'label' => $config['label'],
                     'type_code' => $config['type_code'],
                     'href' => route('dashboard.master-data.entity', ['entity' => $key]),
-                    'record_count' => $isBridgeSource ? $bridgeRecordCount : ($type?->records_count ?? 0),
-                    'is_available' => $isBridgeSource || $type !== null,
-                    'children' => $children,
+                    'record_count' => $recordCount,
+                    'is_available' => $isBridgeSource || $isTunnelSource || $type !== null,
+                    'children' => [
+                        [
+                            'key' => $key.'-records',
+                            'type' => 'entity',
+                            'label' => 'Data '.$config['label'],
+                            'href' => route('dashboard.master-data.entity', ['entity' => $key]),
+                            'row_count' => $recordCount,
+                        ],
+                        ...$sourceChildren,
+                    ],
                 ];
             })
             ->values()
@@ -564,6 +950,37 @@ class DashboardController extends Controller
                 'list_endpoint' => route('dashboard.bridge-source.records.index'),
                 'store_endpoint' => route('dashboard.bridge-source.records.store'),
                 'delete_endpoint' => route('dashboard.bridge-source.records.destroy', ['bridgeUniqid' => '__bridge__']),
+            ];
+        }
+
+        if ($entity === 'terowongan') {
+            return [
+                'key' => $entity,
+                'label' => $config['label'],
+                'type_code' => $config['type_code'],
+                'mode' => 'tunnel-source',
+                'records_count' => $this->tunnelRecordCount(),
+                'type_exists' => true,
+                'type_name' => $config['label'],
+                'crud_enabled' => true,
+                'data_mode' => 'database',
+                'columns' => [
+                    'nama_terowongan',
+                    'nomor_bh',
+                    'km_hm',
+                    'id_wilayah_kerja',
+                    'id_lintas',
+                    'panjang_m',
+                    'status_operasi',
+                    'status_aset',
+                    'updated_at',
+                ],
+                'list_endpoint' => route('dashboard.tunnel-source.records.index'),
+                'store_endpoint' => route('dashboard.tunnel-source.records.store'),
+                'update_endpoint' => route('dashboard.tunnel-source.records.update', ['tunnel_id' => '__tunnel__']),
+                'import_endpoint' => route('dashboard.tunnel-source.import'),
+                'export_endpoint' => route('dashboard.tunnel-source.export'),
+                'template_endpoint' => route('dashboard.tunnel-source.template'),
             ];
         }
 
@@ -625,6 +1042,19 @@ class DashboardController extends Controller
     /**
      * @return array<string, mixed>
      */
+    private function resolveTunnelSourceTablePage(string $table): array
+    {
+        return [
+            ...$this->tunnelSourceTableService->tablePage($table),
+            'parent_key' => 'terowongan',
+            'mode' => 'tunnel-source-table',
+            'breadcrumb_label' => 'Terowongan',
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
     private function resolveSuperadminUserPage(): array
     {
         return [
@@ -680,7 +1110,7 @@ class DashboardController extends Controller
     {
         $user = request()->user();
 
-        if (! $user instanceof User || ! $user->hasRole('superadmin', 'admin')) {
+        if (! $user instanceof User || ! $user->hasRole('superadmin', 'admin', 'operator')) {
             abort(403);
         }
 
@@ -696,5 +1126,178 @@ class DashboardController extends Controller
         throw ValidationException::withMessages([
             'bridge_source' => ['Mode CRUD source database belum tersedia di environment ini. Halaman saat ini memakai fallback baca dari dump SQL.'],
         ]);
+    }
+
+    private function tunnelRecordCount(): int
+    {
+        if (! Schema::connection('tunnel')->hasTable('m_tunnels')) {
+            return 0;
+        }
+
+        return Tunnel::query()->count();
+    }
+
+    private function downloadTunnelCsv(string $filename, callable $writer): StreamedResponse
+    {
+        return response()->streamDownload(function () use ($writer): void {
+            $handle = fopen('php://output', 'w');
+
+            if ($handle === false) {
+                return;
+            }
+
+            fputs($handle, "\xEF\xBB\xBF");
+            $writer($handle);
+            fclose($handle);
+        }, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
+    }
+
+    /**
+     * @return array<int, mixed>
+     */
+    private function tunnelCsvRow(Tunnel $tunnel): array
+    {
+        return array_map(
+            fn (string $column): mixed => $this->csvValue(data_get($tunnel, $column)),
+            self::TUNNEL_CSV_COLUMNS,
+        );
+    }
+
+    private function csvValue(mixed $value): mixed
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        if ($value instanceof \DateTimeInterface) {
+            return $value->format('Y-m-d');
+        }
+
+        if (is_array($value) || is_object($value)) {
+            return json_encode($value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        }
+
+        return $value;
+    }
+
+    /**
+     * @param  array<int, string>  $headers
+     * @param  array<int, string|null>  $row
+     * @return array<string, mixed>
+     */
+    private function tunnelPayloadFromCsvRow(array $headers, array $row): array
+    {
+        $payload = [];
+
+        foreach ($headers as $index => $header) {
+            if (! in_array($header, self::TUNNEL_CSV_COLUMNS, true)) {
+                continue;
+            }
+
+            $value = $this->normalizeCsvValue($row[$index] ?? null);
+
+            if ($value === null) {
+                continue;
+            }
+
+            Arr::set($payload, $header, $value);
+        }
+
+        return $payload;
+    }
+
+    private function normalizeCsvValue(?string $value): mixed
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $trimmed = trim($value);
+
+        if ($trimmed === '') {
+            return null;
+        }
+
+        if (
+            (str_starts_with($trimmed, '{') && str_ends_with($trimmed, '}')) ||
+            (str_starts_with($trimmed, '[') && str_ends_with($trimmed, ']'))
+        ) {
+            $decoded = json_decode($trimmed, true);
+
+            if (json_last_error() === JSON_ERROR_NONE) {
+                return $decoded;
+            }
+        }
+
+        return $trimmed;
+    }
+
+    /**
+     * @param  array<int, string|null>  $row
+     */
+    private function csvRowIsEmpty(array $row): bool
+    {
+        return collect($row)->every(fn ($value): bool => trim((string) $value) === '');
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function tunnelImportRules(): array
+    {
+        $nextYear = now()->year + 1;
+
+        return [
+            'kode_aset' => ['nullable', 'string', 'max:50', Rule::unique('tunnel.m_tunnels', 'kode_aset')->whereNull('deleted_at')],
+            'nomor_bh' => ['nullable', 'string', 'max:50'],
+            'nama_terowongan' => ['required', 'string', 'max:150'],
+            'id_wilayah_kerja' => ['nullable', 'string', 'max:50'],
+            'id_lintas' => ['nullable', 'string', 'max:50'],
+            'km_hm' => ['nullable', 'string', 'max:30'],
+            'panjang_m' => ['nullable', 'numeric', 'min:0'],
+            'tahun_bangunan' => ['nullable', 'integer', 'between:1800,'.$nextYear],
+            'tahun_operasi' => ['nullable', 'integer', 'between:1800,'.$nextYear],
+            'umur_tahun' => ['nullable', 'integer', 'min:0', 'max:65535'],
+            'lat' => ['nullable', 'numeric', 'between:-90,90'],
+            'long' => ['nullable', 'numeric', 'between:-180,180'],
+            'status_operasi' => ['nullable', 'string', 'max:30'],
+            'status_aset' => ['nullable', 'string', 'max:30'],
+            'kondisi_terakhir' => ['nullable', 'string', 'max:50'],
+            'tgl_inspeksi_terakhir' => ['nullable', 'date'],
+            'structure' => ['nullable', 'array'],
+            'structure.jenis_struktur' => ['nullable', 'string', 'max:100'],
+            'structure.material_struktur' => ['nullable', 'string', 'max:100'],
+            'structure.material_lining' => ['nullable', 'string', 'max:100'],
+            'structure.material_portal' => ['nullable', 'string', 'max:100'],
+            'structure.material_invert' => ['nullable', 'string', 'max:100'],
+            'structure.metode_konstruksi' => ['nullable', 'string', 'max:100'],
+            'structure.waterproofing' => ['nullable', 'string', 'max:100'],
+            'structure.tahun_rehabilitasi_terakhir' => ['nullable', 'integer', 'between:1800,'.$nextYear],
+            'specs' => ['nullable', 'array'],
+            'specs.jumlah_jalur' => ['nullable', 'integer', 'min:1', 'max:255'],
+            'specs.jenis_jalur' => ['nullable', 'string', 'max:50'],
+            'specs.gauge_m' => ['nullable', 'numeric', 'min:0'],
+            'specs.lebar_bersih_m' => ['nullable', 'numeric', 'min:0'],
+            'specs.tinggi_bersih_m' => ['nullable', 'numeric', 'min:0'],
+            'specs.clearance_horizontal_mm' => ['nullable', 'integer', 'min:1'],
+            'specs.clearance_vertikal_mm' => ['nullable', 'integer', 'min:1'],
+            'specs.bentuk_penampang' => ['nullable', 'string', 'max:100'],
+            'specs.gradien_persen' => ['nullable', 'numeric', 'min:0'],
+            'specs.radius_lengkung_m' => ['nullable', 'numeric', 'min:0'],
+            'specs.catatan_teknis' => ['nullable', 'string'],
+            'docs' => ['nullable', 'array'],
+            'docs.no_ded_bed_kajian_teknis' => ['nullable', 'string', 'max:100'],
+            'docs.ded_bed_kajian_teknis' => ['nullable'],
+            'docs.no_spesifikasi_teknis' => ['nullable', 'string', 'max:100'],
+            'docs.spesifikasi_teknis' => ['nullable'],
+            'docs.no_shop_drawing' => ['nullable', 'string', 'max:100'],
+            'docs.shop_drawing' => ['nullable'],
+            'docs.no_as_built_drawing' => ['nullable', 'string', 'max:100'],
+            'docs.as_built_drawing' => ['nullable'],
+            'docs.no_dok_hasil_uji' => ['nullable', 'string', 'max:100'],
+            'docs.dok_hasil_uji' => ['nullable'],
+        ];
     }
 }

@@ -44,7 +44,15 @@ Isi utama:
 - seluruh tabel source `m_jembatan*`
 - survey, detail, penilaian, review, perawatan
 
-### 4. `prasarana_track`
+### 4. `prasarana_tunnel`
+
+Isi utama:
+
+- source operasional Terowongan
+- histori inspeksi terowongan
+- detail aset terowongan
+
+### 5. `prasarana_track`
 
 Isi utama:
 
@@ -52,7 +60,7 @@ Isi utama:
 - histori inspeksi jalur
 - detail aset jalur
 
-### 5. `prasarana_operational_facility`
+### 6. `prasarana_operational_facility`
 
 Isi utama:
 
@@ -101,6 +109,7 @@ Isi utama:
 Domain yang saat ini disiapkan:
 
 - Jembatan
+- Terowongan
 - Jalur
 - Fasilitas Operasional
 - Sertifikat
@@ -137,7 +146,7 @@ Pola yang tidak disarankan:
 
 ## Strategi Implementasi Bertahap
 
-1. Tetapkan naming koneksi eksplisit: `bridge`, `track`, `operational_facility`, `certificate`, `warehouse`
+1. Tetapkan naming koneksi eksplisit: `bridge`, `tunnel`, `track`, `operational_facility`, `certificate`, `warehouse`
 2. Pertahankan alias `legacy` hanya untuk kompatibilitas sementara
 3. Pisahkan `core` dan `reference`
 4. Pindahkan setiap modul ke source of truth database domain masing-masing

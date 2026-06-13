@@ -8,6 +8,7 @@ use App\Models\ImportMapping;
 use App\Models\MasterData;
 use App\Models\MasterDataType;
 use App\Support\MasterData\BridgeModuleDefinition;
+use App\Support\MasterData\TunnelModuleDefinition;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
@@ -42,6 +43,12 @@ class DatabaseSeeder extends Seeder
             name: 'Jembatan',
             actorId: $actorId,
             attributes: BridgeModuleDefinition::typeAttributes(),
+        );
+        $this->seedMasterDataType(
+            code: 'tunnel',
+            name: 'Terowongan',
+            actorId: $actorId,
+            attributes: TunnelModuleDefinition::typeAttributes(),
         );
         $this->seedMasterDataType(code: 'railway_track', name: 'Jalur Kereta', actorId: $actorId);
         $this->seedMasterDataType(code: 'province', name: 'Provinsi', actorId: $actorId);

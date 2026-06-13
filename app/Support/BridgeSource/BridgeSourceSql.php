@@ -271,12 +271,34 @@ class BridgeSourceSql
 
     public function schemaPath(): string
     {
-        return base_path('database/struktur/struktur_jembatan.sql');
+        return $this->firstExistingPath([
+            base_path('database/struktur/struktur_jembatan.sql'),
+            base_path('database/data/struktur_jembatan.sql'),
+        ]);
     }
 
     public function dataPath(): string
     {
-        return base_path((string) config('master-data.bridge_source.dump_path', 'database/struktur/data_jembatan.sql'));
+        $configuredPath = base_path((string) config('master-data.bridge_source.dump_path', 'database/struktur/data_jembatan.sql'));
+
+        return $this->firstExistingPath([
+            $configuredPath,
+            base_path('database/data/data_jembatan.sql'),
+        ]);
+    }
+
+    /**
+     * @param  array<int, string>  $paths
+     */
+    private function firstExistingPath(array $paths): string
+    {
+        foreach ($paths as $path) {
+            if (is_file($path)) {
+                return $path;
+            }
+        }
+
+        return $paths[0];
     }
 
     private function sanitizeCreateStatement(string $statement): string

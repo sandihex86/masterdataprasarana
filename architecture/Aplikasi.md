@@ -34,7 +34,7 @@ Flow web saat ini:
 3. User terautentikasi masuk ke `/dashboard`
 4. Swagger docs juga berada di belakang auth web
 
-Dashboard web saat ini memakai satu shell Blade dengan navigasi halaman internal berbasis route terpisah, termasuk halaman master data mandiri per submenu seperti `Jembatan`, `Jalur`, `Fasilitas Operasional`, `Sertifikat`, dan `Gudang`.
+Dashboard web saat ini memakai satu shell Blade dengan navigasi halaman internal berbasis route terpisah, termasuk halaman master data mandiri per submenu seperti `Jembatan`, `Terowongan`, `Jalur`, `Fasilitas Operasional`, `Sertifikat`, dan `Gudang`.
 
 Flow API saat ini:
 
@@ -103,6 +103,8 @@ Koneksi utama yang kini disiapkan:
   Untuk data referensi lintas domain seperti provinsi, wilayah kerja, wilayah operasi, lintas, stasiun, dan taxonomy bersama.
 - `bridge`
   Untuk seluruh source dan transaksi modul Jembatan.
+- `tunnel`
+  Untuk bounded context modul Terowongan.
 - `track`
   Untuk bounded context modul Jalur.
 - `operational_facility`

@@ -20,10 +20,18 @@ class LegacyDatabaseService
     public function listTables(?string $connection = null): array
     {
         $connection ??= $this->defaultConnection();
+        $database = DB::connection($connection);
+
+        if ($database->getDriverName() === 'sqlite') {
+            return array_map(
+                fn (object $table): string => (string) $table->name,
+                $database->select("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name"),
+            );
+        }
 
         return array_map(
             fn (object $table) => array_values((array) $table)[0],
-            DB::connection($connection)->select('SHOW TABLES'),
+            $database->select('SHOW TABLES'),
         );
     }
 

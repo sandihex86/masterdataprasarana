@@ -27,6 +27,14 @@ return [
             'required' => true,
         ],
         [
+            'key' => 'tunnel',
+            'label' => 'Database Terowongan',
+            'connection' => 'tunnel',
+            'domain' => 'terowongan',
+            'description' => 'Bounded context untuk modul Terowongan dan data source/survey/detail terowongan.',
+            'required' => false,
+        ],
+        [
             'key' => 'track',
             'label' => 'Database Jalur',
             'connection' => 'track',
@@ -72,6 +80,12 @@ return [
             'label' => 'Jembatan',
             'connection' => 'bridge',
             'source_of_truth' => 'database bridge',
+            'shared_reference_connection' => 'reference',
+        ],
+        'terowongan' => [
+            'label' => 'Terowongan',
+            'connection' => 'tunnel',
+            'source_of_truth' => 'database tunnel',
             'shared_reference_connection' => 'reference',
         ],
         'jalur' => [

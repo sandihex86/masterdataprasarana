@@ -13,7 +13,46 @@ use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\ImportMappingController;
 use App\Http\Controllers\Api\V1\MasterDataController;
 use App\Http\Controllers\Api\V1\MasterDataTypeController;
+use App\Http\Controllers\Api\V1\TunnelController;
 use Illuminate\Support\Facades\Route;
+
+$tunnelRoutes = static function (): void {
+    Route::get('/tunnels', [TunnelController::class, 'index'])
+        ->middleware('abilities:master-data:read')
+        ->name('api.tunnels.index');
+    Route::post('/tunnels', [TunnelController::class, 'store'])
+        ->middleware('abilities:master-data:write')
+        ->name('api.tunnels.store');
+    Route::get('/tunnels/{tunnel_id}/structure', [TunnelController::class, 'structure'])
+        ->middleware('abilities:master-data:read')
+        ->name('api.tunnels.structure.show');
+    Route::match(['put', 'patch'], '/tunnels/{tunnel_id}/structure', [TunnelController::class, 'upsertStructure'])
+        ->middleware('abilities:master-data:write')
+        ->name('api.tunnels.structure.upsert');
+    Route::get('/tunnels/{tunnel_id}/specs', [TunnelController::class, 'specs'])
+        ->middleware('abilities:master-data:read')
+        ->name('api.tunnels.specs.show');
+    Route::match(['put', 'patch'], '/tunnels/{tunnel_id}/specs', [TunnelController::class, 'upsertSpecs'])
+        ->middleware('abilities:master-data:write')
+        ->name('api.tunnels.specs.upsert');
+    Route::get('/tunnels/{tunnel_id}/docs', [TunnelController::class, 'docs'])
+        ->middleware('abilities:master-data:read')
+        ->name('api.tunnels.docs.show');
+    Route::match(['put', 'patch'], '/tunnels/{tunnel_id}/docs', [TunnelController::class, 'upsertDocs'])
+        ->middleware('abilities:master-data:write')
+        ->name('api.tunnels.docs.upsert');
+    Route::get('/tunnels/{tunnel_id}', [TunnelController::class, 'show'])
+        ->middleware('abilities:master-data:read')
+        ->name('api.tunnels.show');
+    Route::match(['put', 'patch'], '/tunnels/{tunnel_id}', [TunnelController::class, 'update'])
+        ->middleware('abilities:master-data:write')
+        ->name('api.tunnels.update');
+    Route::delete('/tunnels/{tunnel_id}', [TunnelController::class, 'destroy'])
+        ->middleware('abilities:master-data:delete')
+        ->name('api.tunnels.destroy');
+};
+
+Route::middleware(['auth:sanctum', 'api.actor'])->group($tunnelRoutes);
 
 Route::prefix('v1')->group(function (): void {
     Route::get('/health', [HealthController::class, 'summary'])->name('api.v1.health.summary');
@@ -23,6 +62,40 @@ Route::prefix('v1')->group(function (): void {
         ->name('api.v1.integration.health');
 
     Route::middleware(['auth:sanctum', 'api.actor'])->group(function (): void {
+        Route::get('/tunnels', [TunnelController::class, 'index'])
+            ->middleware('abilities:master-data:read')
+            ->name('api.v1.tunnels.index');
+        Route::post('/tunnels', [TunnelController::class, 'store'])
+            ->middleware('abilities:master-data:write')
+            ->name('api.v1.tunnels.store');
+        Route::get('/tunnels/{tunnel_id}/structure', [TunnelController::class, 'structure'])
+            ->middleware('abilities:master-data:read')
+            ->name('api.v1.tunnels.structure.show');
+        Route::match(['put', 'patch'], '/tunnels/{tunnel_id}/structure', [TunnelController::class, 'upsertStructure'])
+            ->middleware('abilities:master-data:write')
+            ->name('api.v1.tunnels.structure.upsert');
+        Route::get('/tunnels/{tunnel_id}/specs', [TunnelController::class, 'specs'])
+            ->middleware('abilities:master-data:read')
+            ->name('api.v1.tunnels.specs.show');
+        Route::match(['put', 'patch'], '/tunnels/{tunnel_id}/specs', [TunnelController::class, 'upsertSpecs'])
+            ->middleware('abilities:master-data:write')
+            ->name('api.v1.tunnels.specs.upsert');
+        Route::get('/tunnels/{tunnel_id}/docs', [TunnelController::class, 'docs'])
+            ->middleware('abilities:master-data:read')
+            ->name('api.v1.tunnels.docs.show');
+        Route::match(['put', 'patch'], '/tunnels/{tunnel_id}/docs', [TunnelController::class, 'upsertDocs'])
+            ->middleware('abilities:master-data:write')
+            ->name('api.v1.tunnels.docs.upsert');
+        Route::get('/tunnels/{tunnel_id}', [TunnelController::class, 'show'])
+            ->middleware('abilities:master-data:read')
+            ->name('api.v1.tunnels.show');
+        Route::match(['put', 'patch'], '/tunnels/{tunnel_id}', [TunnelController::class, 'update'])
+            ->middleware('abilities:master-data:write')
+            ->name('api.v1.tunnels.update');
+        Route::delete('/tunnels/{tunnel_id}', [TunnelController::class, 'destroy'])
+            ->middleware('abilities:master-data:delete')
+            ->name('api.v1.tunnels.destroy');
+
         Route::get('/master/bridges/batch', [BridgeBatchController::class, 'batch'])
             ->middleware('abilities:master-data:read')
             ->name('api.v1.master.bridges.batch');
