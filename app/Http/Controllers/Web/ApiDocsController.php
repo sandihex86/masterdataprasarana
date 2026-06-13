@@ -9,13 +9,14 @@ class ApiDocsController extends Controller
 {
     public function swagger(): Response
     {
-        $title = 'Master Data Prasarana DJKA API Docs';
-        $docsUrl = route('l5-swagger.default.docs');
+        $title = 'Master Data Prasarana API Docs';
+        $docsUrl = route('docs.openapi');
         $cssUrl = 'https://unpkg.com/swagger-ui-dist@5/swagger-ui.css';
         $bundleUrl = 'https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js';
         $presetUrl = 'https://unpkg.com/swagger-ui-dist@5/swagger-ui-standalone-preset.js';
-        $favicon32 = 'https://unpkg.com/swagger-ui-dist@5/favicon-32x32.png';
-        $favicon16 = 'https://unpkg.com/swagger-ui-dist@5/favicon-16x16.png';
+        $favicon32 = '/favicon.png';
+        $favicon16 = '/favicon.png';
+        $brandLogo = '/images/logo/logo_kemenhub.png';
         $csrfToken = csrf_token();
 
         $html = <<<HTML
@@ -49,7 +50,7 @@ class ApiDocsController extends Controller
             background: rgba(10, 12, 16, 0.96);
             border-bottom: 1px solid rgba(255,255,255,0.08);
             backdrop-filter: blur(18px);
-            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.16), 0 6px 18px rgba(0, 0, 0, 0.12);
         }
         .brand {
             display: flex;
@@ -92,19 +93,46 @@ class ApiDocsController extends Controller
             align-items: center;
             justify-content: center;
             gap: 8px;
+            position: relative;
+            overflow: hidden;
             padding: 10px 14px;
-            border-radius: 999px;
+            border-radius: 14px;
             border: 1px solid rgba(255,255,255,0.14);
             background: rgba(255,255,255,0.06);
             color: #f8fafc;
             text-decoration: none;
             font-size: 0.92rem;
             font-weight: 600;
+            transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease, border-color 160ms ease;
+        }
+        .button::before {
+            content: "";
+            position: absolute;
+            top: 6px;
+            left: 50%;
+            width: 22px;
+            height: 3px;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.18);
+            transform: translateX(-50%);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 160ms ease;
         }
         .button.primary {
             background: linear-gradient(135deg, #7ee787, #2ea043);
             border-color: transparent;
             color: #08120b;
+        }
+        .button.primary::before {
+            background: rgba(255,255,255,0.52);
+        }
+        .button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 5px 10px rgba(0, 0, 0, 0.08);
+        }
+        .button:hover::before {
+            opacity: 1;
         }
         #swagger-ui { max-width: 1280px; margin: 0 auto; padding: 18px 12px 36px; }
         .swagger-ui .topbar { display: none; }
@@ -121,8 +149,8 @@ class ApiDocsController extends Controller
     <div class="topbar">
         <div class="brand">
             <div class="brand-mark">
-                <img src="{$favicon32}" alt="Swagger logo">
-                <span>Swagger</span>
+                <img src="{$brandLogo}" alt="Logo Kementerian Perhubungan">
+                <span>API Docs</span>
             </div>
             <div class="brand-copy">
                 <strong>{$title}</strong>

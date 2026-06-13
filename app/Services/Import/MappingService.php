@@ -22,7 +22,7 @@ class MappingService
      * @param  array<string, mixed>  $configuration
      * @return array<string, mixed>
      */
-    public function validateConfiguration(array $configuration, string $connection = 'legacy'): array
+    public function validateConfiguration(array $configuration, string $connection = 'bridge'): array
     {
         $required = ['source_system', 'source_table', 'entity_type', 'identity'];
 
@@ -128,7 +128,7 @@ class MappingService
      * @param  array<string, mixed>  $configuration
      * @return array<int, array<string, mixed>>
      */
-    public function preview(array $configuration, int $limit = 10, string $connection = 'legacy'): array
+    public function preview(array $configuration, int $limit = 10, string $connection = 'bridge'): array
     {
         $configuration = $this->validateConfiguration($configuration, $connection);
         $rows = $this->legacyDatabase->sampleRows(
@@ -230,7 +230,7 @@ class MappingService
         foreach (array_filter($references) as $reference) {
             if (! in_array($reference, $columns, true)) {
                 throw ValidationException::withMessages([
-                    'mapping' => ["Kolom source [{$reference}] tidak ditemukan pada tabel legacy."],
+                    'mapping' => ["Kolom source [{$reference}] tidak ditemukan pada tabel source."],
                 ]);
             }
         }

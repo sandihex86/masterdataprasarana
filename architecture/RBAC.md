@@ -92,8 +92,21 @@ Karena `superadmin` dan `admin` memakai wildcard `*`, keduanya saat ini memiliki
 
 Perbedaan yang sudah benar-benar diterapkan di aplikasi saat ini:
 
+- `superadmin` dapat melihat seluruh dashboard, dokumentasi API, JSON sistem, audit log, dan endpoint API
+- `admin` dapat melihat dokumentasi API, group menu `Master Data`, `Import dan Mapping`, serta `Monitoring`
+- `viewer` difokuskan ke dokumentasi API
+- role non-admin lain saat ini mengikuti tampilan dokumentasi API pada dashboard web
 - route web tertentu dibatasi oleh middleware role
-- label role tetap dibedakan untuk kebutuhan organisasi
+
+Untuk menu `Master Data`, `admin` dan `superadmin` saat ini mengakses submenu:
+
+- `Jembatan`
+- `Jalur`
+- `Fasilitas Operasional`
+- `Sertifikat`
+- `Gudang`
+
+Masing-masing submenu memakai halaman route terpisah dan grid interaktif untuk baca, tambah, lihat detail, dan edit data.
 
 Jika nanti dibutuhkan perbedaan hak nyata antara `superadmin` dan `admin`, implementasi ability perlu dipisah.
 
@@ -134,7 +147,7 @@ Ini adalah pusat definisi role untuk user.
 
 Contoh implementasi saat ini:
 
-- `/dashboard/system` hanya bisa diakses `superadmin` dan `admin`
+- `/dashboard/system` hanya bisa diakses `superadmin`
 
 Ini adalah kontrol akses berbasis role murni, bukan ability.
 
@@ -255,6 +268,12 @@ Ability minimum:
 ### Login
 
 - guest only
+
+### Dashboard
+
+- `viewer`: dokumentasi API dan OpenAPI spec
+- `admin`: dashboard operasional, dokumentasi API, monitoring, import dan mapping, serta seluruh submenu `Master Data`
+- `superadmin`: seluruh akses `admin` ditambah JSON sistem, audit log, dan endpoint internal khusus
 
 ### Dashboard utama
 

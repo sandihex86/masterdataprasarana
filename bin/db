@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+if ! command -v php >/dev/null 2>&1; then
+    echo "Error: php tidak ditemukan di PATH." >&2
+    exit 1
+fi
+
+if ! command -v mysql >/dev/null 2>&1; then
+    echo "Error: mysql client tidak ditemukan di PATH." >&2
+    exit 1
+fi
+
+cd "$ROOT_DIR"
+
+eval "$(
+php <<'PHP'
+<?php
+
+$root = getcwd();
+
+require $root . '/vendor/autoload.php';
+
+$app = require $root . '/bootstrap/app.php';
+$kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
+$kernel->bootstrap();
+
+$default = (string) config('database.default', 'mysql');
+$connection = (array) config("database.connections.{$default}", []);
+
+$values = [
+    'DB_CONNECTION' => $default,
+    'DB_HOST' => $connection['host'] ?? '127.0.0.1',
+    'DB_PORT' => $connection['port'] ?? '3306',
+    'DB_DATABASE' => $connection['database'] ?? '',
+    'DB_USERNAME' => $connection['username'] ?? '',
+    'DB_PASSWORD' => $connection['password'] ?? '',
+];
+
+foreach ($values as $key => $value) {
+    echo $key . '=' . escapeshellarg((string) $value) . PHP_EOL;
+}
+PHP
+)"
+
+if [[ "$DB_CONNECTION" != "mysql" ]]; then
+    echo "Error: script ini saat ini hanya mendukung koneksi mysql. DB_CONNECTION aktif: $DB_CONNECTION" >&2
+    exit 1
+fi
+
+MYSQL_PWD="$DB_PASSWORD" exec mysql \
+    --host="$DB_HOST" \
+    --port="$DB_PORT" \
+    --user="$DB_USERNAME" \
+    "$DB_DATABASE" \
+    "$@"

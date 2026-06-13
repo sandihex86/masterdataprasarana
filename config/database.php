@@ -3,6 +3,41 @@
 use Illuminate\Support\Str;
 use Pdo\Mysql;
 
+$mysqlConnection = static function (string $prefix, ?string $fallbackPrefix = null): array {
+    $databaseDefault = $prefix === 'DB' ? 'laravel' : '';
+    $usernameDefault = $prefix === 'DB' ? 'root' : '';
+
+    $env = static function (string $suffix, mixed $default = null) use ($prefix, $fallbackPrefix): mixed {
+        $key = $prefix.'_'.$suffix;
+
+        if ($fallbackPrefix !== null) {
+            return env($key, env($fallbackPrefix.'_'.$suffix, $default));
+        }
+
+        return env($key, $default);
+    };
+
+    return [
+        'driver' => $env('CONNECTION', 'mysql'),
+        'url' => $env('URL'),
+        'host' => $env('HOST', '127.0.0.1'),
+        'port' => $env('PORT', '3306'),
+        'database' => $env('DATABASE', $databaseDefault),
+        'username' => $env('USERNAME', $usernameDefault),
+        'password' => $env('PASSWORD', ''),
+        'unix_socket' => $env('SOCKET', ''),
+        'charset' => $env('CHARSET', 'utf8mb4'),
+        'collation' => $env('COLLATION', 'utf8mb4_unicode_ci'),
+        'prefix' => '',
+        'prefix_indexes' => true,
+        'strict' => true,
+        'engine' => null,
+        'options' => extension_loaded('pdo_mysql') ? array_filter([
+            Mysql::ATTR_SSL_CA => $env('SSL_CA'),
+        ]) : [],
+    ];
+};
+
 return [
 
     /*
@@ -44,25 +79,27 @@ return [
             'transaction_mode' => 'DEFERRED',
         ],
 
-        'mysql' => [
-            'driver' => 'mysql',
-            'url' => env('DB_URL'),
-            'host' => env('DB_HOST', '127.0.0.1'),
-            'port' => env('DB_PORT', '3306'),
-            'database' => env('DB_DATABASE', 'laravel'),
-            'username' => env('DB_USERNAME', 'root'),
-            'password' => env('DB_PASSWORD', ''),
-            'unix_socket' => env('DB_SOCKET', ''),
-            'charset' => env('DB_CHARSET', 'utf8mb4'),
-            'collation' => env('DB_COLLATION', 'utf8mb4_unicode_ci'),
-            'prefix' => '',
-            'prefix_indexes' => true,
-            'strict' => true,
-            'engine' => null,
+        'mysql' => array_merge($mysqlConnection('DB'), [
             'options' => extension_loaded('pdo_mysql') ? array_filter([
-                Mysql::ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+                Mysql::ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA', env('DB_SSL_CA')),
             ]) : [],
-        ],
+        ]),
+
+        'core' => $mysqlConnection('CORE_DB', 'DB'),
+
+        'reference' => $mysqlConnection('REFERENCE_DB', 'CORE_DB'),
+
+        'bridge' => $mysqlConnection('BRIDGE_DB'),
+
+        'track' => $mysqlConnection('TRACK_DB'),
+
+        'operational_facility' => $mysqlConnection('OPERATIONAL_FACILITY_DB'),
+
+        'certificate' => $mysqlConnection('CERTIFICATE_DB'),
+
+        'warehouse' => $mysqlConnection('WAREHOUSE_DB'),
+
+        'reporting' => $mysqlConnection('REPORTING_DB'),
 
         'mariadb' => [
             'driver' => 'mariadb',
@@ -81,24 +118,6 @@ return [
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 Mysql::ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
-            ]) : [],
-        ],
-
-        'legacy' => [
-            'driver' => env('LEGACY_DB_CONNECTION', 'mysql'),
-            'host' => env('LEGACY_DB_HOST', '127.0.0.1'),
-            'port' => env('LEGACY_DB_PORT', '3306'),
-            'database' => env('LEGACY_DB_DATABASE', ''),
-            'username' => env('LEGACY_DB_USERNAME', ''),
-            'password' => env('LEGACY_DB_PASSWORD', ''),
-            'charset' => env('LEGACY_DB_CHARSET', 'utf8mb4'),
-            'collation' => env('LEGACY_DB_COLLATION', 'utf8mb4_unicode_ci'),
-            'prefix' => '',
-            'prefix_indexes' => true,
-            'strict' => true,
-            'engine' => null,
-            'options' => extension_loaded('pdo_mysql') ? array_filter([
-                Mysql::ATTR_SSL_CA => env('LEGACY_DB_SSL_CA'),
             ]) : [],
         ],
 

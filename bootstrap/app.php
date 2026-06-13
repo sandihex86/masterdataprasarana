@@ -16,6 +16,7 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\Http\Middleware\CheckAbilities;
 use Laravel\Sanctum\Http\Middleware\CheckForAnyAbility;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -41,11 +42,11 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
-            fn (Request $request) => $request->is('api/*'),
+            fn (Request $request) => $request->expectsJson() || $request->is('api/*'),
         );
 
         $exceptions->render(function (ValidationException $exception, Request $request) {
-            if (! $request->is('api/*')) {
+            if (! ($request->expectsJson() || $request->is('api/*'))) {
                 return null;
             }
 
@@ -58,7 +59,7 @@ return Application::configure(basePath: dirname(__DIR__))
         });
 
         $exceptions->render(function (AuthenticationException $exception, Request $request) {
-            if (! $request->is('api/*')) {
+            if (! ($request->expectsJson() || $request->is('api/*'))) {
                 return null;
             }
 
@@ -70,7 +71,7 @@ return Application::configure(basePath: dirname(__DIR__))
         });
 
         $exceptions->render(function (AuthorizationException $exception, Request $request) {
-            if (! $request->is('api/*')) {
+            if (! ($request->expectsJson() || $request->is('api/*'))) {
                 return null;
             }
 
@@ -82,7 +83,7 @@ return Application::configure(basePath: dirname(__DIR__))
         });
 
         $exceptions->render(function (ModelNotFoundException|NotFoundHttpException $exception, Request $request) {
-            if (! $request->is('api/*')) {
+            if (! ($request->expectsJson() || $request->is('api/*'))) {
                 return null;
             }
 
@@ -93,8 +94,27 @@ return Application::configure(basePath: dirname(__DIR__))
             );
         });
 
+        $exceptions->render(function (HttpExceptionInterface $exception, Request $request) {
+            if (! ($request->expectsJson() || $request->is('api/*'))) {
+                return null;
+            }
+
+            $status = $exception->getStatusCode();
+
+            return ApiResponse::error(
+                message: $status === 403 ? 'Akses ditolak.' : ($exception->getMessage() !== '' ? $exception->getMessage() : 'Terjadi kesalahan HTTP.'),
+                code: match ($status) {
+                    401 => 'AUTHENTICATION_REQUIRED',
+                    403 => 'ACCESS_DENIED',
+                    404 => 'RESOURCE_NOT_FOUND',
+                    default => 'HTTP_ERROR',
+                },
+                status: $status,
+            );
+        });
+
         $exceptions->render(function (Throwable $exception, Request $request) {
-            if (! $request->is('api/*')) {
+            if (! ($request->expectsJson() || $request->is('api/*'))) {
                 return null;
             }
 

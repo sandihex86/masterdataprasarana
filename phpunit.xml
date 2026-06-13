@@ -31,6 +31,18 @@
         <env name="DB_USERNAME" value="prasarana"/>
         <env name="DB_PASSWORD" value="prasarana"/>
         <env name="DB_URL" value=""/>
+        <env name="CORE_DB_CONNECTION" value="mysql"/>
+        <env name="CORE_DB_HOST" value="127.0.0.1"/>
+        <env name="CORE_DB_PORT" value="3307"/>
+        <env name="CORE_DB_DATABASE" value="prasarana_testing"/>
+        <env name="CORE_DB_USERNAME" value="prasarana"/>
+        <env name="CORE_DB_PASSWORD" value="prasarana"/>
+        <env name="BRIDGE_DB_CONNECTION" value="mysql"/>
+        <env name="BRIDGE_DB_HOST" value="127.0.0.1"/>
+        <env name="BRIDGE_DB_PORT" value="3307"/>
+        <env name="BRIDGE_DB_DATABASE" value="prasarana_testing"/>
+        <env name="BRIDGE_DB_USERNAME" value="prasarana"/>
+        <env name="BRIDGE_DB_PASSWORD" value="prasarana"/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>

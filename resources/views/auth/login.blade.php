@@ -3,7 +3,9 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Login | Master Data Prasarana DJKA</title>
+    <title>Login | Master Data Prasarana</title>
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
     @if ($recaptchaEnabled)
         @if ($recaptchaType === 'v3')
             <script src="https://www.google.com/recaptcha/api.js?render={{ $recaptchaSiteKey }}"></script>
@@ -23,7 +25,9 @@
             --accent-deep: #115e59;
             --danger-soft: rgba(180, 35, 24, 0.1);
             --danger-text: #b42318;
-            --shadow: 0 24px 64px rgba(15, 23, 42, 0.12);
+            --shadow: 0 1px 2px rgba(15, 23, 42, 0.08), 0 8px 24px rgba(15, 23, 42, 0.08);
+            --shadow-accent: 0 1px 2px rgba(15, 118, 110, 0.14), 0 4px 12px rgba(15, 118, 110, 0.1);
+            --shadow-hover-accent: 0 1px 3px rgba(15, 118, 110, 0.14), 0 5px 10px rgba(15, 118, 110, 0.08);
         }
 
         * {
@@ -75,6 +79,13 @@
         .heading {
             margin-bottom: 24px;
             text-align: center;
+        }
+
+        .logo {
+            display: block;
+            width: min(240px, 78%);
+            height: auto;
+            margin: 0 auto 18px;
         }
 
         h1 {
@@ -173,21 +184,6 @@
             background: linear-gradient(135deg, rgba(15, 118, 110, 0.05), rgba(14, 165, 233, 0.08));
         }
 
-        .recaptcha-v3-badge {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 100%;
-            min-height: 54px;
-            padding: 14px 16px;
-            border-radius: 18px;
-            border: 1px solid rgba(15, 23, 42, 0.08);
-            background: rgba(255, 255, 255, 0.8);
-            color: var(--accent-deep);
-            font-size: 0.92rem;
-            font-weight: 600;
-        }
-
         .remember {
             display: flex;
             align-items: center;
@@ -209,22 +205,43 @@
             align-items: center;
             justify-content: center;
             gap: 10px;
+            position: relative;
+            overflow: hidden;
             padding: 15px 18px;
             border: 0;
-            border-radius: 20px;
+            border-radius: 15px;
             background: linear-gradient(135deg, var(--accent), #0ea5e9);
             color: white;
             font: inherit;
             font-weight: 700;
             cursor: pointer;
-            box-shadow: 0 10px 22px rgba(15, 118, 110, 0.16);
+            box-shadow: var(--shadow-accent);
             transition: transform 160ms ease, box-shadow 160ms ease, filter 160ms ease;
+        }
+
+        .button::before {
+            content: "";
+            position: absolute;
+            top: 7px;
+            left: 50%;
+            width: 26px;
+            height: 3px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.46);
+            transform: translateX(-50%);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 160ms ease;
         }
 
         .button:hover {
             transform: translateY(-1px);
-            box-shadow: 0 12px 26px rgba(15, 118, 110, 0.18);
+            box-shadow: var(--shadow-hover-accent);
             filter: saturate(1.04);
+        }
+
+        .button:hover::before {
+            opacity: 1;
         }
 
         @keyframes rise {
@@ -265,7 +282,8 @@
     <main class="shell">
         <section class="panel">
             <div class="heading">
-                <h1>Master Data Prasarana DJKA</h1>
+                <img class="logo" src="/images/logo/logo.svg" alt="Logo Kementerian Perhubungan">
+                <h1>Master Data Prasarana</h1>
             </div>
 
             @if ($errors->any())
@@ -300,22 +318,14 @@
                     </div>
                 </div>
 
-                @if ($recaptchaEnabled)
+                @if ($recaptchaEnabled && $recaptchaType !== 'v3')
                     <div class="recaptcha-wrap">
                         <div class="recaptcha-shell">
-                            @if ($recaptchaType === 'v3')
-                                <div class="recaptcha-v3-badge">reCAPTCHA aktif</div>
-                            @else
-                                <div class="g-recaptcha" data-sitekey="{{ $recaptchaSiteKey }}"></div>
-                            @endif
+                            <div class="g-recaptcha" data-sitekey="{{ $recaptchaSiteKey }}"></div>
                         </div>
                     </div>
                     <p class="recaptcha-note">
-                        @if ($recaptchaType === 'v3')
-                            Verifikasi keamanan Google reCAPTCHA v3 berjalan otomatis.
-                        @else
-                            Verifikasi keamanan Google reCAPTCHA.
-                        @endif
+                        Verifikasi keamanan Google reCAPTCHA.
                     </p>
                 @endif
 

@@ -3,7 +3,10 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Dashboard | Master Data Prasarana DJKA</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>Dashboard | Master Data Prasarana</title>
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <style>
         :root {
             color-scheme: light;
@@ -26,7 +29,11 @@
             --warn-soft: rgba(180, 83, 9, 0.12);
             --danger: #b42318;
             --danger-soft: rgba(180, 35, 24, 0.11);
-            --shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
+            --shadow: 0 1px 2px rgba(15, 23, 42, 0.08), 0 2px 6px rgba(15, 23, 42, 0.05);
+            --shadow-raised: 0 2px 6px rgba(15, 23, 42, 0.08), 0 6px 14px rgba(15, 23, 42, 0.05);
+            --shadow-accent: 0 1px 2px rgba(209, 77, 31, 0.14), 0 3px 8px rgba(209, 77, 31, 0.1);
+            --shadow-hover: 0 1px 3px rgba(15, 23, 42, 0.08), 0 4px 8px rgba(15, 23, 42, 0.05);
+            --shadow-hover-accent: 0 1px 3px rgba(209, 77, 31, 0.14), 0 5px 10px rgba(209, 77, 31, 0.08);
         }
 
         * {
@@ -57,16 +64,27 @@
             font: inherit;
         }
 
+        summary {
+            list-style: none;
+        }
+
+        summary::-webkit-details-marker {
+            display: none;
+        }
+
         .dashboard {
             min-height: 100vh;
             display: grid;
             grid-template-columns: 272px minmax(0, 1fr);
+            transition: grid-template-columns 180ms ease;
         }
 
         .sidebar {
             position: sticky;
             top: 0;
             height: 100vh;
+            display: flex;
+            flex-direction: column;
             padding: 22px 14px;
             background: var(--sidebar);
             border-right: 1px solid var(--line);
@@ -74,24 +92,76 @@
             overflow: auto;
         }
 
+        .sidebar-header {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 10px;
+            padding: 8px 8px 16px;
+        }
+
         .brand {
             display: flex;
             align-items: center;
             gap: 12px;
-            padding: 8px 8px 18px;
+            min-width: 0;
         }
 
         .brand-mark {
-            width: 42px;
-            height: 42px;
-            border-radius: 14px;
+            width: 44px;
+            height: 44px;
             display: grid;
             place-items: center;
-            background: linear-gradient(135deg, var(--accent), #f59e0b);
-            color: white;
-            box-shadow: 0 16px 32px rgba(209, 77, 31, 0.18);
-            font-weight: 800;
-            letter-spacing: -0.05em;
+            overflow: hidden;
+            flex: 0 0 44px;
+        }
+
+        .brand-mark img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .sidebar-toggle {
+            width: 34px;
+            height: 34px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            border: 0;
+            background: transparent;
+            color: var(--muted);
+            cursor: pointer;
+            transition: background 160ms ease, color 160ms ease, transform 160ms ease;
+        }
+
+        .sidebar-toggle:hover {
+            background: rgba(15, 23, 42, 0.05);
+            color: var(--text);
+            transform: translateY(-1px);
+        }
+
+        .sidebar-toggle .icon {
+            width: 16px;
+            height: 16px;
+            flex-basis: 16px;
+        }
+
+        .sidebar-action {
+            margin-top: auto;
+            display: flex;
+            justify-content: flex-end;
+            padding-top: 16px;
+            padding-right: 2px;
+        }
+
+        .sidebar-action .sidebar-toggle {
+            width: 34px;
+            height: 34px;
+            justify-content: center;
+            border-radius: 10px;
+            padding: 0;
         }
 
         .brand-copy strong {
@@ -120,9 +190,44 @@
             text-transform: uppercase;
         }
 
+        .nav-subtitle {
+            margin: -2px 10px 10px;
+            color: var(--muted);
+            font-size: 0.78rem;
+        }
+
         .nav-list {
             display: grid;
             gap: 6px;
+        }
+
+        .nav-group {
+            display: grid;
+            gap: 6px;
+        }
+
+        .nav-children {
+            display: grid;
+            gap: 4px;
+            margin: -2px 0 4px 46px;
+            padding-left: 10px;
+            border-left: 1px dashed rgba(15, 23, 42, 0.12);
+        }
+
+        .nav-child-link {
+            display: block;
+            padding: 8px 10px;
+            border-radius: 12px;
+            color: var(--muted);
+            font-size: 0.82rem;
+            transition: background 160ms ease, color 160ms ease, transform 160ms ease;
+        }
+
+        .nav-child-link:hover,
+        .nav-child-link.active {
+            background: rgba(15, 23, 42, 0.04);
+            color: var(--text);
+            transform: translateX(1px);
         }
 
         .nav-link,
@@ -205,12 +310,14 @@
         }
 
         .topbar {
+            position: relative;
+            z-index: 40;
             display: flex;
             justify-content: space-between;
             align-items: center;
             gap: 14px;
-            margin-bottom: 18px;
-            padding: 10px 12px 10px 16px;
+            margin-bottom: 22px;
+            padding: 16px 14px 16px 18px;
             border-radius: 22px;
             background: rgba(255, 255, 255, 0.7);
             border: 1px solid rgba(255, 255, 255, 0.68);
@@ -219,12 +326,15 @@
 
         .topbar-title strong {
             display: block;
-            font-size: 1rem;
+            font-size: 1.4rem;
+            line-height: 1.05;
+            letter-spacing: -0.04em;
         }
 
         .topbar-title span {
             color: var(--muted);
-            font-size: 0.87rem;
+            font-size: 0.96rem;
+            margin-top: 4px;
         }
 
         .topbar-actions {
@@ -241,8 +351,7 @@
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            border-radius: 999px;
-            padding: 10px 14px;
+            padding: 8px 12px;
             font-size: 0.9rem;
             font-weight: 600;
         }
@@ -253,32 +362,182 @@
         }
 
         .top-button {
+            position: relative;
+            overflow: hidden;
             background: white;
             border: 1px solid var(--line);
             color: var(--text);
+            border-radius: 14px;
+            transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease, background 160ms ease;
+        }
+
+        .top-button::before {
+            content: "";
+            position: absolute;
+            top: 6px;
+            left: 50%;
+            width: 24px;
+            height: 3px;
+            border-radius: 999px;
+            background: rgba(15, 23, 42, 0.09);
+            transform: translateX(-50%);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 160ms ease;
         }
 
         .top-button.primary {
             background: linear-gradient(135deg, var(--accent), #ef7a1b);
             border-color: transparent;
             color: white;
-            box-shadow: 0 16px 28px rgba(209, 77, 31, 0.22);
+            box-shadow: var(--shadow-accent);
+        }
+
+        .top-button.primary::before {
+            background: rgba(255, 255, 255, 0.46);
+        }
+
+        .top-button:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .top-button:hover::before {
+            opacity: 1;
+        }
+
+        .top-button.primary:hover {
+            box-shadow: var(--shadow-hover-accent);
+        }
+
+        .user-menu {
+            position: relative;
         }
 
         .user-chip {
             background: white;
             border: 1px solid var(--line);
+            border-radius: 14px;
+            padding: 8px 12px;
+            font-size: 0.82rem;
+            line-height: 1;
+            min-height: 46px;
+            cursor: pointer;
+            transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+        }
+
+        .user-menu[open] .user-chip {
+            background: #fff;
+            border-color: rgba(15, 23, 42, 0.14);
+            box-shadow: var(--shadow);
         }
 
         .user-avatar {
-            width: 34px;
-            height: 34px;
+            width: 28px;
+            height: 28px;
             display: grid;
             place-items: center;
-            border-radius: 12px;
+            border-radius: 999px;
             background: linear-gradient(135deg, rgba(209, 77, 31, 0.16), rgba(109, 74, 255, 0.12));
             color: var(--accent-deep);
-            font-weight: 800;
+            font-size: 0.78rem;
+            font-weight: 700;
+        }
+
+        .user-chip-text {
+            display: grid;
+            gap: 2px;
+        }
+
+        .user-chip-text strong {
+            font-size: 0.86rem;
+            font-weight: 600;
+            line-height: 1.1;
+        }
+
+        .user-chip-text span {
+            color: var(--muted);
+            font-size: 0.74rem;
+            line-height: 1.1;
+        }
+
+        .user-menu-caret {
+            width: 16px;
+            height: 16px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--muted);
+            transition: transform 160ms ease;
+        }
+
+        .user-menu[open] .user-menu-caret {
+            transform: rotate(180deg);
+        }
+
+        .user-dropdown {
+            position: absolute;
+            right: 0;
+            top: calc(100% + 10px);
+            width: min(240px, 82vw);
+            padding: 8px;
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.98);
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            box-shadow: var(--shadow-raised);
+            z-index: 120;
+        }
+
+        .user-menu-list {
+            display: grid;
+            gap: 4px;
+        }
+
+        .user-menu-item,
+        .user-menu-button {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: 14px;
+            border: 0;
+            background: transparent;
+            color: inherit;
+            text-align: left;
+            cursor: pointer;
+            transition: background 160ms ease, transform 160ms ease;
+        }
+
+        .user-menu-item:hover,
+        .user-menu-button:hover {
+            background: rgba(15, 23, 42, 0.04);
+            transform: translateX(1px);
+        }
+
+        .user-menu-icon {
+            width: 18px;
+            height: 18px;
+            flex: 0 0 18px;
+            stroke: currentColor;
+            stroke-width: 1.8;
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .user-menu-copy strong {
+            display: block;
+            font-size: 0.84rem;
+            font-weight: 600;
+        }
+
+        .user-menu-copy span {
+            display: block;
+            margin-top: 2px;
+            color: var(--muted);
+            font-size: 0.72rem;
+            line-height: 1.35;
         }
 
         .grid {
@@ -286,49 +545,18 @@
             gap: 18px;
         }
 
-        .hero {
-            grid-template-columns: 1.25fr 0.95fr;
-            align-items: stretch;
-        }
-
         .card {
             position: relative;
             overflow: hidden;
             background: var(--panel);
             border: 1px solid rgba(255, 255, 255, 0.62);
-            border-radius: 28px;
+            border-radius: 20px;
             box-shadow: var(--shadow);
             backdrop-filter: blur(16px);
         }
 
         .card-body {
             padding: 24px;
-        }
-
-        .hero-main::before {
-            content: "";
-            position: absolute;
-            inset: auto -80px -80px auto;
-            width: 240px;
-            height: 240px;
-            border-radius: 999px;
-            background: linear-gradient(135deg, rgba(209, 77, 31, 0.16), rgba(109, 74, 255, 0.05));
-            filter: blur(2px);
-        }
-
-        .eyebrow {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 12px;
-            border-radius: 999px;
-            background: rgba(255, 255, 255, 0.78);
-            border: 1px solid rgba(255, 255, 255, 0.72);
-            font-size: 0.76rem;
-            font-weight: 700;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            color: var(--accent-deep);
         }
 
         h1,
@@ -339,24 +567,9 @@
         }
 
         h1 {
-            margin-top: 16px;
+            margin-top: 0;
             font-size: clamp(2rem, 5vw, 3.4rem);
             line-height: 0.96;
-        }
-
-        .lead {
-            margin-top: 12px;
-            max-width: 60ch;
-            color: var(--muted);
-            line-height: 1.7;
-        }
-
-        .hero-actions,
-        .hero-pills {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 22px;
         }
 
         .action-button,
@@ -365,31 +578,68 @@
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            border-radius: 999px;
             padding: 10px 14px;
             font-size: 0.9rem;
             font-weight: 600;
         }
 
         .action-button {
+            position: relative;
+            overflow: hidden;
             background: white;
             border: 1px solid var(--line);
+            border-radius: 14px;
+            transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease, background 160ms ease;
+        }
+
+        .action-button::before {
+            content: "";
+            position: absolute;
+            top: 6px;
+            left: 50%;
+            width: 24px;
+            height: 3px;
+            border-radius: 999px;
+            background: rgba(15, 23, 42, 0.09);
+            transform: translateX(-50%);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 160ms ease;
         }
 
         .action-button.primary {
             background: linear-gradient(135deg, var(--accent), #ef7a1b);
             color: white;
             border-color: transparent;
-            box-shadow: 0 16px 28px rgba(209, 77, 31, 0.22);
+            box-shadow: var(--shadow-accent);
+        }
+
+        .action-button.primary::before {
+            background: rgba(255, 255, 255, 0.46);
+        }
+
+        .action-button:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .action-button:hover::before {
+            opacity: 1;
+        }
+
+        .action-button.primary:hover {
+            box-shadow: var(--shadow-hover-accent);
         }
 
         .chip {
             background: var(--accent-soft);
             color: var(--accent-deep);
+            border-radius: 999px;
         }
 
         .status {
             text-transform: capitalize;
+            border-radius: 999px;
         }
 
         .status.ok,
@@ -415,7 +665,7 @@
 
         .metric {
             padding: 20px;
-            border-radius: 24px;
+            border-radius: 18px;
             background: var(--panel-strong);
             border: 1px solid var(--line-soft);
         }
@@ -463,7 +713,7 @@
 
         .overview-card {
             padding: 20px;
-            border-radius: 24px;
+            border-radius: 18px;
             background: rgba(255, 255, 255, 0.88);
             border: 1px solid var(--line-soft);
         }
@@ -473,6 +723,17 @@
             margin-top: 10px;
             font-size: 1.9rem;
             line-height: 1;
+        }
+
+        .section-header h2,
+        .table-head h2 {
+            font-size: 1.2rem;
+            line-height: 1.15;
+        }
+
+        .overview-card h3 {
+            font-size: 1.06rem;
+            line-height: 1.2;
         }
 
         .overview-card span,
@@ -507,14 +768,14 @@
             gap: 16px;
             align-items: center;
             padding: 16px 18px;
-            border-radius: 20px;
+            border-radius: 16px;
             background: rgba(255, 255, 255, 0.92);
             border: 1px solid var(--line-soft);
         }
 
         .menu-item:hover {
             transform: translateY(-1px);
-            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
+            box-shadow: var(--shadow);
         }
 
         .menu-main,
@@ -567,7 +828,7 @@
         .table-card {
             background: rgba(255, 255, 255, 0.92);
             border: 1px solid rgba(255, 255, 255, 0.62);
-            border-radius: 26px;
+            border-radius: 20px;
             box-shadow: var(--shadow);
             overflow: hidden;
         }
@@ -621,7 +882,7 @@
         .footer-callout {
             margin-top: 14px;
             padding: 16px 18px;
-            border-radius: 20px;
+            border-radius: 16px;
             background: linear-gradient(135deg, rgba(109, 74, 255, 0.08), rgba(209, 77, 31, 0.08));
             color: var(--text);
             border: 1px solid rgba(109, 74, 255, 0.08);
@@ -632,8 +893,1002 @@
             margin-bottom: 4px;
         }
 
+        .master-data-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 14px;
+            padding: 22px 22px 0;
+            flex-wrap: wrap;
+        }
+
+        .master-data-toolbar-main,
+        .toolbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .search-field {
+            min-width: min(100%, 320px);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            height: 46px;
+            padding: 0 14px;
+            border-radius: 14px;
+            border: 1px solid var(--line);
+            background: white;
+        }
+
+        .search-field input {
+            width: 100%;
+            border: 0;
+            outline: none;
+            background: transparent;
+            color: var(--text);
+        }
+
+        .rows-select,
+        .field input,
+        .field textarea,
+        .field select {
+            width: 100%;
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            background: white;
+            color: var(--text);
+        }
+
+        .master-data-alert {
+            margin: 14px 22px 0;
+            padding: 14px 16px;
+            border-radius: 16px;
+            border: 1px solid rgba(180, 83, 9, 0.14);
+            background: rgba(180, 83, 9, 0.08);
+            color: var(--warn);
+            font-size: 0.88rem;
+        }
+
+        .relation-grid {
+            display: grid;
+            gap: 16px;
+        }
+
+        .relation-accordion {
+            border-radius: 24px;
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.98));
+            box-shadow: 0 16px 34px rgba(15, 23, 42, 0.05);
+            overflow: hidden;
+        }
+
+        .relation-accordion-summary {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            padding: 18px 20px;
+            cursor: pointer;
+        }
+
+        .relation-accordion-summary:hover {
+            background: rgba(248, 250, 252, 0.88);
+        }
+
+        .relation-accordion-copy {
+            display: grid;
+            gap: 6px;
+        }
+
+        .relation-accordion-copy p,
+        .relation-graph-meta p,
+        .relation-graph-empty p {
+            margin: 0;
+            color: var(--muted);
+        }
+
+        .relation-accordion-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 999px;
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            background: rgba(255, 255, 255, 0.94);
+            color: var(--muted);
+            font-size: 0.78rem;
+            font-weight: 700;
+        }
+
+        .relation-accordion[open] .relation-accordion-toggle .icon {
+            transform: rotate(180deg);
+        }
+
+        .relation-accordion-toggle .icon {
+            width: 16px;
+            height: 16px;
+            transition: transform 180ms ease;
+        }
+
+        .relation-accordion-body {
+            display: grid;
+            gap: 16px;
+            padding: 0 20px 20px;
+            border-top: 1px solid rgba(15, 23, 42, 0.08);
+        }
+
+        .relation-graph-stage {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 290px;
+            gap: 16px;
+            padding-top: 18px;
+        }
+
+        .relation-graph-canvas {
+            min-height: 430px;
+            border-radius: 22px;
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            background:
+                radial-gradient(circle at top left, rgba(241, 129, 32, 0.12), transparent 34%),
+                linear-gradient(180deg, rgba(255, 252, 248, 0.98), rgba(255, 255, 255, 0.98));
+        }
+
+        .relation-graph-meta {
+            display: grid;
+            gap: 12px;
+            align-content: start;
+        }
+
+        .relation-meta-card {
+            padding: 16px;
+            border-radius: 18px;
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            background: rgba(255, 255, 255, 0.96);
+        }
+
+        .relation-meta-card span {
+            display: block;
+            margin-bottom: 6px;
+            color: var(--muted);
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .relation-meta-card strong {
+            display: block;
+            font-size: 0.95rem;
+            line-height: 1.45;
+            word-break: break-word;
+        }
+
+        .relation-legend {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .relation-legend-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 999px;
+            background: rgba(248, 250, 252, 0.88);
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            color: var(--muted);
+            font-size: 0.77rem;
+            font-weight: 700;
+        }
+
+        .relation-legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 999px;
+        }
+
+        .relation-legend-dot.root {
+            background: #d14d1f;
+        }
+
+        .relation-legend-dot.one-to-one {
+            background: #2563eb;
+        }
+
+        .relation-legend-dot.one-to-many {
+            background: #0f766e;
+        }
+
+        .relation-legend-dot.lookup {
+            background: #b45309;
+        }
+
+        .relation-graph-empty {
+            display: grid;
+            place-items: center;
+            min-height: 240px;
+            text-align: center;
+        }
+
+        .detail-icon .icon,
+        .detail-section-icon .icon,
+        .detail-hero-icon .icon {
+            width: 18px;
+            height: 18px;
+        }
+
+        .form-section {
+            display: grid;
+            gap: 14px;
+            padding: 18px;
+            border-radius: 18px;
+            border: 1px solid var(--line-soft);
+            background: rgba(244, 241, 234, 0.42);
+        }
+
+        .section-header.compact {
+            margin-bottom: 0;
+        }
+
+        .section-header.compact h3 {
+            font-size: 1rem;
+        }
+
+        .section-header.compact p {
+            margin: 6px 0 0;
+        }
+
+        .inline-button.danger {
+            border-color: rgba(180, 35, 24, 0.16);
+            background: rgba(180, 35, 24, 0.08);
+            color: var(--danger);
+        }
+
+        .inline-button.danger::before {
+            background: rgba(180, 35, 24, 0.2);
+        }
+
+        .inline-button.danger:hover {
+            box-shadow: 0 1px 3px rgba(180, 35, 24, 0.14), 0 5px 10px rgba(180, 35, 24, 0.08);
+        }
+
+        .master-data-table-wrap {
+            overflow: auto;
+        }
+
+        .master-data-table th:last-child,
+        .master-data-table td:last-child {
+            text-align: right;
+        }
+
+        .grid-empty,
+        .grid-loading {
+            padding: 26px 0;
+            text-align: center;
+            color: var(--muted);
+        }
+
+        .row-title strong {
+            display: block;
+        }
+
+        .row-title span {
+            display: block;
+            margin-top: 4px;
+            color: var(--muted);
+            font-size: 0.82rem;
+        }
+
+        .inline-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .inline-button,
+        .pagination-button,
+        .icon-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            border: 1px solid var(--line);
+            background: white;
+            color: var(--text);
+            cursor: pointer;
+            transition: background 160ms ease, border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+        }
+
+        .inline-button:hover,
+        .pagination-button:hover,
+        .icon-button:hover {
+            background: rgba(15, 23, 42, 0.04);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .inline-button {
+            position: relative;
+            overflow: hidden;
+            padding: 9px 12px;
+            border-radius: 13px;
+            font-size: 0.82rem;
+            font-weight: 600;
+        }
+
+        .inline-button::before {
+            content: "";
+            position: absolute;
+            top: 6px;
+            left: 50%;
+            width: 20px;
+            height: 3px;
+            border-radius: 999px;
+            background: rgba(15, 23, 42, 0.08);
+            transform: translateX(-50%);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 160ms ease;
+        }
+
+        .inline-button.primary {
+            background: linear-gradient(135deg, var(--accent), #ef7a1b);
+            border-color: transparent;
+            color: white;
+            box-shadow: var(--shadow-accent);
+        }
+
+        .inline-button.primary::before {
+            background: rgba(255, 255, 255, 0.44);
+        }
+
+        .inline-button.primary:hover {
+            box-shadow: var(--shadow-hover-accent);
+        }
+
+        .inline-button:hover::before {
+            opacity: 1;
+        }
+
+        .pagination-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            padding: 0 22px 22px;
+            flex-wrap: wrap;
+        }
+
+        .pagination-meta {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+
+        .rows-per-page {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            min-height: 42px;
+            padding: 6px 8px 6px 12px;
+            border-radius: 14px;
+            border: 1px solid rgba(15, 23, 42, 0.1);
+            background: rgba(255, 255, 255, 0.96);
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+        }
+
+        .rows-label {
+            color: var(--muted);
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.01em;
+            white-space: nowrap;
+        }
+
+        .rows-select-wrap {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            min-width: 76px;
+            padding-right: 18px;
+        }
+
+        .rows-select {
+            min-width: 100%;
+            height: 28px;
+            padding: 0 20px 0 0;
+            border: 0;
+            border-radius: 0;
+            background: transparent;
+            color: var(--text);
+            font-size: 0.88rem;
+            font-weight: 600;
+            outline: none;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            cursor: pointer;
+        }
+
+        .rows-select-icon {
+            position: absolute;
+            right: 0;
+            width: 16px;
+            height: 16px;
+            color: var(--muted);
+            pointer-events: none;
+        }
+
+        .pagination-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .pagination-button {
+            min-width: 40px;
+            min-height: 40px;
+            padding: 0 14px;
+            border-radius: 13px;
+        }
+
+        .pagination-button:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .pagination-page,
+        .helper-text {
+            color: var(--muted);
+            font-size: 0.84rem;
+        }
+
+        body.modal-open {
+            overflow: hidden;
+        }
+
+        .modal {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            z-index: 220;
+        }
+
+        .modal.is-open {
+            display: flex;
+        }
+
+        .modal-backdrop {
+            position: absolute;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.4);
+            backdrop-filter: blur(8px);
+        }
+
+        .modal-panel {
+            position: relative;
+            width: min(780px, 100%);
+            max-height: min(88vh, 920px);
+            overflow: auto;
+            scroll-behavior: smooth;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.98);
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14), 0 2px 8px rgba(15, 23, 42, 0.08);
+        }
+
+        .modal-panel.modal-panel-xl {
+            width: min(1180px, 100%);
+            max-height: min(92vh, 1080px);
+        }
+
+        .modal-panel.modal-panel-xl .modal-head {
+            position: sticky;
+            top: 0;
+            z-index: 5;
+            padding-bottom: 18px;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.94));
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+        }
+
+        .modal-panel.modal-panel-xl .modal-body {
+            padding-top: 18px;
+        }
+
+        .modal-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 14px;
+            padding: 22px 22px 0;
+        }
+
+        .modal-head p {
+            margin: 8px 0 0;
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        .icon-button {
+            width: 38px;
+            height: 38px;
+            padding: 0;
+        }
+
+        .modal-body {
+            padding: 22px;
+            display: grid;
+            gap: 18px;
+        }
+
+        .form-grid,
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .field {
+            display: grid;
+            gap: 8px;
+        }
+
+        .field.full,
+        .detail-grid .full {
+            grid-column: 1 / -1;
+        }
+
+        .field label,
+        .detail-item span {
+            color: var(--muted);
+            font-size: 0.76rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .field input,
+        .field textarea,
+        .field select {
+            padding: 12px 14px;
+            outline: none;
+        }
+
+        .field textarea {
+            min-height: 116px;
+            resize: vertical;
+            font-family: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+            font-size: 0.88rem;
+        }
+
+        .detail-item {
+            padding: 14px 16px;
+            border-radius: 16px;
+            border: 1px solid var(--line-soft);
+            background: rgba(255, 255, 255, 0.92);
+        }
+
+        .detail-item strong {
+            display: block;
+            margin-top: 6px;
+            word-break: break-word;
+        }
+
+        .compact-data-table th,
+        .compact-data-table td {
+            padding: 10px 12px;
+            font-size: 0.82rem;
+            vertical-align: top;
+            line-height: 1.5;
+        }
+
+        .compact-data-table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            background: rgba(248, 250, 252, 0.98);
+        }
+
+        .compact-data-table tbody tr:nth-child(even) td {
+            background: rgba(248, 250, 252, 0.52);
+        }
+
+        .detail-hero {
+            display: grid;
+            gap: 18px;
+            padding: 20px;
+            border-radius: 24px;
+            border: 1px solid rgba(241, 129, 32, 0.16);
+            background:
+                radial-gradient(circle at top right, rgba(241, 129, 32, 0.14), transparent 30%),
+                linear-gradient(135deg, rgba(255, 249, 243, 0.98), rgba(255, 255, 255, 0.98));
+        }
+
+        .detail-hero-main {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+        }
+
+        .detail-eyebrow {
+            display: inline-block;
+            margin-bottom: 8px;
+            color: #b45309;
+            font-size: 0.74rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .detail-hero-main p,
+        .detail-section-title p,
+        .detail-helper,
+        .detail-empty {
+            margin: 6px 0 0;
+            color: var(--muted);
+        }
+
+        .detail-hero-stats {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .detail-stat {
+            padding: 14px;
+            border-radius: 18px;
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            background: rgba(255, 255, 255, 0.94);
+        }
+
+        .detail-stat span {
+            display: block;
+            color: var(--muted);
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .detail-stat strong {
+            display: block;
+            margin-top: 8px;
+            font-size: 0.96rem;
+            line-height: 1.45;
+        }
+
+        .detail-stack {
+            display: grid;
+            gap: 14px;
+        }
+
+        .detail-section {
+            display: grid;
+            gap: 14px;
+            padding: 18px;
+            border-radius: 22px;
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            background: rgba(255, 255, 255, 0.96);
+            box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
+            overflow: hidden;
+        }
+
+        .detail-section-head {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            align-items: flex-start;
+            flex-wrap: wrap;
+        }
+
+        .detail-section-title {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+
+        .detail-section-icon,
+        .detail-hero-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 42px;
+            height: 42px;
+            border-radius: 16px;
+            color: #b45309;
+            background: rgba(241, 129, 32, 0.12);
+            flex: 0 0 auto;
+        }
+
+        .detail-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 12px;
+            border-radius: 999px;
+            background: rgba(15, 23, 42, 0.05);
+            color: var(--muted);
+            font-size: 0.76rem;
+            font-weight: 700;
+        }
+
+        .detail-chip-grid {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .detail-kv-table,
+        .detail-record-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 0.83rem;
+        }
+
+        .detail-kv-table th,
+        .detail-kv-table td,
+        .detail-record-table th,
+        .detail-record-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+            vertical-align: top;
+            text-align: left;
+        }
+
+        .detail-kv-table th,
+        .detail-record-table th {
+            color: var(--muted);
+            font-size: 0.73rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            background: rgba(248, 250, 252, 0.94);
+        }
+
+        .detail-kv-table th {
+            width: 30%;
+            min-width: 200px;
+        }
+
+        .detail-kv-table td,
+        .detail-record-table td {
+            color: var(--text);
+            background: rgba(255, 255, 255, 0.92);
+            word-break: break-word;
+        }
+
+        .detail-record-table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        .detail-record-table tbody tr:nth-child(even) td {
+            background: rgba(248, 250, 252, 0.5);
+        }
+
+        .detail-kv-table tr:last-child th,
+        .detail-kv-table tr:last-child td,
+        .detail-record-table tr:last-child th,
+        .detail-record-table tr:last-child td {
+            border-bottom: 0;
+        }
+
+        .detail-table-wrap {
+            overflow: auto;
+            border-radius: 18px;
+            border: 1px solid rgba(15, 23, 42, 0.08);
+        }
+
+        .detail-table-wrap table {
+            min-width: 100%;
+        }
+
+        .detail-empty {
+            padding: 20px;
+            border-radius: 18px;
+            border: 1px dashed rgba(15, 23, 42, 0.14);
+            background: rgba(248, 250, 252, 0.74);
+            text-align: center;
+        }
+
+        .json-preview {
+            margin: 0;
+            padding: 16px;
+            border-radius: 16px;
+            background: #111827;
+            color: #f8fafc;
+            overflow: auto;
+            font-size: 0.82rem;
+            line-height: 1.55;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            padding: 0 22px 22px;
+            flex-wrap: wrap;
+        }
+
+        .feedback {
+            padding: 14px 16px;
+            border-radius: 16px;
+            border: 1px solid rgba(180, 35, 24, 0.12);
+            background: rgba(180, 35, 24, 0.08);
+            color: var(--danger);
+            font-size: 0.88rem;
+        }
+
+        .feedback.success {
+            border-color: rgba(15, 118, 110, 0.12);
+            background: rgba(15, 118, 110, 0.08);
+            color: var(--ok);
+        }
+
+        .superadmin-kpis {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .superadmin-kpi {
+            padding: 20px;
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.94);
+            border: 1px solid var(--line-soft);
+        }
+
+        .superadmin-kpi span {
+            display: block;
+            color: var(--muted);
+            font-size: 0.84rem;
+        }
+
+        .superadmin-kpi strong {
+            display: block;
+            margin-top: 10px;
+            font-size: 1.9rem;
+            line-height: 1;
+        }
+
+        .superadmin-kpi small {
+            display: block;
+            margin-top: 8px;
+            color: var(--muted);
+            line-height: 1.55;
+        }
+
+        .checkbox-field {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            min-height: 48px;
+            padding: 12px 14px;
+            border-radius: 14px;
+            border: 1px solid var(--line);
+            background: white;
+        }
+
+        .checkbox-field input {
+            width: 18px;
+            height: 18px;
+            margin: 0;
+        }
+
+        .checkbox-field span {
+            color: var(--text);
+            font-size: 0.92rem;
+            font-weight: 500;
+        }
+
+        .token-ability-grid {
+            display: grid;
+            gap: 10px;
+        }
+
+        .token-ability-card {
+            display: flex;
+            gap: 12px;
+            padding: 14px 16px;
+            border-radius: 16px;
+            border: 1px solid var(--line);
+            background: rgba(255, 255, 255, 0.94);
+        }
+
+        .token-ability-card input {
+            width: 18px;
+            height: 18px;
+            margin-top: 2px;
+        }
+
+        .token-ability-card strong,
+        .token-ability-card span {
+            display: block;
+        }
+
+        .token-ability-card span {
+            margin-top: 4px;
+            color: var(--muted);
+            font-size: 0.84rem;
+            line-height: 1.55;
+        }
+
+        .secret-preview {
+            display: grid;
+            gap: 10px;
+            margin-top: 14px;
+            padding: 16px;
+            border-radius: 18px;
+            border: 1px solid rgba(15, 118, 110, 0.12);
+            background: linear-gradient(135deg, rgba(15, 118, 110, 0.08), rgba(109, 74, 255, 0.08));
+        }
+
+        .secret-preview strong {
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .secret-code {
+            display: block;
+            padding: 14px 16px;
+            border-radius: 14px;
+            background: #111827;
+            color: #f8fafc;
+            overflow: auto;
+            font-family: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+            font-size: 0.84rem;
+            line-height: 1.55;
+            word-break: break-all;
+        }
+
         .logout-form {
             margin: 0;
+        }
+
+        body.sidebar-collapsed .dashboard {
+            grid-template-columns: 96px minmax(0, 1fr);
+        }
+
+        body.sidebar-collapsed .sidebar-header {
+            justify-content: center;
+        }
+
+        body.sidebar-collapsed .brand-copy,
+        body.sidebar-collapsed .nav-title,
+        body.sidebar-collapsed .nav-subtitle,
+        body.sidebar-collapsed .nav-copy,
+        body.sidebar-collapsed .nav-badge {
+            display: none;
+        }
+
+        body.sidebar-collapsed .brand {
+            justify-content: center;
+        }
+
+        body.sidebar-collapsed .nav-link,
+        body.sidebar-collapsed .nav-button {
+            justify-content: center;
+            padding-left: 10px;
+            padding-right: 10px;
+        }
+
+        body.sidebar-collapsed .nav-main {
+            justify-content: center;
+        }
+
+        body.sidebar-collapsed .sidebar-toggle .icon {
+            transform: rotate(180deg);
         }
 
         @media (max-width: 1180px) {
@@ -647,13 +1902,52 @@
                 border-right: 0;
                 border-bottom: 1px solid var(--line);
             }
+
+            body.sidebar-collapsed .dashboard {
+                grid-template-columns: 1fr;
+            }
+
+            body.sidebar-collapsed .brand-copy {
+                display: block;
+            }
+
+            body.sidebar-collapsed .nav-title {
+                display: block;
+            }
+
+            body.sidebar-collapsed .nav-subtitle {
+                display: block;
+            }
+
+            body.sidebar-collapsed .nav-copy {
+                display: block;
+            }
+
+            body.sidebar-collapsed .nav-badge {
+                display: inline-flex;
+            }
+
+            body.sidebar-collapsed .sidebar-toggle {
+                position: static;
+            }
+
+            body.sidebar-collapsed .sidebar-action .nav-copy {
+                display: block;
+            }
         }
 
         @media (max-width: 1040px) {
-            .hero,
             .workspace,
             .overview-grid {
                 grid-template-columns: 1fr;
+            }
+
+            .relation-graph-stage {
+                grid-template-columns: 1fr;
+            }
+
+            .detail-hero-stats {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
             }
         }
 
@@ -671,9 +1965,7 @@
                 align-items: flex-start;
             }
 
-            .topbar-actions,
-            .hero-actions,
-            .hero-pills {
+            .topbar-actions {
                 width: 100%;
             }
 
@@ -686,6 +1978,37 @@
             .card-body {
                 padding-left: 18px;
                 padding-right: 18px;
+            }
+
+            .master-data-toolbar,
+            .pagination-bar,
+            .modal-head,
+            .modal-body,
+            .modal-actions {
+                padding-left: 18px;
+                padding-right: 18px;
+            }
+
+            .form-grid,
+            .detail-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .detail-hero-stats {
+                grid-template-columns: 1fr;
+            }
+
+            .search-field {
+                min-width: 100%;
+            }
+
+            .superadmin-kpis {
+                grid-template-columns: 1fr;
+            }
+
+            .user-dropdown {
+                right: auto;
+                left: 0;
             }
         }
     </style>
@@ -700,147 +2023,399 @@
     $userInitial = strtoupper(substr($userName, 0, 1));
     $userRole = $user?->resolveRole();
     $userRoleLabel = $userRole?->label() ?? 'Guest';
+    $isSuperadmin = $user?->hasRole(\App\Enums\UserRole::Superadmin) ?? false;
+    $isAdmin = $user?->hasRole(\App\Enums\UserRole::Admin) ?? false;
+    $canViewDocumentation = true;
+    $canViewMasterData = $isSuperadmin || $isAdmin;
+    $canViewImportMapping = $isSuperadmin || $isAdmin;
+    $canViewMonitoring = $isSuperadmin || $isAdmin;
+    $canViewFullDiagnostics = $isSuperadmin;
+    $hasOperationalDashboard = $canViewMasterData || $canViewImportMapping || $canViewMonitoring;
+    $isDocumentationOnly = ! $hasOperationalDashboard && ! $canViewFullDiagnostics;
+    $masterDataMenu = $masterDataMenu ?? [];
+    $masterDataPage = $masterDataPage ?? null;
+    $bridgeSourceTablePage = $bridgeSourceTablePage ?? null;
+    $superadminUserPage = $superadminUserPage ?? null;
+    $superadminApiClientPage = $superadminApiClientPage ?? null;
+    $activeMasterDataKey = $masterDataPage['key'] ?? $bridgeSourceTablePage['parent_key'] ?? null;
+    $bridgeModule = $overview['bridge_module'] ?? null;
+    $infrastructureDomains = $overview['infrastructure_domains'] ?? collect();
+    $currentPage = $currentPage ?? ($isDocumentationOnly ? 'documentation' : 'overview');
 
-    $quickMenu = [
-        ['label' => 'Swagger Docs', 'href' => route('docs.swagger'), 'tag' => 'Docs'],
-        ['label' => 'OpenAPI Spec', 'href' => route('l5-swagger.default.docs'), 'tag' => 'Spec'],
-        ['label' => 'Health Check API', 'href' => '/api/v1/health', 'tag' => 'API'],
+    $pageMeta = [
+        'overview' => ['title' => 'Dashboard', 'description' => 'Ringkasan operasional dan data inti.'],
+        'documentation' => ['title' => 'Dokumentasi API', 'description' => 'Akses Swagger UI dan spesifikasi OpenAPI.'],
+        'quick-menu' => ['title' => 'Menu Penting', 'description' => 'Akses cepat ke fitur dan endpoint penting.'],
+        'module-status' => ['title' => 'Status Modul', 'description' => 'Status kesiapan modul inti aplikasi.'],
+        'master-data' => ['title' => 'Master Data', 'description' => 'Tipe data dan record master data terbaru.'],
+        'master-data-entity' => ['title' => $masterDataPage['label'] ?? 'Master Data', 'description' => 'Grid data aktif.'],
+        'bridge-source-table' => ['title' => $bridgeSourceTablePage['label'] ?? 'Tabel Source Jembatan', 'description' => $bridgeSourceTablePage['description'] ?? 'Data tabel source dari dump SQL.'],
+        'import-mapping' => ['title' => 'Import dan Mapping', 'description' => 'Konfigurasi mapping dan ringkasan batch import.'],
+        'monitoring' => ['title' => 'Monitoring', 'description' => 'Kesehatan sistem, trafik API, dan observability.'],
+        'superadmin-users' => ['title' => $superadminUserPage['label'] ?? 'Manajemen User', 'description' => 'CRUD akun internal, role, dan kontrol akses dashboard.'],
+        'superadmin-api-clients' => ['title' => $superadminApiClientPage['label'] ?? 'Bearer Key API', 'description' => 'Kelola client API dan generate bearer token dengan desain dashboard modern.'],
     ];
 
-    if ($user?->isAdministrator()) {
+    $currentPageMeta = $pageMeta[$currentPage] ?? $pageMeta['overview'];
+
+    $quickMenu = [
+        ['label' => 'Dokumentasi API', 'href' => route('dashboard.documentation'), 'tag' => 'Docs'],
+        ['label' => 'OpenAPI Spec', 'href' => route('docs.openapi'), 'tag' => 'Spec'],
+    ];
+
+    if ($canViewMonitoring) {
+        $quickMenu[] = ['label' => 'Health Check API', 'href' => '/api/v1/health', 'tag' => 'API'];
+    }
+
+    if ($canViewFullDiagnostics) {
         $quickMenu[] = ['label' => 'JSON Sistem', 'href' => route('dashboard.system'), 'tag' => 'Internal'];
+        $quickMenu[] = ['label' => 'Manajemen User', 'href' => route('dashboard.superadmin.users'), 'tag' => 'IAM'];
+        $quickMenu[] = ['label' => 'Bearer Key API', 'href' => route('dashboard.superadmin.api-clients'), 'tag' => 'Token'];
     }
 @endphp
 <div class="dashboard">
     <aside class="sidebar">
-        <div class="brand">
-            <div class="brand-mark">MD</div>
-            <div class="brand-copy">
-                <strong>Master Data</strong>
-                <span>Prasarana DJKA</span>
+        <div class="sidebar-header">
+            <div class="brand">
+                <div class="brand-mark">
+                    <img src="/images/logo/logo.svg" alt="Logo DJKA">
+                </div>
+                <div class="brand-copy">
+                    <strong>Master Data</strong>
+                    <span>Prasarana</span>
+                </div>
             </div>
         </div>
 
         <div class="nav-section">
-            <p class="nav-title">Utama</p>
-            <div class="nav-list">
-                <a class="nav-link active" href="#beranda">
-                    <div class="nav-main">
-                        <svg class="icon" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>
-                        <div class="nav-copy"><strong>Beranda</strong></div>
-                    </div>
-                </a>
-                <a class="nav-link" href="#status-modul">
-                    <div class="nav-main">
-                        <svg class="icon" viewBox="0 0 24 24"><path d="M4 19h16"/><path d="M7 15V9"/><path d="M12 15V5"/><path d="M17 15v-3"/></svg>
-                        <div class="nav-copy"><strong>Status Modul</strong></div>
-                    </div>
-                </a>
-                <a class="nav-link" href="#menu-penting">
-                    <div class="nav-main">
-                        <svg class="icon" viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h16"/></svg>
-                        <div class="nav-copy"><strong>Menu Penting</strong></div>
-                    </div>
-                </a>
-            </div>
-        </div>
-
-        <div class="nav-section">
-            <p class="nav-title">Data dan Integrasi</p>
-            <div class="nav-list">
-                <a class="nav-link" href="#master-data">
-                    <div class="nav-main">
-                        <svg class="icon" viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M8 9h8"/><path d="M8 13h5"/></svg>
-                        <div class="nav-copy"><strong>Master Data</strong></div>
-                    </div>
-                    <span class="nav-badge">{{ number_format($metrics['master_data_records']) }}</span>
-                </a>
-                <a class="nav-link" href="#import-mapping">
-                    <div class="nav-main">
-                        <svg class="icon" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
-                        <div class="nav-copy"><strong>Import & Mapping</strong></div>
-                    </div>
-                    <span class="nav-badge">{{ number_format($metrics['import_mappings']) }}</span>
-                </a>
-                <a class="nav-link" href="#monitoring">
-                    <div class="nav-main">
-                        <svg class="icon" viewBox="0 0 24 24"><path d="M3 12h4l2.5-6 5 12 2.5-6H21"/></svg>
-                        <div class="nav-copy"><strong>Monitoring</strong></div>
-                    </div>
-                </a>
-                <a class="nav-link" href="{{ route('docs.swagger') }}">
-                    <div class="nav-main">
-                        <svg class="icon" viewBox="0 0 24 24"><path d="M8 4h8"/><path d="M8 20h8"/><path d="M5 8h14"/><path d="M5 16h14"/><path d="M7 8v8"/><path d="M17 8v8"/></svg>
-                        <div class="nav-copy"><strong>Swagger Docs</strong></div>
-                    </div>
-                </a>
-            </div>
-        </div>
-
-        <div class="nav-section">
-            <p class="nav-title">Akun</p>
-            <div class="nav-list">
-                <a class="nav-link" href="{{ route('l5-swagger.default.docs') }}">
-                    <div class="nav-main">
-                        <svg class="icon" viewBox="0 0 24 24"><path d="M8 7h8"/><path d="M8 12h8"/><path d="M8 17h5"/><path d="M5 3h14v18H5z"/></svg>
-                        <div class="nav-copy"><strong>OpenAPI JSON</strong></div>
-                    </div>
-                </a>
-                <form class="logout-form" method="post" action="{{ route('logout') }}">
-                    @csrf
-                    <button class="nav-button" type="submit">
+            @if ($isDocumentationOnly)
+                <p class="nav-title">Dokumentasi</p>
+                <div class="nav-list">
+                    <a class="nav-link {{ $currentPage === 'documentation' ? 'active' : '' }}" href="{{ route('dashboard.documentation') }}">
                         <div class="nav-main">
-                            <svg class="icon" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg>
-                            <div class="nav-copy"><strong>Logout</strong></div>
+                            <svg class="icon" viewBox="0 0 24 24"><path d="M8 4h8"/><path d="M8 20h8"/><path d="M5 8h14"/><path d="M5 16h14"/><path d="M7 8v8"/><path d="M17 8v8"/></svg>
+                            <div class="nav-copy"><strong>Dokumentasi API</strong></div>
                         </div>
-                    </button>
-                </form>
+                    </a>
+                    <a class="nav-link" href="{{ route('docs.openapi') }}">
+                        <div class="nav-main">
+                            <svg class="icon" viewBox="0 0 24 24"><path d="M8 7h8"/><path d="M8 12h8"/><path d="M8 17h5"/><path d="M5 3h14v18H5z"/></svg>
+                            <div class="nav-copy"><strong>OpenAPI Spec</strong></div>
+                        </div>
+                    </a>
+                </div>
+            @else
+                <p class="nav-title">Utama</p>
+                <div class="nav-list">
+                    <a class="nav-link {{ $currentPage === 'overview' ? 'active' : '' }}" href="{{ route('dashboard.index') }}">
+                        <div class="nav-main">
+                            <svg class="icon" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>
+                            <div class="nav-copy"><strong>Beranda</strong></div>
+                        </div>
+                    </a>
+                    @if ($canViewMonitoring)
+                        <a class="nav-link {{ $currentPage === 'module-status' ? 'active' : '' }}" href="{{ route('dashboard.module-status') }}">
+                            <div class="nav-main">
+                                <svg class="icon" viewBox="0 0 24 24"><path d="M4 19h16"/><path d="M7 15V9"/><path d="M12 15V5"/><path d="M17 15v-3"/></svg>
+                                <div class="nav-copy"><strong>Status Modul</strong></div>
+                            </div>
+                        </a>
+                    @endif
+                    <a class="nav-link {{ $currentPage === 'quick-menu' ? 'active' : '' }}" href="{{ route('dashboard.quick-menu') }}">
+                        <div class="nav-main">
+                            <svg class="icon" viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h16"/></svg>
+                            <div class="nav-copy"><strong>Menu Penting</strong></div>
+                        </div>
+                    </a>
+                </div>
+            @endif
+        </div>
+
+        @if (! $isDocumentationOnly)
+            <div class="nav-section">
+                @if ($canViewMasterData)
+                    <p class="nav-title">Master Data</p>
+                    <p class="nav-subtitle">Menu Utama</p>
+                    <div class="nav-list">
+                        @foreach ($masterDataMenu as $item)
+                            <div class="nav-group">
+                                <a class="nav-link {{ in_array($currentPage, ['master-data-entity', 'bridge-source-table'], true) && $activeMasterDataKey === $item['key'] ? 'active' : '' }}" href="{{ $item['href'] }}">
+                                    <div class="nav-main">
+                                        @switch($item['key'])
+                                            @case('jembatan')
+                                                <svg class="icon" viewBox="0 0 24 24"><path d="M4 18h16"/><path d="M6 18V9l3-3 3 3 3-3 3 3v9"/><path d="M9 12h6"/></svg>
+                                                @break
+                                            @case('jalur')
+                                                <svg class="icon" viewBox="0 0 24 24"><path d="M7 4h10"/><path d="M8 4l-2 16"/><path d="M16 4l2 16"/><path d="M6.5 10h11"/><path d="M5.5 16h13"/></svg>
+                                                @break
+                                            @case('fasilitas-operasional')
+                                                <svg class="icon" viewBox="0 0 24 24"><path d="M4 20h16"/><path d="M6 20V8l6-4 6 4v12"/><path d="M10 12h4"/><path d="M10 16h4"/></svg>
+                                                @break
+                                            @case('sertifikat')
+                                                <svg class="icon" viewBox="0 0 24 24"><path d="M7 3h8l4 4v14H7z"/><path d="M15 3v5h5"/><path d="M10 13h6"/><path d="M10 17h4"/></svg>
+                                                @break
+                                            @default
+                                                <svg class="icon" viewBox="0 0 24 24"><path d="M3 8h18v11H3z"/><path d="M8 8V5h8v3"/><path d="M12 13v6"/></svg>
+                                        @endswitch
+                                        <div class="nav-copy">
+                                            <strong>{{ $item['label'] }}</strong>
+                                            <span>{{ $item['is_available'] ? number_format($item['record_count']) . ' data' : 'Siap diisi' }}</span>
+                                        </div>
+                                    </div>
+                                </a>
+                                @if (!empty($item['children']) && $activeMasterDataKey === $item['key'])
+                                    <div class="nav-children">
+                                        @foreach ($item['children'] as $child)
+                                            <a class="nav-child-link {{ $currentPage === 'bridge-source-table' && ($bridgeSourceTablePage['table'] ?? null) === $child['table'] ? 'active' : '' }}" href="{{ $child['href'] }}">
+                                                {{ $child['table'] }} · {{ number_format($child['row_count']) }}
+                                            </a>
+                                        @endforeach
+                                    </div>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
             </div>
+
+            <div class="nav-section">
+                <p class="nav-title">Integrasi</p>
+                <div class="nav-list">
+                    @if ($canViewImportMapping)
+                        <a class="nav-link {{ $currentPage === 'import-mapping' ? 'active' : '' }}" href="{{ route('dashboard.import-mapping') }}">
+                            <div class="nav-main">
+                                <svg class="icon" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+                                <div class="nav-copy"><strong>Import dan Mapping</strong></div>
+                            </div>
+                            <span class="nav-badge">{{ number_format($metrics['import_mappings']) }}</span>
+                        </a>
+                    @endif
+                    @if ($canViewMonitoring)
+                        <a class="nav-link {{ $currentPage === 'monitoring' ? 'active' : '' }}" href="{{ route('dashboard.monitoring') }}">
+                            <div class="nav-main">
+                                <svg class="icon" viewBox="0 0 24 24"><path d="M3 12h4l2.5-6 5 12 2.5-6H21"/></svg>
+                                <div class="nav-copy"><strong>Monitoring</strong></div>
+                            </div>
+                        </a>
+                    @endif
+                    @if ($canViewDocumentation)
+                        <a class="nav-link {{ $currentPage === 'documentation' ? 'active' : '' }}" href="{{ route('dashboard.documentation') }}">
+                            <div class="nav-main">
+                                <svg class="icon" viewBox="0 0 24 24"><path d="M8 4h8"/><path d="M8 20h8"/><path d="M5 8h14"/><path d="M5 16h14"/><path d="M7 8v8"/><path d="M17 8v8"/></svg>
+                                <div class="nav-copy"><strong>Dokumentasi API</strong></div>
+                            </div>
+                        </a>
+                    @endif
+                </div>
+            </div>
+
+            @if ($isSuperadmin)
+                <div class="nav-section">
+                    <p class="nav-title">Superadmin</p>
+                    <p class="nav-subtitle">Identity & API</p>
+                    <div class="nav-list">
+                        <a class="nav-link {{ $currentPage === 'superadmin-users' ? 'active' : '' }}" href="{{ route('dashboard.superadmin.users') }}">
+                            <div class="nav-main">
+                                <svg class="icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="9.5" cy="7" r="4"/><path d="M20 8v6"/><path d="M23 11h-6"/></svg>
+                                <div class="nav-copy">
+                                    <strong>Manajemen User</strong>
+                                    <span>{{ number_format($metrics['users']) }} akun internal</span>
+                                </div>
+                            </div>
+                        </a>
+                        <a class="nav-link {{ $currentPage === 'superadmin-api-clients' ? 'active' : '' }}" href="{{ route('dashboard.superadmin.api-clients') }}">
+                            <div class="nav-main">
+                                <svg class="icon" viewBox="0 0 24 24"><path d="M7 7h10v10H7z"/><path d="M3 10V8a1 1 0 0 1 1-1h2"/><path d="M21 10V8a1 1 0 0 0-1-1h-2"/><path d="M3 14v2a1 1 0 0 0 1 1h2"/><path d="M21 14v2a1 1 0 0 1-1 1h-2"/><path d="m10 12 2 2 4-4"/></svg>
+                                <div class="nav-copy">
+                                    <strong>Bearer Key API</strong>
+                                    <span>{{ number_format($metrics['api_clients']) }} client API</span>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            @endif
+        @endif
+
+        <div class="nav-section">
+            <div class="nav-list">
+                @if (! $isDocumentationOnly)
+                    <a class="nav-link" href="{{ route('docs.openapi') }}">
+                        <div class="nav-main">
+                            <svg class="icon" viewBox="0 0 24 24"><path d="M8 7h8"/><path d="M8 12h8"/><path d="M8 17h5"/><path d="M5 3h14v18H5z"/></svg>
+                            <div class="nav-copy"><strong>OpenAPI Spec</strong></div>
+                        </div>
+                    </a>
+                @endif
+            </div>
+        </div>
+
+        <div class="sidebar-action">
+            <button class="sidebar-toggle" type="button" data-sidebar-toggle aria-label="Collapse sidebar" aria-expanded="true">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M9 5v14"/><path d="m15 9-3 3 3 3"/></svg>
+            </button>
         </div>
     </aside>
 
     <main class="content">
         <div class="topbar">
             <div class="topbar-title">
-                <strong>Dashboard</strong>
+                <strong>{{ $currentPageMeta['title'] }}</strong>
                 <span>{{ $app['name'] }} · {{ $app['generated_at']->format('d M Y H:i') }} UTC</span>
             </div>
             <div class="topbar-actions">
-                <span class="pill">Swagger aktif</span>
-                @if ($user?->isAdministrator())
-                    <a class="top-button" href="{{ route('dashboard.system') }}">JSON Sistem</a>
-                @endif
-                <a class="top-button primary" href="{{ route('docs.swagger') }}">Buka Swagger Docs</a>
-                <div class="user-chip">
-                    <div class="user-avatar">{{ $userInitial }}</div>
-                    <span>{{ $userName }} · {{ $userRoleLabel }}</span>
-                </div>
+                <details class="user-menu">
+                    <summary class="user-chip" aria-label="Buka menu akun">
+                        <div class="user-avatar">{{ $userInitial }}</div>
+                        <div class="user-chip-text">
+                            <strong>{{ $userName }}</strong>
+                            <span>{{ $userRoleLabel }}</span>
+                        </div>
+                        <span class="user-menu-caret">
+                            <svg class="user-menu-icon" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+                        </span>
+                    </summary>
+                    <div class="user-dropdown">
+                        <div class="user-menu-list">
+                            <a class="user-menu-item" href="{{ route('docs.swagger') }}">
+                                <svg class="user-menu-icon" viewBox="0 0 24 24"><path d="M8 4h8"/><path d="M8 20h8"/><path d="M5 8h14"/><path d="M5 16h14"/><path d="M7 8v8"/><path d="M17 8v8"/></svg>
+                                <div class="user-menu-copy">
+                                    <strong>Dokumentasi API</strong>
+                                    <span>Buka Swagger UI internal</span>
+                                </div>
+                            </a>
+                            <a class="user-menu-item" href="{{ route('docs.openapi') }}" target="_blank" rel="noreferrer">
+                                <svg class="user-menu-icon" viewBox="0 0 24 24"><path d="M8 7h8"/><path d="M8 12h8"/><path d="M8 17h5"/><path d="M5 3h14v18H5z"/></svg>
+                                <div class="user-menu-copy">
+                                    <strong>OpenAPI Spec</strong>
+                                    <span>Lihat spesifikasi JSON</span>
+                                </div>
+                            </a>
+                            @if ($canViewMonitoring)
+                                <a class="user-menu-item" href="/api/v1/health" target="_blank" rel="noreferrer">
+                                    <svg class="user-menu-icon" viewBox="0 0 24 24"><path d="M3 12h4l2.5-6 5 12 2.5-6H21"/></svg>
+                                    <div class="user-menu-copy">
+                                        <strong>Health API</strong>
+                                        <span>Ringkasan status endpoint</span>
+                                    </div>
+                                </a>
+                            @endif
+                            @if ($canViewFullDiagnostics)
+                                <a class="user-menu-item" href="{{ route('dashboard.system') }}">
+                                    <svg class="user-menu-icon" viewBox="0 0 24 24"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h10"/></svg>
+                                    <div class="user-menu-copy">
+                                        <strong>JSON Sistem</strong>
+                                        <span>Snapshot internal dashboard</span>
+                                    </div>
+                                </a>
+                            @endif
+                            <form method="post" action="{{ route('logout') }}">
+                                @csrf
+                                <button class="user-menu-button" type="submit">
+                                    <svg class="user-menu-icon" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg>
+                                    <div class="user-menu-copy">
+                                        <strong>Logout</strong>
+                                        <span>Keluar dari sesi aktif</span>
+                                    </div>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </details>
             </div>
         </div>
 
-        <section class="grid hero section" id="beranda">
-            <article class="card hero-main">
-                <div class="card-body">
-                    <span class="eyebrow">Dashboard</span>
-                    <h1>{{ $userName }}</h1>
-
-                    <div class="hero-pills">
-                        <span class="status {{ $health['status'] }}">{{ $health['status'] }}</span>
-                        <span class="chip">ENV {{ \Illuminate\Support\Str::upper($app['environment']) }}</span>
-                        <span class="chip">Debug {{ $app['debug'] ? 'enabled' : 'disabled' }}</span>
-                        <span class="chip">Role {{ $userRoleLabel }}</span>
-                        <span class="chip">Laravel {{ $app['laravel_version'] }}</span>
-                    </div>
-
-                    <div class="hero-actions">
-                        <a class="action-button primary" href="{{ route('docs.swagger') }}">Swagger Docs</a>
-                        <a class="action-button" href="/api/v1/health" target="_blank" rel="noreferrer">Health API</a>
-                        <a class="action-button" href="{{ route('l5-swagger.default.docs') }}" target="_blank" rel="noreferrer">OpenAPI Spec</a>
+        @if ($currentPage === 'documentation')
+            <section class="section">
+                <div class="card">
+                    <div class="card-body menu-list">
+                        <a class="menu-item" href="{{ route('docs.swagger') }}">
+                            <div class="menu-main">
+                                <strong>Swagger UI</strong>
+                                <span>Dokumentasi interaktif untuk eksplorasi endpoint.</span>
+                            </div>
+                            <span class="menu-tag">Docs</span>
+                        </a>
+                        <a class="menu-item" href="{{ route('docs.openapi') }}" target="_blank" rel="noreferrer">
+                            <div class="menu-main">
+                                <strong>OpenAPI Spec</strong>
+                                <span>Spesifikasi JSON resmi untuk integrasi dan tooling.</span>
+                            </div>
+                            <span class="menu-tag">Spec</span>
+                        </a>
+                        @if ($canViewMonitoring)
+                            <a class="menu-item" href="/api/v1/health" target="_blank" rel="noreferrer">
+                                <div class="menu-main">
+                                    <strong>Health Check API</strong>
+                                    <span>Status endpoint health untuk verifikasi layanan.</span>
+                                </div>
+                                <span class="menu-tag">API</span>
+                            </a>
+                        @endif
                     </div>
                 </div>
-            </article>
+            </section>
 
-            <article class="grid stats">
+            @if ($bridgeModule)
+                <section class="section">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="section-header" style="margin-bottom: 18px;">
+                                <div>
+                                    <h2>Metadata Modul Jembatan</h2>
+                                    <p>{{ $bridgeModule['distinction'] }}</p>
+                                </div>
+                                <span class="menu-tag">{{ number_format($bridgeModule['record_count']) }} data</span>
+                            </div>
+
+                            <div class="footer-callout" style="margin-top: 0;">
+                                <strong>{{ $bridgeModule['label'] }} · {{ $bridgeModule['namespace'] }}</strong>
+                                Sumber utama `{{ $bridgeModule['source_system'] }}` dengan {{ number_format($bridgeModule['active_record_count']) }} data aktif. Modul ini menjadi acuan pengembangan endpoint spesifik untuk modul prasarana lain.
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="section">
+                    <div class="table-card">
+                        <div class="table-head">
+                            <div>
+                                <h2>Tabel Metadata Jembatan</h2>
+                            </div>
+                            <span class="menu-tag">{{ count($bridgeModule['fields']) }} field</span>
+                        </div>
+                        <div class="table-body">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Field</th>
+                                        <th>Path API</th>
+                                        <th>Sumber</th>
+                                        <th>Keterangan</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach ($bridgeModule['fields'] as $field)
+                                        <tr>
+                                            <td>
+                                                <strong>{{ $field['label'] }}</strong>
+                                                <div class="table-note mono">{{ $field['type'] }}</div>
+                                            </td>
+                                            <td class="mono">{{ $field['api_path'] }}</td>
+                                            <td class="mono">{{ $field['source'] }}</td>
+                                            <td>{{ $field['description'] }}</td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+            @endif
+        @endif
+
+        @if ($currentPage === 'overview' && $hasOperationalDashboard)
+            <section class="grid stats section" id="beranda">
                 <div class="metric card">
                     <div class="card-body">
                         <span>Master data aktif</span>
@@ -869,328 +2444,4889 @@
                         <small>{{ number_format($metrics['audit_logs']) }} audit log tercatat</small>
                     </div>
                 </div>
-            </article>
-        </section>
+            </section>
+        @endif
 
-        <section class="section" id="akses-role">
-            <div class="section-header">
-                <div>
-                    <h2>Matriks Role</h2>
+        @if ($currentPage === 'overview' && $canViewFullDiagnostics)
+            <section class="section" id="akses-role">
+                <div class="section-header">
+                    <div>
+                        <h2>Matriks Role</h2>
+                    </div>
                 </div>
-            </div>
-            <div class="grid overview-grid">
-                @foreach ($overview['user_roles'] as $role)
-                    <article class="overview-card">
-                        <span class="menu-tag">{{ number_format($role['count']) }} user</span>
-                        <h3 style="margin-top: 14px;">{{ $role['label'] }}</h3>
-                    </article>
-                @endforeach
-            </div>
-        </section>
-
-        <section class="section" id="menu-penting">
-            <div class="section-header">
-                <div>
-                    <h2>Menu Penting</h2>
-                </div>
-            </div>
-            <div class="card">
-                <div class="card-body menu-list">
-                    @foreach ($quickMenu as $item)
-                        <a class="menu-item" href="{{ $item['href'] }}" @if(\Illuminate\Support\Str::startsWith($item['href'], '/api/')) target="_blank" rel="noreferrer" @endif>
-                            <div class="menu-main"><strong>{{ $item['label'] }}</strong></div>
-                            <span class="menu-tag">{{ $item['tag'] }}</span>
-                        </a>
+                <div class="grid overview-grid">
+                    @foreach ($overview['user_roles'] as $role)
+                        <article class="overview-card">
+                            <span class="menu-tag">{{ number_format($role['count']) }} user</span>
+                            <h3 style="margin-top: 14px;">{{ $role['label'] }}</h3>
+                        </article>
                     @endforeach
                 </div>
-            </div>
-        </section>
+            </section>
+        @endif
 
-        <section class="section" id="status-modul">
-            <div class="section-header">
-                <div>
-                    <h2>Status Modul</h2>
+        @if ($currentPage === 'quick-menu')
+            <section class="section" id="menu-penting">
+                <div class="section-header">
+                    <div>
+                        <h2>Menu Penting</h2>
+                    </div>
                 </div>
-            </div>
-            <div class="grid overview-grid">
-                @foreach ($overview['modules'] as $module)
-                    <article class="overview-card">
-                        <span class="status {{ $module['status'] }}">{{ $module['status'] }}</span>
-                        <strong>{{ $module['percentage'] }}%</strong>
-                        <h3 style="margin-top: 12px;">{{ $module['label'] }}</h3>
-                        <div class="meter">
-                            <span style="width: {{ $module['percentage'] }}%"></span>
-                        </div>
-                        <small>{{ $module['completed'] }} dari {{ $module['total'] }} indikator terpenuhi</small>
-                    </article>
-                @endforeach
-            </div>
-        </section>
+                <div class="card">
+                    <div class="card-body menu-list">
+                        @foreach ($quickMenu as $item)
+                            <a class="menu-item" href="{{ $item['href'] }}" @if(\Illuminate\Support\Str::startsWith($item['href'], '/api/')) target="_blank" rel="noreferrer" @endif>
+                                <div class="menu-main"><strong>{{ $item['label'] }}</strong></div>
+                                <span class="menu-tag">{{ $item['tag'] }}</span>
+                            </a>
+                        @endforeach
+                    </div>
+                </div>
+            </section>
+        @endif
 
+        @if ($currentPage === 'module-status' && $canViewMonitoring)
+            <section class="section" id="status-modul">
+                <div class="section-header">
+                    <div>
+                        <h2>Status Modul</h2>
+                    </div>
+                </div>
+                <div class="grid overview-grid">
+                    @foreach ($overview['modules'] as $module)
+                        <article class="overview-card">
+                            <span class="status {{ $module['status'] }}">{{ $module['status'] }}</span>
+                            <strong>{{ $module['percentage'] }}%</strong>
+                            <h3 style="margin-top: 12px;">{{ $module['label'] }}</h3>
+                            <div class="meter">
+                                <span style="width: {{ $module['percentage'] }}%"></span>
+                            </div>
+                            <small>{{ $module['completed'] }} dari {{ $module['total'] }} indikator terpenuhi</small>
+                        </article>
+                    @endforeach
+                </div>
+            </section>
+        @endif
+
+        @if ($currentPage === 'superadmin-users' && $isSuperadmin && $superadminUserPage)
+            <section class="section">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="section-header" style="margin-bottom: 18px;">
+                            <div>
+                                <h2>Manajemen User Superadmin</h2>
+                                <p>Kelola akun internal, role akses, dan pembaruan password dari satu workspace yang mengikuti template dashboard saat ini.</p>
+                            </div>
+                            <span class="menu-tag">{{ number_format($superadminUserPage['records_count']) }} akun</span>
+                        </div>
+                        <div class="grid superadmin-kpis">
+                            <article class="superadmin-kpi">
+                                <span>Total User</span>
+                                <strong>{{ number_format($metrics['users']) }}</strong>
+                                <small>Semua akun internal yang sudah terdaftar di aplikasi.</small>
+                            </article>
+                            <article class="superadmin-kpi">
+                                <span>Superadmin</span>
+                                <strong>{{ number_format(collect($overview['user_roles'])->firstWhere('code', 'superadmin')['count'] ?? 0) }}</strong>
+                                <small>Role dengan akses penuh ke modul sensitif dan pengaturan sistem.</small>
+                            </article>
+                            <article class="superadmin-kpi">
+                                <span>Admin Operasional</span>
+                                <strong>{{ number_format(collect($overview['user_roles'])->firstWhere('code', 'admin')['count'] ?? 0) }}</strong>
+                                <small>Akun admin yang saat ini dapat mengelola modul operasional dan source data.</small>
+                            </article>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section">
+                <div class="table-card" data-superadmin-users-app='@json($superadminUserPage)'>
+                    <div class="master-data-toolbar">
+                        <div class="master-data-toolbar-main">
+                            <label class="search-field" aria-label="Cari user">
+                                <svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+                                <input type="search" placeholder="Cari nama, email, role, atau UUID user" data-grid-search>
+                            </label>
+                        </div>
+                        <div class="toolbar-actions">
+                            <span class="menu-tag" data-grid-count>{{ number_format($superadminUserPage['records_count']) }} data</span>
+                            <button class="action-button primary" type="button" data-grid-create>Tambah User</button>
+                        </div>
+                    </div>
+
+                    <div class="table-body">
+                        <div class="master-data-table-wrap">
+                            <table class="master-data-table">
+                                <thead data-grid-head></thead>
+                                <tbody data-grid-body>
+                                    <tr>
+                                        <td colspan="6" class="grid-loading">Memuat data user...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="pagination-bar">
+                        <div class="pagination-meta">
+                            <div class="rows-per-page">
+                                <span class="rows-label">Baris</span>
+                                <label class="rows-select-wrap" aria-label="Jumlah data per halaman">
+                                    <select class="rows-select" data-grid-per-page>
+                                        <option value="10">10</option>
+                                        <option value="25">25</option>
+                                        <option value="50">50</option>
+                                    </select>
+                                    <svg class="rows-select-icon" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                </label>
+                            </div>
+                            <div class="helper-text" data-grid-summary>Menyiapkan data user...</div>
+                        </div>
+                        <div class="pagination-controls">
+                            <button class="pagination-button" type="button" data-grid-prev>Sebelumnya</button>
+                            <span class="pagination-page" data-grid-page>Halaman 1</span>
+                            <button class="pagination-button" type="button" data-grid-next>Berikutnya</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        @endif
+
+        @if ($currentPage === 'superadmin-api-clients' && $isSuperadmin && $superadminApiClientPage)
+            <section class="section">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="section-header" style="margin-bottom: 18px;">
+                            <div>
+                                <h2>Generator Bearer Key API</h2>
+                                <p>Kelola client integrasi, batas rate limit, dan buat bearer token Sanctum langsung dari panel Superadmin dengan pola desain dashboard yang sama.</p>
+                            </div>
+                            <span class="menu-tag">{{ number_format($superadminApiClientPage['records_count']) }} client</span>
+                        </div>
+                        <div class="grid superadmin-kpis">
+                            <article class="superadmin-kpi">
+                                <span>Client API Aktif</span>
+                                <strong>{{ number_format($metrics['active_api_clients']) }}</strong>
+                                <small>Client aktif yang siap menerima bearer token dan mengakses endpoint API.</small>
+                            </article>
+                            <article class="superadmin-kpi">
+                                <span>Token Tersimpan</span>
+                                <strong>{{ number_format($metrics['access_tokens']) }}</strong>
+                                <small>Total token Sanctum yang saat ini tercatat pada sistem.</small>
+                            </article>
+                            <article class="superadmin-kpi">
+                                <span>Request Hari Ini</span>
+                                <strong>{{ number_format($metrics['request_logs_today']) }}</strong>
+                                <small>Aktivitas API terbaru untuk membantu validasi penggunaan integrasi.</small>
+                            </article>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section">
+                <div class="table-card" data-superadmin-api-clients-app='@json($superadminApiClientPage)'>
+                    <div class="master-data-toolbar">
+                        <div class="master-data-toolbar-main">
+                            <label class="search-field" aria-label="Cari client API">
+                                <svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+                                <input type="search" placeholder="Cari nama client, code, owner, atau UUID" data-grid-search>
+                            </label>
+                        </div>
+                        <div class="toolbar-actions">
+                            <span class="menu-tag" data-grid-count>{{ number_format($superadminApiClientPage['records_count']) }} data</span>
+                            <button class="action-button primary" type="button" data-grid-create>Tambah Client API</button>
+                        </div>
+                    </div>
+
+                    <div class="table-body">
+                        <div class="master-data-table-wrap">
+                            <table class="master-data-table">
+                                <thead data-grid-head></thead>
+                                <tbody data-grid-body>
+                                    <tr>
+                                        <td colspan="8" class="grid-loading">Memuat client API...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="pagination-bar">
+                        <div class="pagination-meta">
+                            <div class="rows-per-page">
+                                <span class="rows-label">Baris</span>
+                                <label class="rows-select-wrap" aria-label="Jumlah data per halaman">
+                                    <select class="rows-select" data-grid-per-page>
+                                        <option value="10">10</option>
+                                        <option value="25">25</option>
+                                        <option value="50">50</option>
+                                    </select>
+                                    <svg class="rows-select-icon" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                </label>
+                            </div>
+                            <div class="helper-text" data-grid-summary>Menyiapkan client API...</div>
+                        </div>
+                        <div class="pagination-controls">
+                            <button class="pagination-button" type="button" data-grid-prev>Sebelumnya</button>
+                            <span class="pagination-page" data-grid-page>Halaman 1</span>
+                            <button class="pagination-button" type="button" data-grid-next>Berikutnya</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        @endif
+
+        @if ($currentPage === 'master-data-entity' && $canViewMasterData && $masterDataPage)
+            @if (($masterDataPage['mode'] ?? 'master-data') === 'bridge-source')
+                <section class="section">
+                    <div class="grid" style="gap: 14px; margin-bottom: 14px;">
+                        <div class="card">
+                            <div class="card-body">
+                                <details class="relation-accordion" data-bridge-relation-map='@json($masterDataPage["relation_map"] ?? [])'>
+                                    <summary class="relation-accordion-summary">
+                                        <div class="relation-accordion-copy">
+                                            <h2>Relasi Tabel Source Jembatan</h2>
+                                            <p class="helper-text">Diagram relasi dibuat dengan Cytoscape dan default tertutup agar fokus awal tetap di tabel gabungan.</p>
+                                        </div>
+                                        <span class="relation-accordion-toggle">
+                                            <span>{{ count($masterDataPage['relation_map'] ?? []) }} relasi</span>
+                                            <svg class="icon" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                        </span>
+                                    </summary>
+                                    <div class="relation-accordion-body">
+                                        <div class="relation-legend">
+                                            <span class="relation-legend-item"><span class="relation-legend-dot root"></span>Root</span>
+                                            <span class="relation-legend-item"><span class="relation-legend-dot one-to-one"></span>One to One</span>
+                                            <span class="relation-legend-item"><span class="relation-legend-dot one-to-many"></span>One to Many</span>
+                                            <span class="relation-legend-item"><span class="relation-legend-dot lookup"></span>Lookup</span>
+                                        </div>
+                                        <div class="relation-graph-stage">
+                                            <div class="relation-graph-canvas" data-relation-graph></div>
+                                            <aside class="relation-graph-meta">
+                                                <div class="relation-meta-card">
+                                                    <span>Tabel</span>
+                                                    <strong data-relation-preview-title>m_jembatan</strong>
+                                                </div>
+                                                <div class="relation-meta-card">
+                                                    <span>Tipe</span>
+                                                    <strong data-relation-preview-type>ROOT</strong>
+                                                </div>
+                                                <div class="relation-meta-card">
+                                                    <span>Relasi</span>
+                                                    <strong data-relation-preview-description>Induk data jembatan</strong>
+                                                </div>
+                                                <div class="relation-meta-card">
+                                                    <span>Kunci</span>
+                                                    <strong data-relation-preview-key>uniqid</strong>
+                                                </div>
+                                                <div class="relation-meta-card">
+                                                    <span>Target</span>
+                                                    <strong data-relation-preview-target>Tabel utama CRUD source</strong>
+                                                </div>
+                                            </aside>
+                                        </div>
+                                    </div>
+                                </details>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="table-card" data-bridge-source-app='@json($masterDataPage)'>
+                        <div class="master-data-toolbar">
+                            <div class="master-data-toolbar-main">
+                                <label class="search-field" aria-label="Cari data jembatan source">
+                                    <svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+                                    <input type="search" placeholder="Cari uniqid, nomor jembatan, jenis, KM/HM, atau stasiun" data-grid-search>
+                                </label>
+                            </div>
+                            <div class="toolbar-actions">
+                                <span class="menu-tag" data-grid-count>{{ number_format($masterDataPage['records_count']) }} data</span>
+                                @if (($masterDataPage['crud_enabled'] ?? false))
+                                    <button class="action-button primary" type="button" data-grid-create>Tambah</button>
+                                @else
+                                    <span class="menu-tag">Mode baca dari dump SQL</span>
+                                @endif
+                            </div>
+                        </div>
+
+                        @if (($masterDataPage['crud_enabled'] ?? false) === false)
+                            <div class="master-data-alert">
+                                Source database belum tersedia di environment ini. Tabel gabungan tetap dimuat dari dump SQL agar seluruh data jembatan tetap bisa ditinjau.
+                            </div>
+                        @endif
+
+                        <div class="table-body">
+                            <div class="master-data-table-wrap">
+                                <table class="master-data-table compact-data-table">
+                                    <thead data-grid-head></thead>
+                                    <tbody data-grid-body>
+                                        <tr>
+                                            <td colspan="7" class="grid-loading">Memuat data...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="pagination-bar">
+                            <div class="pagination-meta">
+                                <div class="rows-per-page">
+                                    <span class="rows-label">Baris</span>
+                                    <label class="rows-select-wrap" aria-label="Jumlah data per halaman">
+                                        <select class="rows-select" data-grid-per-page>
+                                            <option value="10">10</option>
+                                            <option value="25">25</option>
+                                            <option value="50">50</option>
+                                        </select>
+                                        <svg class="rows-select-icon" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                    </label>
+                                </div>
+                                <div class="helper-text" data-grid-summary>Menyiapkan data...</div>
+                            </div>
+                            <div class="pagination-controls">
+                                <button class="pagination-button" type="button" data-grid-prev>Sebelumnya</button>
+                                <span class="pagination-page" data-grid-page>Halaman 1</span>
+                                <button class="pagination-button" type="button" data-grid-next>Berikutnya</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            @else
+                <section class="section">
+                    <div class="table-card" data-master-data-app='@json($masterDataPage)'>
+                        <div class="master-data-toolbar">
+                            <div class="master-data-toolbar-main">
+                                <label class="search-field" aria-label="Cari data">
+                                    <svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+                                    <input type="search" placeholder="Cari kode, nama, atau deskripsi" data-grid-search>
+                                </label>
+                            </div>
+                            <div class="toolbar-actions">
+                                <span class="menu-tag" data-grid-count>{{ number_format($masterDataPage['records_count']) }} data</span>
+                                <button class="action-button primary" type="button" data-grid-create>Tambah</button>
+                            </div>
+                        </div>
+
+                        @if (! $masterDataPage['type_exists'])
+                            <div class="master-data-alert">
+                                Tipe `{{ $masterDataPage['type_code'] }}` belum terdaftar di `master_data_types`, namun halaman ini sudah siap dipakai untuk input awal.
+                            </div>
+                        @endif
+
+                        <div class="table-body">
+                            <div class="master-data-table-wrap">
+                                <table class="master-data-table">
+                                    <thead data-grid-head></thead>
+                                    <tbody data-grid-body>
+                                        <tr>
+                                            <td colspan="6" class="grid-loading">Memuat data...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="pagination-bar">
+                            <div class="pagination-meta">
+                                <div class="rows-per-page">
+                                    <span class="rows-label">Baris</span>
+                                    <label class="rows-select-wrap" aria-label="Jumlah data per halaman">
+                                        <select class="rows-select" data-grid-per-page>
+                                            <option value="10">10</option>
+                                            <option value="25">25</option>
+                                            <option value="50">50</option>
+                                        </select>
+                                        <svg class="rows-select-icon" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                    </label>
+                                </div>
+                                <div class="helper-text" data-grid-summary>Menyiapkan data...</div>
+                            </div>
+                            <div class="pagination-controls">
+                                <button class="pagination-button" type="button" data-grid-prev>Sebelumnya</button>
+                                <span class="pagination-page" data-grid-page>Halaman 1</span>
+                                <button class="pagination-button" type="button" data-grid-next>Berikutnya</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            @endif
+        @endif
+
+        @if ($currentPage === 'bridge-source-table' && $canViewMasterData && $bridgeSourceTablePage)
+            <section class="section">
+                <div class="card" style="margin-bottom: 14px;">
+                    <div class="card-body">
+                        <div class="section-header">
+                            <div>
+                                <h2>{{ $bridgeSourceTablePage['table'] }}</h2>
+                                <p>{{ $bridgeSourceTablePage['description'] }}</p>
+                            </div>
+                            <span class="menu-tag">{{ number_format($bridgeSourceTablePage['row_count']) }} baris</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-card" data-bridge-source-table-app='@json($bridgeSourceTablePage)'>
+                    <div class="master-data-toolbar">
+                        <div class="master-data-toolbar-main">
+                            <label class="search-field" aria-label="Cari baris source table">
+                                <svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+                                <input type="search" placeholder="Cari nilai pada tabel source ini" data-grid-search>
+                            </label>
+                        </div>
+                        <div class="toolbar-actions">
+                            <span class="menu-tag" data-grid-count>{{ number_format($bridgeSourceTablePage['row_count']) }} data</span>
+                        </div>
+                    </div>
+
+                    <div class="table-body">
+                        <div class="master-data-table-wrap">
+                            <table class="master-data-table compact-data-table">
+                                <thead data-grid-head></thead>
+                                <tbody data-grid-body>
+                                    <tr>
+                                        <td colspan="6" class="grid-loading">Memuat data...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="pagination-bar">
+                        <div class="pagination-meta">
+                            <div class="rows-per-page">
+                                <span class="rows-label">Baris</span>
+                                <label class="rows-select-wrap" aria-label="Jumlah data per halaman">
+                                    <select class="rows-select" data-grid-per-page>
+                                        <option value="10">10</option>
+                                        <option value="25">25</option>
+                                        <option value="50">50</option>
+                                    </select>
+                                    <svg class="rows-select-icon" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                </label>
+                            </div>
+                            <div class="helper-text" data-grid-summary>Menyiapkan data...</div>
+                        </div>
+                        <div class="pagination-controls">
+                            <button class="pagination-button" type="button" data-grid-prev>Sebelumnya</button>
+                            <span class="pagination-page" data-grid-page>Halaman 1</span>
+                            <button class="pagination-button" type="button" data-grid-next>Berikutnya</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        @endif
+
+        @if (in_array($currentPage, ['import-mapping', 'monitoring'], true) && $hasOperationalDashboard)
         <section class="grid workspace section">
             <div class="stack">
-                <div class="card" id="monitoring">
-                    <div class="card-body">
-                        <div class="section-header">
-                            <div>
-                                <h2>Kesehatan Sistem</h2>
-                            </div>
-                            <span class="status {{ $health['status'] }}">{{ $health['status'] }}</span>
-                        </div>
-
-                        <div class="health-list">
-                            @foreach ($health['checks'] as $check)
-                                <div class="health-item">
-                                    <div class="health-main">
-                                        <strong>{{ $check['label'] }}</strong>
-                                        <span>{{ $check['detail'] }}</span>
-                                    </div>
-                                    <span class="status {{ $check['ok'] ? 'ok' : 'missing' }}">{{ $check['ok'] ? 'ok' : 'issue' }}</span>
+                @if ($currentPage === 'monitoring' && $canViewMonitoring)
+                    <div class="card" id="monitoring">
+                        <div class="card-body">
+                            <div class="section-header">
+                                <div>
+                                    <h2>Kesehatan Sistem</h2>
                                 </div>
-                            @endforeach
+                                <span class="status {{ $health['status'] }}">{{ $health['status'] }}</span>
+                            </div>
+
+                            <div class="health-list">
+                                @foreach ($health['checks'] as $check)
+                                    <div class="health-item">
+                                        <div class="health-main">
+                                            <strong>{{ $check['label'] }}</strong>
+                                            <span>{{ $check['detail'] }}</span>
+                                        </div>
+                                        <span class="status {{ $check['ok'] ? 'ok' : 'missing' }}">{{ $check['ok'] ? 'ok' : 'issue' }}</span>
+                                    </div>
+                                @endforeach
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <div class="table-card" id="master-data">
-                    <div class="table-head">
-                        <div>
-                            <h2>Master Data</h2>
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="section-header">
+                                <div>
+                                    <h2>Domain Infrastruktur</h2>
+                                </div>
+                            </div>
+
+                            <div class="health-list">
+                                @foreach ($infrastructureDomains as $domain)
+                                    <div class="health-item">
+                                        <div class="health-main">
+                                            <strong>{{ $domain['label'] }}</strong>
+                                            <span>{{ $domain['connection'] }} → {{ $domain['database'] ?? 'belum dikonfigurasi' }}</span>
+                                            <span>{{ $domain['description'] }}</span>
+                                        </div>
+                                        <span class="status {{ $domain['configured'] ? 'ok' : 'partial' }}">{{ $domain['configured'] ? 'aktif' : 'opsional' }}</span>
+                                    </div>
+                                @endforeach
+                            </div>
                         </div>
-                        <span class="menu-tag">{{ $overview['entity_types']->count() }} tipe</span>
                     </div>
-                    <div class="table-body">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Tipe</th>
-                                    <th>Kode</th>
-                                    <th>Record</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse ($overview['entity_types'] as $type)
-                                    <tr>
-                                        <td><strong>{{ $type['name'] }}</strong></td>
-                                        <td class="mono">{{ $type['code'] }}</td>
-                                        <td>{{ number_format($type['records_count']) }}</td>
-                                        <td><span class="status {{ $type['is_active'] ? 'ready' : 'partial' }}">{{ $type['is_active'] ? 'active' : 'inactive' }}</span></td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="4" class="empty">Belum ada tipe master data yang tersimpan.</td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
+                @endif
 
-                        <table style="margin-top: 8px;">
-                            <thead>
-                                <tr>
-                                    <th>Record</th>
-                                    <th>Tipe</th>
-                                    <th>Status</th>
-                                    <th>Diperbarui</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse ($overview['recent_records'] as $record)
-                                    <tr>
-                                        <td>
-                                            <strong>{{ $record['name'] ?? '-' }}</strong>
-                                            <div class="table-note mono">{{ $record['code'] }}</div>
-                                        </td>
-                                        <td>{{ $record['type_name'] ?? $record['entity_type'] }}</td>
-                                        <td><span class="status {{ $record['status'] === 'active' ? 'ready' : 'partial' }}">{{ $record['status'] }}</span></td>
-                                        <td>{{ optional($record['updated_at'])->diffForHumans() }}</td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="4" class="empty">Belum ada record master data terbaru.</td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
             </div>
 
             <div class="stack">
-                <div class="card" id="import-mapping">
-                    <div class="card-body">
-                        <div class="section-header">
-                            <div>
-                                <h2>Import dan Mapping</h2>
+                @if ($currentPage === 'import-mapping' && $canViewImportMapping)
+                    <div class="card" id="import-mapping">
+                        <div class="card-body">
+                            <div class="section-header">
+                                <div>
+                                    <h2>Import dan Mapping</h2>
+                                </div>
+                            </div>
+                            <div class="module-list">
+                                @forelse ($overview['recent_mappings'] as $mapping)
+                                    <div class="module-item">
+                                        <div class="module-main">
+                                            <strong>{{ $mapping['name'] }}</strong>
+                                            <span>{{ $mapping['source_system'] }}/{{ $mapping['source_table'] }} → {{ $mapping['entity_type'] }}</span>
+                                        </div>
+                                        <span class="status {{ $mapping['is_active'] ? 'ready' : 'partial' }}">v{{ $mapping['version'] }}</span>
+                                    </div>
+                                @empty
+                                    <div class="module-item">
+                                        <div class="module-main">
+                                            <strong>Belum ada mapping import.</strong>
+                                        </div>
+                                    </div>
+                                @endforelse
+                            </div>
+
+                            <div class="footer-callout" style="margin-top: 16px;">
+                                <strong>Batch import tersimpan: {{ number_format($metrics['import_batches']) }}</strong>
+                                Error import yang tercatat saat ini: {{ number_format($metrics['import_errors']) }}.
                             </div>
                         </div>
-                        <div class="module-list">
-                            @forelse ($overview['recent_mappings'] as $mapping)
-                                <div class="module-item">
-                                    <div class="module-main">
-                                        <strong>{{ $mapping['name'] }}</strong>
-                                        <span>{{ $mapping['source_system'] }}/{{ $mapping['source_table'] }} → {{ $mapping['entity_type'] }}</span>
-                                    </div>
-                                    <span class="status {{ $mapping['is_active'] ? 'ready' : 'partial' }}">v{{ $mapping['version'] }}</span>
-                                </div>
-                            @empty
-                                <div class="module-item">
-                                    <div class="module-main">
-                                        <strong>Belum ada mapping import.</strong>
-                                    </div>
-                                </div>
-                            @endforelse
-                        </div>
+                    </div>
+                @endif
 
-                        <div class="footer-callout" style="margin-top: 16px;">
-                            <strong>Batch import tersimpan: {{ number_format($metrics['import_batches']) }}</strong>
-                            Error import yang tercatat saat ini: {{ number_format($metrics['import_errors']) }}.
+                @if ($currentPage === 'monitoring' && $canViewMonitoring)
+                    <div class="table-card">
+                        <div class="table-head">
+                            <div>
+                                <h2>Import, Client API, dan Monitoring</h2>
+                            </div>
+                        </div>
+                        <div class="table-body">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Import</th>
+                                        <th>Status</th>
+                                        <th>Progress</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse ($overview['recent_imports'] as $import)
+                                        <tr>
+                                            <td>
+                                                <strong>{{ $import['entity_type'] ?? 'n/a' }}</strong>
+                                                <div class="table-note mono">{{ $import['source_system'] }}/{{ $import['source_table'] ?? '-' }}</div>
+                                            </td>
+                                            <td><span class="status {{ $import['status'] === 'completed' ? 'ready' : 'partial' }}">{{ $import['status'] }}</span></td>
+                                            <td>{{ $import['progress_percentage'] }}% / {{ number_format($import['total_rows']) }}</td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="3" class="empty">Belum ada batch import terbaru.</td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+
+                            <table style="margin-top: 8px;">
+                                <thead>
+                                    <tr>
+                                        <th>Client API</th>
+                                        <th>Kode</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse ($overview['recent_clients'] as $client)
+                                        <tr>
+                                            <td>
+                                                <strong>{{ $client['name'] }}</strong>
+                                                <div class="table-note">{{ $client['owner_email'] ?? 'owner belum diisi' }}</div>
+                                            </td>
+                                            <td class="mono">{{ $client['code'] }}</td>
+                                            <td><span class="status {{ $client['is_active'] ? 'ready' : 'partial' }}">{{ $client['is_active'] ? 'active' : 'inactive' }}</span></td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="3" class="empty">Belum ada client API tersimpan.</td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+
+                            <table style="margin-top: 8px;">
+                                <thead>
+                                    <tr>
+                                        <th>Request API</th>
+                                        <th>Status</th>
+                                        <th>Waktu</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse ($overview['recent_requests'] as $request)
+                                        <tr>
+                                            <td class="mono">{{ $request['method'] }} {{ $request['endpoint'] }}</td>
+                                            <td>{{ $request['status_code'] }} / {{ $request['response_time_ms'] }}ms</td>
+                                            <td>{{ optional($request['requested_at'])->diffForHumans() }}</td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="3" class="empty">Belum ada request log yang direkam.</td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
                         </div>
                     </div>
-                </div>
+                @endif
+            </div>
+        </section>
+        @endif
 
+        @if ($currentPage === 'overview' && $canViewFullDiagnostics)
+            <section class="section">
                 <div class="table-card">
                     <div class="table-head">
                         <div>
-                            <h2>Import, Client API, dan Monitoring</h2>
+                            <h2>Audit Log dan Endpoint API</h2>
                         </div>
+                        <span class="menu-tag">{{ $overview['api_routes']->count() }} route</span>
                     </div>
                     <div class="table-body">
                         <table>
                             <thead>
                                 <tr>
-                                    <th>Import</th>
-                                    <th>Status</th>
-                                    <th>Progress</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse ($overview['recent_imports'] as $import)
-                                    <tr>
-                                        <td>
-                                            <strong>{{ $import['entity_type'] ?? 'n/a' }}</strong>
-                                            <div class="table-note mono">{{ $import['source_system'] }}/{{ $import['source_table'] ?? '-' }}</div>
-                                        </td>
-                                        <td><span class="status {{ $import['status'] === 'completed' ? 'ready' : 'partial' }}">{{ $import['status'] }}</span></td>
-                                        <td>{{ $import['progress_percentage'] }}% / {{ number_format($import['total_rows']) }}</td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="3" class="empty">Belum ada batch import terbaru.</td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-
-                        <table style="margin-top: 8px;">
-                            <thead>
-                                <tr>
-                                    <th>Client API</th>
-                                    <th>Kode</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse ($overview['recent_clients'] as $client)
-                                    <tr>
-                                        <td>
-                                            <strong>{{ $client['name'] }}</strong>
-                                            <div class="table-note">{{ $client['owner_email'] ?? 'owner belum diisi' }}</div>
-                                        </td>
-                                        <td class="mono">{{ $client['code'] }}</td>
-                                        <td><span class="status {{ $client['is_active'] ? 'ready' : 'partial' }}">{{ $client['is_active'] ? 'active' : 'inactive' }}</span></td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="3" class="empty">Belum ada client API tersimpan.</td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-
-                        <table style="margin-top: 8px;">
-                            <thead>
-                                <tr>
-                                    <th>Request API</th>
-                                    <th>Status</th>
+                                    <th>Audit</th>
+                                    <th>Objek</th>
+                                    <th>Request ID</th>
                                     <th>Waktu</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse ($overview['recent_requests'] as $request)
+                                @forelse ($overview['recent_audits'] as $audit)
                                     <tr>
-                                        <td class="mono">{{ $request['method'] }} {{ $request['endpoint'] }}</td>
-                                        <td>{{ $request['status_code'] }} / {{ $request['response_time_ms'] }}ms</td>
-                                        <td>{{ optional($request['requested_at'])->diffForHumans() }}</td>
+                                        <td class="mono">{{ $audit['action'] }}</td>
+                                        <td>{{ $audit['auditable_type'] }} #{{ $audit['auditable_id'] }}</td>
+                                        <td class="mono">{{ $audit['request_id'] ?? '-' }}</td>
+                                        <td>{{ optional($audit['created_at'])->diffForHumans() }}</td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="3" class="empty">Belum ada request log yang direkam.</td>
+                                        <td colspan="4" class="empty">Belum ada audit log yang tercatat.</td>
                                     </tr>
                                 @endforelse
                             </tbody>
                         </table>
+
+                        <table style="margin-top: 8px;">
+                            <thead>
+                                <tr>
+                                    <th>Method</th>
+                                    <th>URI</th>
+                                    <th>Route Name</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($overview['api_routes'] as $route)
+                                    <tr>
+                                        <td class="mono">{{ implode(', ', $route['methods']) }}</td>
+                                        <td class="mono">{{ $route['uri'] }}</td>
+                                        <td>{{ $route['name'] }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
                     </div>
                 </div>
-            </div>
-        </section>
+            </section>
+        @endif
 
-        <section class="section">
-            <div class="table-card">
-                <div class="table-head">
-                    <div>
-                        <h2>Audit Log dan Endpoint API</h2>
+        @if ($currentPage === 'superadmin-users' && $isSuperadmin && $superadminUserPage)
+            <div class="modal" data-superadmin-user-view-modal aria-hidden="true">
+                <div class="modal-backdrop" data-modal-close></div>
+                <div class="modal-panel">
+                    <div class="modal-head">
+                        <div>
+                            <h2>Detail User</h2>
+                            <p data-user-view-subtitle>Memuat data...</p>
+                        </div>
+                        <button class="icon-button" type="button" data-modal-close aria-label="Tutup detail user">
+                            <svg class="icon" viewBox="0 0 24 24"><path d="M6 6 18 18"/><path d="M18 6 6 18"/></svg>
+                        </button>
                     </div>
-                    <span class="menu-tag">{{ $overview['api_routes']->count() }} route</span>
-                </div>
-                <div class="table-body">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Audit</th>
-                                <th>Objek</th>
-                                <th>Request ID</th>
-                                <th>Waktu</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse ($overview['recent_audits'] as $audit)
-                                <tr>
-                                    <td class="mono">{{ $audit['action'] }}</td>
-                                    <td>{{ $audit['auditable_type'] }} #{{ $audit['auditable_id'] }}</td>
-                                    <td class="mono">{{ $audit['request_id'] ?? '-' }}</td>
-                                    <td>{{ optional($audit['created_at'])->diffForHumans() }}</td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="4" class="empty">Belum ada audit log yang tercatat.</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-
-                    <table style="margin-top: 8px;">
-                        <thead>
-                            <tr>
-                                <th>Method</th>
-                                <th>URI</th>
-                                <th>Route Name</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach ($overview['api_routes'] as $route)
-                                <tr>
-                                    <td class="mono">{{ implode(', ', $route['methods']) }}</td>
-                                    <td class="mono">{{ $route['uri'] }}</td>
-                                    <td>{{ $route['name'] }}</td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
+                    <div class="modal-body" data-user-view-content></div>
                 </div>
             </div>
-        </section>
+
+            <div class="modal" data-superadmin-user-form-modal aria-hidden="true">
+                <div class="modal-backdrop" data-modal-close></div>
+                <div class="modal-panel">
+                    <div class="modal-head">
+                        <div>
+                            <h2 data-user-form-title>Tambah User</h2>
+                            <p data-user-form-subtitle>Isi akun baru beserta role aksesnya.</p>
+                        </div>
+                        <button class="icon-button" type="button" data-modal-close aria-label="Tutup form user">
+                            <svg class="icon" viewBox="0 0 24 24"><path d="M6 6 18 18"/><path d="M18 6 6 18"/></svg>
+                        </button>
+                    </div>
+                    <form data-superadmin-user-form>
+                        <div class="modal-body">
+                            <div class="feedback" data-user-form-feedback hidden></div>
+                            <div class="form-grid">
+                                <div class="field">
+                                    <label for="managed-user-name">Nama</label>
+                                    <input id="managed-user-name" name="name" type="text" required>
+                                </div>
+                                <div class="field">
+                                    <label for="managed-user-email">Email</label>
+                                    <input id="managed-user-email" name="email" type="email" required>
+                                </div>
+                                <div class="field">
+                                    <label for="managed-user-role">Role</label>
+                                    <select id="managed-user-role" name="role" required>
+                                        @foreach ($superadminUserPage['role_options'] as $role)
+                                            <option value="{{ $role['value'] }}">{{ $role['label'] }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label for="managed-user-password">Password</label>
+                                    <input id="managed-user-password" name="password" type="password" placeholder="Minimal 8 karakter">
+                                </div>
+                                <div class="field full">
+                                    <label>Verifikasi Email</label>
+                                    <label class="checkbox-field">
+                                        <input name="email_verified" type="checkbox" checked>
+                                        <span>Tandai email sudah terverifikasi</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-actions">
+                            <button class="action-button" type="button" data-modal-close>Batal</button>
+                            <button class="action-button primary" type="submit" data-user-form-submit>Simpan</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        @endif
+
+        @if ($currentPage === 'superadmin-api-clients' && $isSuperadmin && $superadminApiClientPage)
+            <div class="modal" data-superadmin-api-client-view-modal aria-hidden="true">
+                <div class="modal-backdrop" data-modal-close></div>
+                <div class="modal-panel modal-panel-xl">
+                    <div class="modal-head">
+                        <div>
+                            <h2>Detail Client API</h2>
+                            <p data-api-client-view-subtitle>Memuat data...</p>
+                        </div>
+                        <button class="icon-button" type="button" data-modal-close aria-label="Tutup detail client API">
+                            <svg class="icon" viewBox="0 0 24 24"><path d="M6 6 18 18"/><path d="M18 6 6 18"/></svg>
+                        </button>
+                    </div>
+                    <div class="modal-body" data-api-client-view-content></div>
+                </div>
+            </div>
+
+            <div class="modal" data-superadmin-api-client-form-modal aria-hidden="true">
+                <div class="modal-backdrop" data-modal-close></div>
+                <div class="modal-panel modal-panel-xl">
+                    <div class="modal-head">
+                        <div>
+                            <h2 data-api-client-form-title>Tambah Client API</h2>
+                            <p data-api-client-form-subtitle>Isi metadata integrasi lalu simpan.</p>
+                        </div>
+                        <button class="icon-button" type="button" data-modal-close aria-label="Tutup form client API">
+                            <svg class="icon" viewBox="0 0 24 24"><path d="M6 6 18 18"/><path d="M18 6 6 18"/></svg>
+                        </button>
+                    </div>
+                    <form data-superadmin-api-client-form>
+                        <div class="modal-body">
+                            <div class="feedback" data-api-client-form-feedback hidden></div>
+                            <div class="form-grid">
+                                <div class="field">
+                                    <label for="api-client-name">Nama Client</label>
+                                    <input id="api-client-name" name="name" type="text" required>
+                                </div>
+                                <div class="field">
+                                    <label for="api-client-code">Code</label>
+                                    <input id="api-client-code" name="code" type="text" placeholder="contoh: partner_integrasi" required>
+                                </div>
+                                <div class="field">
+                                    <label for="api-client-owner-name">PIC / Owner</label>
+                                    <input id="api-client-owner-name" name="owner_name" type="text">
+                                </div>
+                                <div class="field">
+                                    <label for="api-client-owner-email">Email Owner</label>
+                                    <input id="api-client-owner-email" name="owner_email" type="email">
+                                </div>
+                                <div class="field">
+                                    <label for="api-client-rate-minute">Rate Limit / Menit</label>
+                                    <input id="api-client-rate-minute" name="rate_limit_per_minute" type="number" min="1">
+                                </div>
+                                <div class="field">
+                                    <label for="api-client-rate-day">Rate Limit / Hari</label>
+                                    <input id="api-client-rate-day" name="rate_limit_per_day" type="number" min="1">
+                                </div>
+                                <div class="field">
+                                    <label for="api-client-expires-at">Expired At</label>
+                                    <input id="api-client-expires-at" name="expires_at" type="datetime-local">
+                                </div>
+                                <div class="field">
+                                    <label>Status</label>
+                                    <label class="checkbox-field">
+                                        <input name="is_active" type="checkbox" checked>
+                                        <span>Client aktif dan boleh menerima token baru</span>
+                                    </label>
+                                </div>
+                                <div class="field full">
+                                    <label for="api-client-description">Deskripsi</label>
+                                    <textarea id="api-client-description" name="description" placeholder="Deskripsi singkat integrasi ini"></textarea>
+                                </div>
+                                <div class="field full">
+                                    <label for="api-client-allowed-ips">Allowed IPs</label>
+                                    <textarea id="api-client-allowed-ips" name="allowed_ips" placeholder="Satu IP per baris"></textarea>
+                                </div>
+                                <div class="field full">
+                                    <label for="api-client-allowed-origins">Allowed Origins</label>
+                                    <textarea id="api-client-allowed-origins" name="allowed_origins" placeholder="Satu origin per baris"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-actions">
+                            <button class="action-button" type="button" data-modal-close>Batal</button>
+                            <button class="action-button primary" type="submit" data-api-client-form-submit>Simpan</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="modal" data-superadmin-api-token-modal aria-hidden="true">
+                <div class="modal-backdrop" data-modal-close></div>
+                <div class="modal-panel modal-panel-xl">
+                    <div class="modal-head">
+                        <div>
+                            <h2>Generate Bearer Token</h2>
+                            <p data-api-token-subtitle>Pilih scope dan masa berlaku token.</p>
+                        </div>
+                        <button class="icon-button" type="button" data-modal-close aria-label="Tutup generator token">
+                            <svg class="icon" viewBox="0 0 24 24"><path d="M6 6 18 18"/><path d="M18 6 6 18"/></svg>
+                        </button>
+                    </div>
+                    <form data-superadmin-api-token-form>
+                        <div class="modal-body">
+                            <div class="feedback" data-api-token-feedback hidden></div>
+                            <div class="form-grid">
+                                <div class="field">
+                                    <label for="api-token-name">Nama Token</label>
+                                    <input id="api-token-name" name="token_name" type="text" placeholder="contoh: prod-bridge-reader" required>
+                                </div>
+                                <div class="field">
+                                    <label for="api-token-expires-at">Expired At</label>
+                                    <input id="api-token-expires-at" name="expires_at" type="datetime-local">
+                                </div>
+                                <div class="field full">
+                                    <label>Ability / Scope</label>
+                                    <div class="token-ability-grid">
+                                        @foreach ($superadminApiClientPage['ability_options'] as $ability)
+                                            <label class="token-ability-card">
+                                                <input name="abilities[]" type="checkbox" value="{{ $ability['value'] }}" @checked($ability['value'] === '*')>
+                                                <div>
+                                                    <strong>{{ $ability['label'] }}</strong>
+                                                    <span>{{ $ability['description'] }}</span>
+                                                </div>
+                                            </label>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="secret-preview" data-api-token-result hidden>
+                                <div>
+                                    <strong>Bearer Token Baru</strong>
+                                    <span class="table-note">Token hanya muncul satu kali. Simpan segera setelah dibuat.</span>
+                                </div>
+                                <code class="secret-code" data-api-token-secret></code>
+                                <div class="toolbar-actions">
+                                    <button class="action-button" type="button" data-copy-api-token>Salin Token</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-actions">
+                            <button class="action-button" type="button" data-modal-close>Tutup</button>
+                            <button class="action-button primary" type="submit" data-api-token-submit>Generate Token</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        @endif
+
+        @if ($currentPage === 'master-data-entity' && $canViewMasterData && $masterDataPage)
+            @if (($masterDataPage['mode'] ?? 'master-data') === 'bridge-source')
+                <div class="modal" data-bridge-view-modal aria-hidden="true">
+                    <div class="modal-backdrop" data-modal-close></div>
+                    <div class="modal-panel modal-panel-xl">
+                        <div class="modal-head">
+                            <div>
+                                <h2>Detail {{ $masterDataPage['label'] }}</h2>
+                                <p data-bridge-view-subtitle>Memuat data...</p>
+                            </div>
+                            <button class="icon-button" type="button" data-modal-close aria-label="Tutup detail">
+                                <svg class="icon" viewBox="0 0 24 24"><path d="M6 6 18 18"/><path d="M18 6 6 18"/></svg>
+                            </button>
+                        </div>
+                        <div class="modal-body" data-bridge-view-content></div>
+                    </div>
+                </div>
+
+                <div class="modal" data-bridge-form-modal aria-hidden="true">
+                    <div class="modal-backdrop" data-modal-close></div>
+                    <div class="modal-panel">
+                        <div class="modal-head">
+                            <div>
+                                <h2 data-bridge-form-title>Tambah {{ $masterDataPage['label'] }}</h2>
+                                <p data-bridge-form-subtitle>Isi data source utama dan relasinya.</p>
+                            </div>
+                            <button class="icon-button" type="button" data-modal-close aria-label="Tutup form">
+                                <svg class="icon" viewBox="0 0 24 24"><path d="M6 6 18 18"/><path d="M18 6 6 18"/></svg>
+                            </button>
+                        </div>
+                        <form data-bridge-source-form>
+                            <div class="modal-body">
+                                <div class="feedback" data-bridge-form-feedback hidden></div>
+                                <div class="form-section">
+                                    <div class="section-header compact">
+                                        <div>
+                                            <h3>Data Utama `m_jembatan`</h3>
+                                        </div>
+                                    </div>
+                                    <div class="form-grid">
+                                        <div class="field">
+                                            <label for="bridge-tanggal">Tanggal</label>
+                                            <input id="bridge-tanggal" name="tanggal" type="date">
+                                        </div>
+                                        <div class="field">
+                                            <label for="bridge-no-bh">No. Jembatan</label>
+                                            <input id="bridge-no-bh" name="no_bh" type="text">
+                                        </div>
+                                        <div class="field">
+                                            <label for="bridge-jenis">Jenis</label>
+                                            <input id="bridge-jenis" name="jenis" type="text">
+                                        </div>
+                                        <div class="field">
+                                            <label for="bridge-km-hm">KM/HM</label>
+                                            <input id="bridge-km-hm" name="km_hm" type="text">
+                                        </div>
+                                        <div class="field">
+                                            <label for="bridge-arah">Arah</label>
+                                            <input id="bridge-arah" name="arah_bh" type="text">
+                                        </div>
+                                        <div class="field">
+                                            <label for="bridge-nama">Nama</label>
+                                            <input id="bridge-nama" name="nama" type="text">
+                                        </div>
+                                        <div class="field">
+                                            <label for="bridge-wil-ker">Wilayah Kerja</label>
+                                            <input id="bridge-wil-ker" name="wil_ker" type="text">
+                                        </div>
+                                        <div class="field">
+                                            <label for="bridge-wil-op">Wilayah Operasi</label>
+                                            <input id="bridge-wil-op" name="wil_op" type="text">
+                                        </div>
+                                        <div class="field">
+                                            <label for="bridge-province">Provinsi</label>
+                                            <input id="bridge-province" name="id_prov" type="text">
+                                        </div>
+                                        <div class="field">
+                                            <label for="bridge-city">Kab/Kota</label>
+                                            <input id="bridge-city" name="id_kabkot" type="text">
+                                        </div>
+                                        <div class="field">
+                                            <label for="bridge-lintas">Lintas</label>
+                                            <input id="bridge-lintas" name="lintas" type="text">
+                                        </div>
+                                        <div class="field">
+                                            <label for="bridge-stasiun-1">Stasiun Awal</label>
+                                            <input id="bridge-stasiun-1" name="stasiun1" type="text">
+                                        </div>
+                                        <div class="field">
+                                            <label for="bridge-stasiun-2">Stasiun Akhir</label>
+                                            <input id="bridge-stasiun-2" name="stasiun2" type="text">
+                                        </div>
+                                        <div class="field">
+                                            <label for="bridge-lat">Latitude</label>
+                                            <input id="bridge-lat" name="lat" type="text">
+                                        </div>
+                                        <div class="field">
+                                            <label for="bridge-lon">Longitude</label>
+                                            <input id="bridge-lon" name="lon" type="text">
+                                        </div>
+                                        <div class="field">
+                                            <label for="bridge-active">Active</label>
+                                            <select id="bridge-active" name="active">
+                                                <option value="1">1</option>
+                                                <option value="0">0</option>
+                                            </select>
+                                        </div>
+                                        <div class="field">
+                                            <label for="bridge-status">Status</label>
+                                            <input id="bridge-status" name="status" type="number" value="1">
+                                        </div>
+                                        <div class="field">
+                                            <label for="bridge-statusdata">Status Data</label>
+                                            <input id="bridge-statusdata" name="statusdata" type="number" value="0">
+                                        </div>
+                                        <div class="field full">
+                                            <label for="bridge-catatan">Catatan</label>
+                                            <textarea id="bridge-catatan" name="catatan"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-section">
+                                    <div class="section-header compact">
+                                        <div>
+                                            <h3>Profil `m_jembatan_profil`</h3>
+                                        </div>
+                                    </div>
+                                    <div class="form-grid">
+                                        <div class="field">
+                                            <label for="profile-perpotongan">Perpotongan</label>
+                                            <input id="profile-perpotongan" name="profile.perpotongan" type="text">
+                                        </div>
+                                        <div class="field">
+                                            <label for="profile-track-count">Jumlah Lintasan</label>
+                                            <input id="profile-track-count" name="profile.jml_lintasan" type="number">
+                                        </div>
+                                        <div class="field">
+                                            <label for="profile-span-count">Jumlah Bentang</label>
+                                            <input id="profile-span-count" name="profile.jml_bentang" type="number">
+                                        </div>
+                                        <div class="field">
+                                            <label for="profile-total-length">Panjang Total</label>
+                                            <input id="profile-total-length" name="profile.pjg_total" type="text">
+                                        </div>
+                                        <div class="field">
+                                            <label for="profile-finish-year">Tahun Selesai</label>
+                                            <input id="profile-finish-year" name="profile.thn_selesai" type="text">
+                                        </div>
+                                        <div class="field">
+                                            <label for="profile-top-height">RM BGN Atas</label>
+                                            <input id="profile-top-height" name="profile.rm_bgn_atas" type="text">
+                                        </div>
+                                        <div class="field">
+                                            <label for="profile-bottom-height">RM BGN Bawah</label>
+                                            <input id="profile-bottom-height" name="profile.rm_bgn_bawah" type="text">
+                                        </div>
+                                        <div class="field full">
+                                            <label for="profile-span-json">Detail Bentang Profil</label>
+                                            <textarea id="profile-span-json" name="profile_span_json" spellcheck="false">{"pjg_bentang1":"","pjg_bentang2":"","pjg_bentang3":""}</textarea>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-section">
+                                    <div class="section-header compact">
+                                        <div>
+                                            <h3>Detail 1:N</h3>
+                                        </div>
+                                    </div>
+                                    <div class="field full">
+                                        <label for="bridge-spans-json">Bentang `m_jembatan_bentang`</label>
+                                        <textarea id="bridge-spans-json" name="spans_json" spellcheck="false">[]</textarea>
+                                    </div>
+                                    <div class="field full">
+                                        <label for="bridge-substructures-json">Struktur Bawah `m_jembatan_bawah`</label>
+                                        <textarea id="bridge-substructures-json" name="substructures_json" spellcheck="false">[]</textarea>
+                                    </div>
+                                </div>
+
+                                <div class="form-section">
+                                    <div class="section-header compact">
+                                        <div>
+                                            <h3>Proteksi dan Asesmen</h3>
+                                        </div>
+                                    </div>
+                                    <div class="form-grid">
+                                        <div class="field">
+                                            <label for="protection-flow-material">Pelindung Arus Material</label>
+                                            <input id="protection-flow-material" name="protection.pelindung_arus_material" type="text">
+                                        </div>
+                                        <div class="field">
+                                            <label for="protection-flow-type">Pelindung Arus Tipe</label>
+                                            <input id="protection-flow-type" name="protection.pelindung_arus_tipe" type="text">
+                                        </div>
+                                        <div class="field">
+                                            <label for="protection-stream-material">Pengarah Arus Material</label>
+                                            <input id="protection-stream-material" name="protection.pengarah_arus_material" type="text">
+                                        </div>
+                                        <div class="field">
+                                            <label for="protection-stream-type">Pengarah Arus Tipe</label>
+                                            <input id="protection-stream-type" name="protection.pengarah_arus_tipe" type="text">
+                                        </div>
+                                        <div class="field">
+                                            <label for="protection-slide-material">Pelindung Longsoran Material</label>
+                                            <input id="protection-slide-material" name="protection.pelindung_longsoran_material" type="text">
+                                        </div>
+                                        <div class="field">
+                                            <label for="protection-slide-type">Pelindung Longsoran Tipe</label>
+                                            <input id="protection-slide-type" name="protection.pelindung_longsoran_tipe" type="text">
+                                        </div>
+                                        <div class="field">
+                                            <label for="assessment-total">Nilai Total</label>
+                                            <input id="assessment-total" name="assessment.total" type="number" step="0.01">
+                                        </div>
+                                        <div class="field">
+                                            <label for="assessment-conclusion">Kesimpulan</label>
+                                            <input id="assessment-conclusion" name="assessment.kesimpulan" type="number">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-actions">
+                                <button class="action-button" type="button" data-modal-close>Batal</button>
+                                <button class="action-button primary" type="submit" data-bridge-form-submit>Simpan</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            @else
+                <div class="modal" data-view-modal aria-hidden="true">
+                    <div class="modal-backdrop" data-modal-close></div>
+                    <div class="modal-panel">
+                        <div class="modal-head">
+                            <div>
+                                <h2>Detail {{ $masterDataPage['label'] }}</h2>
+                                <p data-view-subtitle>Memuat data...</p>
+                            </div>
+                            <button class="icon-button" type="button" data-modal-close aria-label="Tutup detail">
+                                <svg class="icon" viewBox="0 0 24 24"><path d="M6 6 18 18"/><path d="M18 6 6 18"/></svg>
+                            </button>
+                        </div>
+                        <div class="modal-body" data-view-content></div>
+                    </div>
+                </div>
+
+                <div class="modal" data-form-modal aria-hidden="true">
+                    <div class="modal-backdrop" data-modal-close></div>
+                    <div class="modal-panel">
+                        <div class="modal-head">
+                            <div>
+                                <h2 data-form-title>Tambah {{ $masterDataPage['label'] }}</h2>
+                                <p data-form-subtitle>Isi data inti lalu simpan.</p>
+                            </div>
+                            <button class="icon-button" type="button" data-modal-close aria-label="Tutup form">
+                                <svg class="icon" viewBox="0 0 24 24"><path d="M6 6 18 18"/><path d="M18 6 6 18"/></svg>
+                            </button>
+                        </div>
+                        <form data-master-data-form>
+                            <div class="modal-body">
+                                <div class="feedback" data-form-feedback hidden></div>
+                                <div class="form-grid">
+                                    <div class="field">
+                                        <label for="record-code">Kode</label>
+                                        <input id="record-code" name="code" type="text" required>
+                                    </div>
+                                    <div class="field">
+                                        <label for="record-name">Nama</label>
+                                        <input id="record-name" name="name" type="text">
+                                    </div>
+                                    <div class="field">
+                                        <label for="record-status">Status</label>
+                                        <select id="record-status" name="status" required>
+                                            @foreach ($masterDataPage['status_options'] as $status)
+                                                <option value="{{ $status }}">{{ ucfirst($status) }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="field">
+                                        <label for="record-parent-code">Parent Code</label>
+                                        <input id="record-parent-code" name="parent_code" type="text">
+                                    </div>
+                                    <div class="field">
+                                        <label for="record-source-system">Source System</label>
+                                        <input id="record-source-system" name="source_system" type="text">
+                                    </div>
+                                    <div class="field">
+                                        <label for="record-source-table">Source Table</label>
+                                        <input id="record-source-table" name="source_table" type="text">
+                                    </div>
+                                    <div class="field full">
+                                        <label for="record-source-id">Source ID</label>
+                                        <input id="record-source-id" name="source_id" type="text">
+                                    </div>
+                                    <div class="field full">
+                                        <label for="record-description">Deskripsi</label>
+                                        <textarea id="record-description" name="description"></textarea>
+                                    </div>
+                                    <div class="field full">
+                                        <label for="record-data-json">Data JSON</label>
+                                        <textarea id="record-data-json" name="data_json" spellcheck="false">{}</textarea>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-actions">
+                                <button class="action-button" type="button" data-modal-close>Batal</button>
+                                <button class="action-button primary" type="submit" data-form-submit>Simpan</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            @endif
+        @endif
+
+        @if ($currentPage === 'bridge-source-table' && $canViewMasterData && $bridgeSourceTablePage)
+            <div class="modal" data-bridge-source-table-view-modal aria-hidden="true">
+                <div class="modal-backdrop" data-modal-close></div>
+                <div class="modal-panel modal-panel-xl">
+                    <div class="modal-head">
+                        <div>
+                            <h2>Detail {{ $bridgeSourceTablePage['table'] }}</h2>
+                            <p data-bridge-source-table-view-subtitle>Memuat data...</p>
+                        </div>
+                        <button class="icon-button" type="button" data-modal-close aria-label="Tutup detail">
+                            <svg class="icon" viewBox="0 0 24 24"><path d="M6 6 18 18"/><path d="M18 6 6 18"/></svg>
+                        </button>
+                    </div>
+                    <div class="modal-body" data-bridge-source-table-view-content></div>
+                </div>
+            </div>
+        @endif
     </main>
 </div>
+<script src="{{ asset('vendor-cytoscape.min.js') }}"></script>
+<script>
+    (() => {
+        const body = document.body;
+        const sidebarToggle = document.querySelector('[data-sidebar-toggle]');
+        const sidebarToggleLabel = sidebarToggle?.querySelector('.nav-copy strong');
+        const userMenu = document.querySelector('.user-menu');
+        const desktopBreakpoint = window.matchMedia('(min-width: 1181px)');
+        const storageKey = 'dashboard-sidebar-collapsed';
+
+        const syncSidebarState = (collapsed) => {
+            body.classList.toggle('sidebar-collapsed', collapsed && desktopBreakpoint.matches);
+
+            if (sidebarToggle) {
+                sidebarToggle.setAttribute('aria-expanded', String(!collapsed || !desktopBreakpoint.matches));
+            }
+
+            if (sidebarToggleLabel) {
+                sidebarToggleLabel.textContent = collapsed && desktopBreakpoint.matches ? 'Expand Sidebar' : 'Collapse Sidebar';
+            }
+        };
+
+        if (sidebarToggle) {
+            const savedState = window.localStorage.getItem(storageKey) === 'true';
+            syncSidebarState(savedState);
+
+            sidebarToggle.addEventListener('click', () => {
+                const collapsed = !body.classList.contains('sidebar-collapsed');
+                window.localStorage.setItem(storageKey, String(collapsed));
+                syncSidebarState(collapsed);
+            });
+
+            desktopBreakpoint.addEventListener('change', () => {
+                const collapsed = window.localStorage.getItem(storageKey) === 'true';
+                syncSidebarState(collapsed);
+            });
+        }
+
+        document.addEventListener('click', (event) => {
+            if (userMenu && userMenu.open && !userMenu.contains(event.target)) {
+                userMenu.removeAttribute('open');
+            }
+        });
+
+        const masterDataRoot = document.querySelector('[data-master-data-app]');
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+        if (!masterDataRoot) {
+            return;
+        }
+
+        const config = JSON.parse(masterDataRoot.dataset.masterDataApp || '{}');
+        const columnLabels = {
+            code: 'Kode',
+            name: 'Nama',
+            status: 'Status',
+            parent_code: 'Parent',
+            source_system: 'Source System',
+            source_table: 'Source Table',
+            source_id: 'Source ID',
+            description: 'Deskripsi',
+            created_at: 'Dibuat',
+            updated_at: 'Diperbarui',
+            synced_at: 'Sinkron',
+            'data.bridge_number': 'No. Jembatan',
+            'data.lintas_code': 'Lintas',
+            'data.km_hm': 'KM/HM',
+        };
+        const columns = Array.isArray(config.visible_fields) && config.visible_fields.length > 0
+            ? config.visible_fields
+            : ['code', 'name', 'status', 'updated_at'];
+        const gridHead = masterDataRoot.querySelector('[data-grid-head]');
+        const gridBody = masterDataRoot.querySelector('[data-grid-body]');
+        const gridSearch = masterDataRoot.querySelector('[data-grid-search]');
+        const gridPerPage = masterDataRoot.querySelector('[data-grid-per-page]');
+        const gridCount = masterDataRoot.querySelector('[data-grid-count]');
+        const gridSummary = masterDataRoot.querySelector('[data-grid-summary]');
+        const gridPage = masterDataRoot.querySelector('[data-grid-page]');
+        const prevButton = masterDataRoot.querySelector('[data-grid-prev]');
+        const nextButton = masterDataRoot.querySelector('[data-grid-next]');
+        const createButton = masterDataRoot.querySelector('[data-grid-create]');
+        const viewModal = document.querySelector('[data-view-modal]');
+        const viewSubtitle = viewModal?.querySelector('[data-view-subtitle]');
+        const viewContent = viewModal?.querySelector('[data-view-content]');
+        const formModal = document.querySelector('[data-form-modal]');
+        const formTitle = formModal?.querySelector('[data-form-title]');
+        const formSubtitle = formModal?.querySelector('[data-form-subtitle]');
+        const form = formModal?.querySelector('[data-master-data-form]');
+        const formFeedback = formModal?.querySelector('[data-form-feedback]');
+        const submitButton = formModal?.querySelector('[data-form-submit]');
+
+        const state = {
+            page: 1,
+            perPage: Number(gridPerPage?.value || 10),
+            search: '',
+            pagination: {
+                current_page: 1,
+                last_page: 1,
+                total: Number(config.records_count || 0),
+                per_page: Number(gridPerPage?.value || 10),
+            },
+            loading: false,
+            mode: 'create',
+            activeUuid: null,
+        };
+
+        let searchTimer = null;
+
+        const escapeHtml = (value) => String(value ?? '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#039;');
+
+        const getValue = (object, path) => path.split('.').reduce((carry, segment) => {
+            if (carry === null || carry === undefined) {
+                return null;
+            }
+
+            return carry[segment] ?? null;
+        }, object);
+
+        const prettifyField = (field) => columnLabels[field]
+            || field.replace('data.', '').replaceAll('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
+
+        const formatText = (value) => {
+            if (value === null || value === undefined || value === '') {
+                return '-';
+            }
+
+            if (typeof value === 'object') {
+                return JSON.stringify(value);
+            }
+
+            return String(value);
+        };
+
+        const formatDate = (value) => {
+            if (!value) {
+                return '-';
+            }
+
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) {
+                return String(value);
+            }
+
+            return new Intl.DateTimeFormat('id-ID', {
+                dateStyle: 'medium',
+                timeStyle: 'short',
+                timeZone: 'UTC',
+            }).format(date);
+        };
+
+        const formatAssessmentConclusion = (value) => {
+            if (value === null || value === undefined || value === '') {
+                return '-';
+            }
+
+            const normalized = Number.parseInt(String(value), 10);
+            const labels = {
+                1: 'Baik',
+                2: 'Sedang',
+                3: 'Rusak Ringan',
+                4: 'Rusak Berat',
+            };
+
+            if (Number.isNaN(normalized)) {
+                return String(value);
+            }
+
+            return labels[normalized] ? `${labels[normalized]} (${normalized})` : String(normalized);
+        };
+
+        const iconMarkup = (name) => {
+            const icons = {
+                bridge: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18h18"/><path d="M5 18v-4a7 7 0 0 1 14 0v4"/><path d="M8 18v-4"/><path d="M12 18v-6"/><path d="M16 18v-4"/><path d="M3 10h18"/></svg>',
+                map: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3 6 6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14"/><path d="M15 6v14"/></svg>',
+                route: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="18" r="2"/><circle cx="18" cy="6" r="2"/><path d="M8 18h4a6 6 0 0 0 6-6V8"/></svg>',
+                profile: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18h16"/><path d="M6 18V8l4-2 4 2 4-2v12"/><path d="M10 6v12"/><path d="M14 8v10"/></svg>',
+                span: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18h18"/><path d="M5 18c1.5-5 4-8 7-8s5.5 3 7 8"/><path d="M9 12h6"/></svg>',
+                substructure: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16"/><path d="M6 20v-6h4v6"/><path d="M14 20v-10h4v10"/><path d="M4 10h16"/></svg>',
+                shield: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 5 6v6c0 4.5 2.8 7.7 7 9 4.2-1.3 7-4.5 7-9V6z"/><path d="M9.5 12.5 11 14l3.5-3.5"/></svg>',
+                assessment: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16"/><path d="M7 16V9"/><path d="M12 16V5"/><path d="M17 16v-4"/></svg>',
+                media: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 15-4.5-4.5L7 19"/></svg>',
+                database: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="7" ry="3"/><path d="M5 5v14c0 1.7 3.1 3 7 3s7-1.3 7-3V5"/><path d="M5 12c0 1.7 3.1 3 7 3s7-1.3 7-3"/></svg>',
+            };
+
+            return icons[name] || icons.database;
+        };
+
+        const formatLookup = (label, code) => {
+            if (label && code && String(label) !== String(code)) {
+                return `${label} (${code})`;
+            }
+
+            return label || code || '-';
+        };
+
+        const compactNumber = (value) => {
+            if (value === null || value === undefined || value === '') {
+                return '-';
+            }
+
+            const number = Number(value);
+
+            if (Number.isNaN(number)) {
+                return String(value);
+            }
+
+            return new Intl.NumberFormat('id-ID', {
+                maximumFractionDigits: 2,
+            }).format(number);
+        };
+
+        const formatDetailValue = (value, key = '') => {
+            if (value === null || value === undefined || value === '') {
+                return '-';
+            }
+
+            if (Array.isArray(value)) {
+                return value.length ? value.map((item) => formatDetailValue(item, key)).join(', ') : '-';
+            }
+
+            if (typeof value === 'object') {
+                return Object.keys(value).length ? JSON.stringify(value) : '-';
+            }
+
+            if (key.endsWith('_at') || key === 'tanggal') {
+                return formatDate(value);
+            }
+
+            if (key === 'kesimpulan') {
+                return formatAssessmentConclusion(value);
+            }
+
+            return String(value);
+        };
+
+        const buildRows = (entries) => entries.filter(([, value]) => value !== undefined);
+
+        const renderKeyValueTable = (entries) => {
+            const rows = buildRows(entries);
+
+            if (!rows.length) {
+                return '<div class="detail-empty">Belum ada data yang tersimpan pada bagian ini.</div>';
+            }
+
+            return `
+                <div class="detail-table-wrap">
+                    <table class="detail-kv-table">
+                        <tbody>
+                            ${rows.map(([label, value, key]) => `
+                                <tr>
+                                    <th>${escapeHtml(label)}</th>
+                                    <td>${escapeHtml(formatDetailValue(value, key || ''))}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        };
+
+        const renderRecordTable = (rows, preferredOrder = []) => {
+            if (!Array.isArray(rows) || !rows.length) {
+                return '<div class="detail-empty">Belum ada baris data pada tabel relasi ini.</div>';
+            }
+
+            const allColumns = Array.from(new Set(rows.flatMap((row) => Object.keys(row || {}))));
+            const columns = [
+                ...preferredOrder.filter((column) => allColumns.includes(column)),
+                ...allColumns.filter((column) => !preferredOrder.includes(column)),
+            ];
+
+            return `
+                <div class="detail-table-wrap">
+                    <table class="detail-record-table">
+                        <thead>
+                            <tr>
+                                ${columns.map((column) => `<th>${escapeHtml(prettifyField(column))}</th>`).join('')}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rows.map((row) => `
+                                <tr>
+                                    ${columns.map((column) => `<td>${escapeHtml(formatDetailValue(row[column], column))}</td>`).join('')}
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        };
+
+        const renderSection = (title, description, iconName, body, chip = null) => `
+            <section class="detail-section">
+                <div class="detail-section-head">
+                    <div class="detail-section-title">
+                        <span class="detail-section-icon">${iconMarkup(iconName)}</span>
+                        <div>
+                            <h4>${escapeHtml(title)}</h4>
+                            <p>${escapeHtml(description)}</p>
+                        </div>
+                    </div>
+                    ${chip ? `<span class="detail-chip">${escapeHtml(chip)}</span>` : ''}
+                </div>
+                ${body}
+            </section>
+        `;
+
+        const statusTone = (value) => {
+            if (value === 'active') {
+                return 'ready';
+            }
+
+            if (value === 'draft' || value === 'inactive' || value === 'archived') {
+                return 'partial';
+            }
+
+            return 'missing';
+        };
+
+        const renderStatus = (value) => `<span class="status ${statusTone(value)}">${escapeHtml(formatText(value))}</span>`;
+
+        const setLoadingState = (loading) => {
+            state.loading = loading;
+
+            if (submitButton) {
+                submitButton.disabled = loading;
+            }
+        };
+
+        const renderHeader = () => {
+            gridHead.innerHTML = `
+                <tr>
+                    ${columns.map((column) => `<th>${escapeHtml(prettifyField(column))}</th>`).join('')}
+                    <th>Aksi</th>
+                </tr>
+            `;
+        };
+
+        const renderRows = (rows) => {
+            const totalColumns = columns.length + 1;
+
+            if (state.loading) {
+                gridBody.innerHTML = `<tr><td colspan="${totalColumns}" class="grid-loading">Memuat data...</td></tr>`;
+                return;
+            }
+
+            if (!rows.length) {
+                gridBody.innerHTML = `<tr><td colspan="${totalColumns}" class="grid-empty">Belum ada data ${escapeHtml((config.label || 'master data').toLowerCase())}.</td></tr>`;
+                return;
+            }
+
+            gridBody.innerHTML = rows.map((row) => {
+                const cells = columns.map((column, index) => {
+                    const value = getValue(row, column);
+
+                    if (column === 'status') {
+                        return `<td>${renderStatus(value)}</td>`;
+                    }
+
+                    if (column.endsWith('_at')) {
+                        return `<td>${escapeHtml(formatDate(value))}</td>`;
+                    }
+
+                    if (index === 0) {
+                        const primary = formatText(value);
+                        const secondary = column === 'code'
+                            ? formatText(row.name)
+                            : formatText(row.code);
+
+                        return `
+                            <td>
+                                <div class="row-title">
+                                    <strong>${escapeHtml(primary)}</strong>
+                                    ${secondary !== '-' ? `<span>${escapeHtml(secondary)}</span>` : ''}
+                                </div>
+                            </td>
+                        `;
+                    }
+
+                    return `<td>${escapeHtml(formatText(value))}</td>`;
+                }).join('');
+
+                return `
+                    <tr>
+                        ${cells}
+                        <td>
+                            <div class="inline-actions">
+                                <button class="inline-button" type="button" data-row-action="view" data-uuid="${escapeHtml(row.uuid)}">Lihat</button>
+                                <button class="inline-button primary" type="button" data-row-action="edit" data-uuid="${escapeHtml(row.uuid)}">Edit</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        };
+
+        const renderPagination = () => {
+            const total = Number(state.pagination.total || 0);
+            const currentPage = Number(state.pagination.current_page || 1);
+            const lastPage = Number(state.pagination.last_page || 1);
+            const perPage = Number(state.pagination.per_page || state.perPage || 10);
+            const start = total === 0 ? 0 : ((currentPage - 1) * perPage) + 1;
+            const end = total === 0 ? 0 : Math.min(currentPage * perPage, total);
+
+            if (gridCount) {
+                gridCount.textContent = `${new Intl.NumberFormat('id-ID').format(total)} data`;
+            }
+
+            if (gridSummary) {
+                gridSummary.textContent = total === 0
+                    ? 'Belum ada data.'
+                    : `Menampilkan ${new Intl.NumberFormat('id-ID').format(start)}-${new Intl.NumberFormat('id-ID').format(end)} dari ${new Intl.NumberFormat('id-ID').format(total)} data`;
+            }
+
+            if (gridPage) {
+                gridPage.textContent = `Halaman ${currentPage} / ${lastPage}`;
+            }
+
+            if (prevButton) {
+                prevButton.disabled = currentPage <= 1 || state.loading;
+            }
+
+            if (nextButton) {
+                nextButton.disabled = currentPage >= lastPage || state.loading;
+            }
+        };
+
+        const openModal = (modal) => {
+            if (!modal) {
+                return;
+            }
+
+            modal.classList.add('is-open');
+            modal.setAttribute('aria-hidden', 'false');
+            body.classList.add('modal-open');
+        };
+
+        const closeModal = (modal) => {
+            if (!modal) {
+                return;
+            }
+
+            modal.classList.remove('is-open');
+            modal.setAttribute('aria-hidden', 'true');
+
+            if (!document.querySelector('.modal.is-open')) {
+                body.classList.remove('modal-open');
+            }
+        };
+
+        const closeAllModals = () => {
+            closeModal(viewModal);
+            closeModal(formModal);
+        };
+
+        const fetchJson = async (url, options = {}) => {
+            const response = await fetch(url, {
+                ...options,
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+                    ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {}),
+                    ...(options.headers || {}),
+                },
+            });
+
+            const payload = await response.json().catch(() => null);
+
+            if (!response.ok || (payload && payload.success === false)) {
+                throw payload || { message: 'Permintaan gagal.' };
+            }
+
+            return payload;
+        };
+
+        const extractErrorMessage = (payload) => {
+            if (!payload) {
+                return 'Terjadi kesalahan saat memproses data.';
+            }
+
+            if (payload.error?.details && typeof payload.error.details === 'object') {
+                return Object.values(payload.error.details).flat().join('\n');
+            }
+
+            if (payload.errors && typeof payload.errors === 'object') {
+                return Object.values(payload.errors).flat().join('\n');
+            }
+
+            return payload.message || 'Terjadi kesalahan saat memproses data.';
+        };
+
+        const loadRecords = async () => {
+            setLoadingState(true);
+            renderRows([]);
+            renderPagination();
+
+            const params = new URLSearchParams({
+                page: String(state.page),
+                per_page: String(state.perPage),
+                sort: '-updated_at',
+            });
+
+            if (state.search) {
+                params.set('search', state.search);
+            }
+
+            try {
+                const payload = await fetchJson(`${config.list_endpoint}?${params.toString()}`);
+                state.pagination = payload.meta?.pagination || state.pagination;
+                setLoadingState(false);
+                renderRows(Array.isArray(payload.data) ? payload.data : []);
+                renderPagination();
+            } catch (errorPayload) {
+                setLoadingState(false);
+                state.pagination = {
+                    current_page: 1,
+                    last_page: 1,
+                    total: 0,
+                    per_page: state.perPage,
+                };
+                gridBody.innerHTML = `<tr><td colspan="${columns.length + 1}" class="grid-empty">${escapeHtml(extractErrorMessage(errorPayload))}</td></tr>`;
+                renderPagination();
+            } finally {
+                renderPagination();
+            }
+        };
+
+        const fetchRecord = async (uuid) => {
+            const payload = await fetchJson(`${config.list_endpoint}/${uuid}`);
+            return payload.data || null;
+        };
+
+        const renderDetail = (record) => {
+            if (!viewContent || !viewSubtitle) {
+                return;
+            }
+
+            viewSubtitle.textContent = `${record.code || '-'} · ${record.type?.name || config.label || ''}`;
+
+            const detailItems = [
+                ['Kode', record.code],
+                ['Nama', record.name],
+                ['Status', record.status],
+                ['Parent Code', record.parent_code],
+                ['Source System', record.source_system],
+                ['Source Table', record.source_table],
+                ['Source ID', record.source_id],
+                ['Diperbarui', formatDate(record.updated_at)],
+            ];
+
+            viewContent.innerHTML = `
+                <div class="detail-grid">
+                    ${detailItems.map(([label, value]) => `
+                        <div class="detail-item">
+                            <span>${escapeHtml(label)}</span>
+                            <strong>${label === 'Status' ? renderStatus(value) : escapeHtml(formatText(value))}</strong>
+                        </div>
+                    `).join('')}
+                    <div class="detail-item full">
+                        <span>Deskripsi</span>
+                        <strong>${escapeHtml(formatText(record.description))}</strong>
+                    </div>
+                </div>
+                <div>
+                    <div class="detail-item" style="margin-bottom:12px;">
+                        <span>Data JSON</span>
+                    </div>
+                    <pre class="json-preview">${escapeHtml(JSON.stringify(record.data || {}, null, 2))}</pre>
+                </div>
+            `;
+        };
+
+        const clearFormFeedback = () => {
+            if (!formFeedback) {
+                return;
+            }
+
+            formFeedback.hidden = true;
+            formFeedback.textContent = '';
+        };
+
+        const showFormFeedback = (message) => {
+            if (!formFeedback) {
+                return;
+            }
+
+            formFeedback.hidden = false;
+            formFeedback.textContent = message;
+        };
+
+        const resetForm = () => {
+            if (!form) {
+                return;
+            }
+
+            form.reset();
+            form.querySelector('[name="status"]').value = 'active';
+            form.querySelector('[name="data_json"]').value = '{}';
+            state.activeUuid = null;
+            state.mode = 'create';
+
+            if (formTitle) {
+                formTitle.textContent = `Tambah ${config.label || 'Data'}`;
+            }
+
+            if (formSubtitle) {
+                formSubtitle.textContent = 'Isi data inti lalu simpan.';
+            }
+
+            if (submitButton) {
+                submitButton.textContent = 'Simpan';
+            }
+
+            clearFormFeedback();
+        };
+
+        const fillForm = (record) => {
+            if (!form) {
+                return;
+            }
+
+            form.querySelector('[name="code"]').value = record.code || '';
+            form.querySelector('[name="name"]').value = record.name || '';
+            form.querySelector('[name="status"]').value = record.status || 'active';
+            form.querySelector('[name="parent_code"]').value = record.parent_code || '';
+            form.querySelector('[name="source_system"]').value = record.source_system || '';
+            form.querySelector('[name="source_table"]').value = record.source_table || '';
+            form.querySelector('[name="source_id"]').value = record.source_id || '';
+            form.querySelector('[name="description"]').value = record.description || '';
+            form.querySelector('[name="data_json"]').value = JSON.stringify(record.data || {}, null, 2);
+        };
+
+        const openCreateForm = () => {
+            resetForm();
+            openModal(formModal);
+        };
+
+        const openEditForm = async (uuid) => {
+            resetForm();
+            state.mode = 'edit';
+            state.activeUuid = uuid;
+
+            if (formTitle) {
+                formTitle.textContent = `Edit ${config.label || 'Data'}`;
+            }
+
+            if (formSubtitle) {
+                formSubtitle.textContent = 'Perbarui data lalu simpan.';
+            }
+
+            if (submitButton) {
+                submitButton.textContent = 'Simpan Perubahan';
+            }
+
+            openModal(formModal);
+            showFormFeedback('Memuat data...');
+
+            try {
+                const record = await fetchRecord(uuid);
+                fillForm(record);
+                clearFormFeedback();
+            } catch (errorPayload) {
+                showFormFeedback(extractErrorMessage(errorPayload));
+            }
+        };
+
+        const openDetailModal = async (uuid) => {
+            if (viewContent) {
+                viewContent.innerHTML = '<div class="grid-loading">Memuat detail...</div>';
+            }
+
+            if (viewSubtitle) {
+                viewSubtitle.textContent = 'Memuat data...';
+            }
+
+            openModal(viewModal);
+
+            try {
+                const record = await fetchRecord(uuid);
+                renderDetail(record);
+            } catch (errorPayload) {
+                if (viewContent) {
+                    viewContent.innerHTML = `<div class="feedback">${escapeHtml(extractErrorMessage(errorPayload))}</div>`;
+                }
+            }
+        };
+
+        renderHeader();
+        renderPagination();
+        loadRecords();
+
+        gridSearch?.addEventListener('input', (event) => {
+            window.clearTimeout(searchTimer);
+            state.search = event.target.value.trim();
+            searchTimer = window.setTimeout(() => {
+                state.page = 1;
+                loadRecords();
+            }, 280);
+        });
+
+        gridPerPage?.addEventListener('change', (event) => {
+            state.perPage = Number(event.target.value || 10);
+            state.page = 1;
+            loadRecords();
+        });
+
+        prevButton?.addEventListener('click', () => {
+            if (state.page <= 1) {
+                return;
+            }
+
+            state.page -= 1;
+            loadRecords();
+        });
+
+        nextButton?.addEventListener('click', () => {
+            if (state.page >= Number(state.pagination.last_page || 1)) {
+                return;
+            }
+
+            state.page += 1;
+            loadRecords();
+        });
+
+        createButton?.addEventListener('click', openCreateForm);
+
+        masterDataRoot.addEventListener('click', (event) => {
+            const trigger = event.target.closest('[data-row-action]');
+            if (!trigger) {
+                return;
+            }
+
+            const { rowAction, uuid } = trigger.dataset;
+
+            if (rowAction === 'view') {
+                openDetailModal(uuid);
+            }
+
+            if (rowAction === 'edit') {
+                openEditForm(uuid);
+            }
+        });
+
+        document.querySelectorAll('[data-modal-close]').forEach((button) => {
+            button.addEventListener('click', () => {
+                closeAllModals();
+            });
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                closeAllModals();
+            }
+        });
+
+        form?.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            clearFormFeedback();
+
+            let parsedData = {};
+
+            try {
+                const rawData = form.querySelector('[name="data_json"]').value.trim();
+                parsedData = rawData === '' ? {} : JSON.parse(rawData);
+            } catch (parseError) {
+                showFormFeedback('Data JSON tidak valid.');
+                return;
+            }
+
+            const payload = {
+                code: form.querySelector('[name="code"]').value.trim(),
+                name: form.querySelector('[name="name"]').value.trim() || null,
+                status: form.querySelector('[name="status"]').value,
+                parent_code: form.querySelector('[name="parent_code"]').value.trim() || null,
+                source_system: form.querySelector('[name="source_system"]').value.trim() || null,
+                source_table: form.querySelector('[name="source_table"]').value.trim() || null,
+                source_id: form.querySelector('[name="source_id"]').value.trim() || null,
+                description: form.querySelector('[name="description"]').value.trim() || null,
+                data: parsedData,
+            };
+
+            const url = state.mode === 'edit' && state.activeUuid
+                ? `${config.list_endpoint}/${state.activeUuid}`
+                : config.store_endpoint;
+            const method = state.mode === 'edit' ? 'PATCH' : 'POST';
+
+            setLoadingState(true);
+
+            try {
+                await fetchJson(url, {
+                    method,
+                    body: JSON.stringify(payload),
+                });
+                state.page = 1;
+                closeModal(formModal);
+                resetForm();
+                loadRecords();
+            } catch (errorPayload) {
+                showFormFeedback(extractErrorMessage(errorPayload));
+            } finally {
+                setLoadingState(false);
+            }
+        });
+    })();
+
+    (() => {
+        const root = document.querySelector('[data-bridge-relation-map]');
+
+        if (!root) {
+            return;
+        }
+
+        const relationMap = JSON.parse(root.dataset.bridgeRelationMap || '[]');
+        const graphHost = root.querySelector('[data-relation-graph]');
+        const previewTitle = root.querySelector('[data-relation-preview-title]');
+        const previewDescription = root.querySelector('[data-relation-preview-description]');
+        const previewType = root.querySelector('[data-relation-preview-type]');
+        const previewKey = root.querySelector('[data-relation-preview-key]');
+        const previewTarget = root.querySelector('[data-relation-preview-target]');
+        const updatePreview = (relation) => {
+            if (previewTitle) {
+                previewTitle.textContent = relation?.table || '-';
+            }
+
+            if (previewDescription) {
+                previewDescription.textContent = relation?.relation || '-';
+            }
+
+            if (previewType) {
+                previewType.textContent = String(relation?.type || '-').replaceAll('_', ' ').toUpperCase();
+            }
+
+            if (previewKey) {
+                previewKey.textContent = relation?.key || '-';
+            }
+
+            if (previewTarget) {
+                previewTarget.textContent = relation?.target || 'Tabel utama CRUD source';
+            }
+        };
+
+        const initializeGraph = () => {
+            if (!root.open || root.dataset.graphReady === 'true' || !graphHost) {
+                return;
+            }
+
+            const cytoscapeFactory = window.cytoscape;
+
+            if (typeof cytoscapeFactory !== 'function') {
+                graphHost.innerHTML = '<div class="relation-graph-empty"><p>Library Cytoscape tidak berhasil dimuat.</p></div>';
+                return;
+            }
+
+            const elements = relationMap.flatMap((relation) => {
+                const nodeId = relation.table;
+                const items = [{
+                    data: {
+                        id: nodeId,
+                        label: relation.table,
+                        type: relation.type,
+                        relation: relation.relation,
+                        key: relation.key,
+                        target: relation.target || 'Tabel utama CRUD source',
+                    },
+                }];
+
+                if (relation.type !== 'root') {
+                    items.push({
+                        data: {
+                            id: `${relation.target || 'm_jembatan'}-${nodeId}`,
+                            source: 'm_jembatan',
+                            target: nodeId,
+                            label: relation.key,
+                        },
+                    });
+                }
+
+                return items;
+            });
+
+            const cy = cytoscapeFactory({
+                container: graphHost,
+                elements,
+                layout: {
+                    name: 'breadthfirst',
+                    directed: true,
+                    padding: 28,
+                    spacingFactor: 1.15,
+                },
+                style: [
+                    {
+                        selector: 'node',
+                        style: {
+                            'background-color': '#475569',
+                            'border-width': 2,
+                            'border-color': '#ffffff',
+                            'label': 'data(label)',
+                            'text-wrap': 'wrap',
+                            'text-max-width': 130,
+                            'text-valign': 'center',
+                            'text-halign': 'center',
+                            'color': '#172033',
+                            'font-size': 11,
+                            'font-weight': 700,
+                            'width': 'label',
+                            'height': 56,
+                            'padding': '12px',
+                        },
+                    },
+                    {
+                        selector: 'node[type = "root"]',
+                        style: {
+                            'background-color': '#f18120',
+                            'shape': 'round-rectangle',
+                        },
+                    },
+                    {
+                        selector: 'node[type = "one_to_one"]',
+                        style: {
+                            'background-color': '#93c5fd',
+                            'shape': 'round-rectangle',
+                        },
+                    },
+                    {
+                        selector: 'node[type = "one_to_many"]',
+                        style: {
+                            'background-color': '#99f6e4',
+                            'shape': 'round-rectangle',
+                        },
+                    },
+                    {
+                        selector: 'node[type = "lookup"]',
+                        style: {
+                            'background-color': '#fde68a',
+                            'shape': 'ellipse',
+                        },
+                    },
+                    {
+                        selector: 'edge',
+                        style: {
+                            'curve-style': 'bezier',
+                            'target-arrow-shape': 'triangle',
+                            'target-arrow-color': '#cbd5e1',
+                            'line-color': '#cbd5e1',
+                            'width': 2,
+                            'label': 'data(label)',
+                            'font-size': 9,
+                            'text-background-color': '#ffffff',
+                            'text-background-opacity': 1,
+                            'text-background-padding': 2,
+                            'color': '#64748b',
+                        },
+                    },
+                    {
+                        selector: ':selected',
+                        style: {
+                            'border-color': '#d14d1f',
+                            'border-width': 3,
+                            'line-color': '#d14d1f',
+                            'target-arrow-color': '#d14d1f',
+                        },
+                    },
+                ],
+            });
+
+            cy.on('tap', 'node', (event) => {
+                updatePreview(event.target.data());
+            });
+
+            const rootNode = cy.getElementById('m_jembatan');
+            if (rootNode) {
+                rootNode.select();
+            }
+
+            updatePreview(relationMap.find((item) => item.type === 'root') || relationMap[0] || null);
+            root.dataset.graphReady = 'true';
+        };
+
+        root.addEventListener('toggle', initializeGraph);
+        updatePreview(relationMap.find((item) => item.type === 'root') || relationMap[0] || null);
+    })();
+
+    (() => {
+        const root = document.querySelector('[data-bridge-source-app]');
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        const body = document.body;
+
+        if (!root) {
+            return;
+        }
+
+        const config = JSON.parse(root.dataset.bridgeSourceApp || '{}');
+        const crudEnabled = Boolean(config.crud_enabled);
+        const columns = Array.isArray(config.columns) && config.columns.length > 0
+            ? config.columns
+            : ['uniqid', 'no_bh', 'jenis', 'km_hm', 'updated_at'];
+        const columnLabels = {
+            bridge_identity: 'Identitas Jembatan',
+            route_summary: 'Rute dan Stasiun',
+            wilayah_summary: 'Wilayah',
+            location_summary: 'Lokasi',
+            structure_summary: 'Struktur Gabungan',
+            assessment_summary: 'Asesmen',
+            updated_at: 'Diperbarui',
+        };
+
+        const gridHead = root.querySelector('[data-grid-head]');
+        const gridBody = root.querySelector('[data-grid-body]');
+        const gridSearch = root.querySelector('[data-grid-search]');
+        const gridPerPage = root.querySelector('[data-grid-per-page]');
+        const gridCount = root.querySelector('[data-grid-count]');
+        const gridSummary = root.querySelector('[data-grid-summary]');
+        const gridPage = root.querySelector('[data-grid-page]');
+        const prevButton = root.querySelector('[data-grid-prev]');
+        const nextButton = root.querySelector('[data-grid-next]');
+        const createButton = root.querySelector('[data-grid-create]');
+        const viewModal = document.querySelector('[data-bridge-view-modal]');
+        const viewSubtitle = viewModal?.querySelector('[data-bridge-view-subtitle]');
+        const viewContent = viewModal?.querySelector('[data-bridge-view-content]');
+        const formModal = document.querySelector('[data-bridge-form-modal]');
+        const formTitle = formModal?.querySelector('[data-bridge-form-title]');
+        const formSubtitle = formModal?.querySelector('[data-bridge-form-subtitle]');
+        const form = formModal?.querySelector('[data-bridge-source-form]');
+        const formFeedback = formModal?.querySelector('[data-bridge-form-feedback]');
+        const submitButton = formModal?.querySelector('[data-bridge-form-submit]');
+
+        const state = {
+            page: 1,
+            perPage: Number(gridPerPage?.value || 10),
+            search: '',
+            loading: false,
+            mode: 'create',
+            activeUniqid: null,
+            pagination: {
+                current_page: 1,
+                last_page: 1,
+                total: Number(config.records_count || 0),
+                per_page: Number(gridPerPage?.value || 10),
+            },
+        };
+
+        let searchTimer = null;
+
+        const escapeHtml = (value) => String(value ?? '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#039;');
+
+        const prettifyField = (field) => columnLabels[field]
+            || field.replaceAll('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
+
+        const formatText = (value) => {
+            if (value === null || value === undefined || value === '') {
+                return '-';
+            }
+
+            if (typeof value === 'object') {
+                return JSON.stringify(value);
+            }
+
+            return String(value);
+        };
+
+        const formatDate = (value) => {
+            if (!value) {
+                return '-';
+            }
+
+            const date = new Date(value);
+
+            if (Number.isNaN(date.getTime())) {
+                return String(value);
+            }
+
+            return new Intl.DateTimeFormat('id-ID', {
+                dateStyle: 'medium',
+                timeStyle: 'short',
+                timeZone: 'UTC',
+            }).format(date);
+        };
+
+        const formatAssessmentConclusion = (value) => {
+            if (value === null || value === undefined || value === '') {
+                return '-';
+            }
+
+            const normalized = Number.parseInt(String(value), 10);
+            const labels = {
+                1: 'Baik',
+                2: 'Sedang',
+                3: 'Rusak Ringan',
+                4: 'Rusak Berat',
+            };
+
+            if (Number.isNaN(normalized)) {
+                return String(value);
+            }
+
+            return labels[normalized] ? `${labels[normalized]} (${normalized})` : String(normalized);
+        };
+
+        const iconMarkup = (name) => {
+            const icons = {
+                bridge: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18h18"/><path d="M5 18v-4a7 7 0 0 1 14 0v4"/><path d="M8 18v-4"/><path d="M12 18v-6"/><path d="M16 18v-4"/><path d="M3 10h18"/></svg>',
+                map: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3 6 6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14"/><path d="M15 6v14"/></svg>',
+                route: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="18" r="2"/><circle cx="18" cy="6" r="2"/><path d="M8 18h4a6 6 0 0 0 6-6V8"/></svg>',
+                profile: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18h16"/><path d="M6 18V8l4-2 4 2 4-2v12"/><path d="M10 6v12"/><path d="M14 8v10"/></svg>',
+                span: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18h18"/><path d="M5 18c1.5-5 4-8 7-8s5.5 3 7 8"/><path d="M9 12h6"/></svg>',
+                substructure: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16"/><path d="M6 20v-6h4v6"/><path d="M14 20v-10h4v10"/><path d="M4 10h16"/></svg>',
+                shield: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 5 6v6c0 4.5 2.8 7.7 7 9 4.2-1.3 7-4.5 7-9V6z"/><path d="M9.5 12.5 11 14l3.5-3.5"/></svg>',
+                assessment: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16"/><path d="M7 16V9"/><path d="M12 16V5"/><path d="M17 16v-4"/></svg>',
+                media: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 15-4.5-4.5L7 19"/></svg>',
+                database: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="7" ry="3"/><path d="M5 5v14c0 1.7 3.1 3 7 3s7-1.3 7-3V5"/><path d="M5 12c0 1.7 3.1 3 7 3s7-1.3 7-3"/></svg>',
+            };
+
+            return icons[name] || icons.database;
+        };
+
+        const formatLookup = (label, code) => {
+            if (label && code && String(label) !== String(code)) {
+                return `${label} (${code})`;
+            }
+
+            return label || code || '-';
+        };
+
+        const compactNumber = (value) => {
+            if (value === null || value === undefined || value === '') {
+                return '-';
+            }
+
+            const number = Number(value);
+
+            if (Number.isNaN(number)) {
+                return String(value);
+            }
+
+            return new Intl.NumberFormat('id-ID', {
+                maximumFractionDigits: 2,
+            }).format(number);
+        };
+
+        const formatDetailValue = (value, key = '') => {
+            if (value === null || value === undefined || value === '') {
+                return '-';
+            }
+
+            if (Array.isArray(value)) {
+                return value.length ? value.map((item) => formatDetailValue(item, key)).join(', ') : '-';
+            }
+
+            if (typeof value === 'object') {
+                return Object.keys(value).length ? JSON.stringify(value) : '-';
+            }
+
+            if (key.endsWith('_at') || key === 'tanggal') {
+                return formatDate(value);
+            }
+
+            if (key === 'kesimpulan') {
+                return formatAssessmentConclusion(value);
+            }
+
+            return String(value);
+        };
+
+        const buildRows = (entries) => entries.filter(([, value]) => value !== undefined);
+
+        const renderKeyValueTable = (entries) => {
+            const rows = buildRows(entries);
+
+            if (!rows.length) {
+                return '<div class="detail-empty">Belum ada data yang tersimpan pada bagian ini.</div>';
+            }
+
+            return `
+                <div class="detail-table-wrap">
+                    <table class="detail-kv-table">
+                        <tbody>
+                            ${rows.map(([label, value, key]) => `
+                                <tr>
+                                    <th>${escapeHtml(label)}</th>
+                                    <td>${escapeHtml(formatDetailValue(value, key || ''))}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        };
+
+        const renderRecordTable = (rows, preferredOrder = []) => {
+            if (!Array.isArray(rows) || !rows.length) {
+                return '<div class="detail-empty">Belum ada baris data pada tabel relasi ini.</div>';
+            }
+
+            const allColumns = Array.from(new Set(rows.flatMap((row) => Object.keys(row || {}))));
+            const orderedColumns = [
+                ...preferredOrder.filter((column) => allColumns.includes(column)),
+                ...allColumns.filter((column) => !preferredOrder.includes(column)),
+            ];
+
+            return `
+                <div class="detail-table-wrap">
+                    <table class="detail-record-table">
+                        <thead>
+                            <tr>
+                                ${orderedColumns.map((column) => `<th>${escapeHtml(prettifyField(column))}</th>`).join('')}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rows.map((row) => `
+                                <tr>
+                                    ${orderedColumns.map((column) => `<td>${escapeHtml(formatDetailValue(row[column], column))}</td>`).join('')}
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        };
+
+        const renderSection = (title, description, iconName, body, chip = null) => `
+            <section class="detail-section">
+                <div class="detail-section-head">
+                    <div class="detail-section-title">
+                        <span class="detail-section-icon">${iconMarkup(iconName)}</span>
+                        <div>
+                            <h4>${escapeHtml(title)}</h4>
+                            <p>${escapeHtml(description)}</p>
+                        </div>
+                    </div>
+                    ${chip ? `<span class="detail-chip">${escapeHtml(chip)}</span>` : ''}
+                </div>
+                ${body}
+            </section>
+        `;
+
+        const fetchJson = async (url, options = {}) => {
+            const response = await fetch(url, {
+                ...options,
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+                    ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {}),
+                    ...(options.headers || {}),
+                },
+            });
+
+            const payload = await response.json().catch(() => null);
+
+            if (!response.ok || (payload && payload.success === false)) {
+                throw payload || { message: 'Permintaan gagal.' };
+            }
+
+            return payload;
+        };
+
+        const extractErrorMessage = (payload) => {
+            if (!payload) {
+                return 'Terjadi kesalahan saat memproses data jembatan source.';
+            }
+
+            if (payload.error?.details && typeof payload.error.details === 'object') {
+                return Object.values(payload.error.details).flat().join('\n');
+            }
+
+            if (payload.errors && typeof payload.errors === 'object') {
+                return Object.values(payload.errors).flat().join('\n');
+            }
+
+            return payload.message || 'Terjadi kesalahan saat memproses data jembatan source.';
+        };
+
+        const openModal = (modal) => {
+            if (!modal) {
+                return;
+            }
+
+            modal.classList.add('is-open');
+            modal.setAttribute('aria-hidden', 'false');
+            body.classList.add('modal-open');
+        };
+
+        const closeModal = (modal) => {
+            if (!modal) {
+                return;
+            }
+
+            modal.classList.remove('is-open');
+            modal.setAttribute('aria-hidden', 'true');
+
+            if (!document.querySelector('.modal.is-open')) {
+                body.classList.remove('modal-open');
+            }
+        };
+
+        const closeAllModals = () => {
+            closeModal(viewModal);
+            closeModal(formModal);
+        };
+
+        const renderHeader = () => {
+            gridHead.innerHTML = `
+                <tr>
+                    ${columns.map((column) => `<th>${escapeHtml(prettifyField(column))}</th>`).join('')}
+                    <th>Aksi</th>
+                </tr>
+            `;
+        };
+
+        const renderRows = (rows) => {
+            const totalColumns = columns.length + 1;
+
+            if (state.loading) {
+                gridBody.innerHTML = `<tr><td colspan="${totalColumns}" class="grid-loading">Memuat data...</td></tr>`;
+                return;
+            }
+
+            if (!rows.length) {
+                gridBody.innerHTML = `<tr><td colspan="${totalColumns}" class="grid-empty">Belum ada data jembatan source.</td></tr>`;
+                return;
+            }
+
+            gridBody.innerHTML = rows.map((row) => {
+                const cells = columns.map((column, index) => {
+                    const value = row[column] ?? null;
+
+                    if (column.endsWith('_at')) {
+                        return `<td>${escapeHtml(formatDate(value))}</td>`;
+                    }
+
+                    if (index === 0) {
+                        return `
+                            <td>
+                                <div class="row-title">
+                                    <strong>${escapeHtml(formatText(value))}</strong>
+                                    <span>${escapeHtml(formatText([row.uniqid, row.location_summary].filter(Boolean).join(' | ') || '-'))}</span>
+                                </div>
+                            </td>
+                        `;
+                    }
+
+                    return `<td>${escapeHtml(formatText(value))}</td>`;
+                }).join('');
+
+                return `
+                    <tr>
+                        ${cells}
+                        <td>
+                            <div class="inline-actions">
+                                <button class="inline-button" type="button" data-bridge-row-action="view" data-uniqid="${escapeHtml(row.uniqid)}">Lihat</button>
+                                ${crudEnabled ? `<button class="inline-button primary" type="button" data-bridge-row-action="edit" data-uniqid="${escapeHtml(row.uniqid)}">Edit</button>` : ''}
+                                ${crudEnabled ? `<button class="inline-button danger" type="button" data-bridge-row-action="delete" data-uniqid="${escapeHtml(row.uniqid)}">Hapus</button>` : ''}
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        };
+
+        const renderPagination = () => {
+            const total = Number(state.pagination.total || 0);
+            const currentPage = Number(state.pagination.current_page || 1);
+            const lastPage = Number(state.pagination.last_page || 1);
+            const perPage = Number(state.pagination.per_page || state.perPage || 10);
+            const start = total === 0 ? 0 : ((currentPage - 1) * perPage) + 1;
+            const end = total === 0 ? 0 : Math.min(currentPage * perPage, total);
+
+            if (gridCount) {
+                gridCount.textContent = `${new Intl.NumberFormat('id-ID').format(total)} data`;
+            }
+
+            if (gridSummary) {
+                gridSummary.textContent = total === 0
+                    ? 'Belum ada data.'
+                    : `Menampilkan ${new Intl.NumberFormat('id-ID').format(start)}-${new Intl.NumberFormat('id-ID').format(end)} dari ${new Intl.NumberFormat('id-ID').format(total)} data`;
+            }
+
+            if (gridPage) {
+                gridPage.textContent = `Halaman ${currentPage} / ${lastPage}`;
+            }
+
+            if (prevButton) {
+                prevButton.disabled = currentPage <= 1 || state.loading;
+            }
+
+            if (nextButton) {
+                nextButton.disabled = currentPage >= lastPage || state.loading;
+            }
+        };
+
+        const setLoadingState = (loading) => {
+            state.loading = loading;
+
+            if (submitButton) {
+                submitButton.disabled = loading;
+            }
+        };
+
+        const showFormFeedback = (message) => {
+            if (!formFeedback) {
+                return;
+            }
+
+            formFeedback.hidden = false;
+            formFeedback.textContent = message;
+        };
+
+        const clearFormFeedback = () => {
+            if (!formFeedback) {
+                return;
+            }
+
+            formFeedback.hidden = true;
+            formFeedback.textContent = '';
+        };
+
+        const safeJson = (value, fallback) => {
+            try {
+                return JSON.stringify(value ?? fallback, null, 2);
+            } catch {
+                return JSON.stringify(fallback, null, 2);
+            }
+        };
+
+        const getField = (name) => form?.querySelector(`[name="${name}"]`);
+
+        const setFieldValue = (name, value) => {
+            const field = getField(name);
+
+            if (!field) {
+                return;
+            }
+
+            field.value = value ?? '';
+        };
+
+        const parseJsonField = (name, fallback) => {
+            const field = getField(name);
+            const raw = field?.value?.trim() ?? '';
+
+            if (raw === '') {
+                return fallback;
+            }
+
+            return JSON.parse(raw);
+        };
+
+        const toNullable = (value) => {
+            const trimmed = String(value ?? '').trim();
+
+            return trimmed === '' ? null : trimmed;
+        };
+
+        const toNullableInteger = (value) => {
+            const normalized = toNullable(value);
+
+            return normalized === null ? null : Number.parseInt(normalized, 10);
+        };
+
+        const toNullableFloat = (value) => {
+            const normalized = toNullable(value);
+
+            return normalized === null ? null : Number.parseFloat(normalized);
+        };
+
+        const resetForm = () => {
+            if (!form) {
+                return;
+            }
+
+            form.reset();
+            state.mode = 'create';
+            state.activeUniqid = null;
+            setFieldValue('active', '1');
+            setFieldValue('status', '1');
+            setFieldValue('statusdata', '0');
+            setFieldValue('profile_span_json', '{"pjg_bentang1":"","pjg_bentang2":"","pjg_bentang3":""}');
+            setFieldValue('spans_json', '[]');
+            setFieldValue('substructures_json', '[]');
+
+            if (formTitle) {
+                formTitle.textContent = `Tambah ${config.label || 'Jembatan'}`;
+            }
+
+            if (formSubtitle) {
+                formSubtitle.textContent = 'Isi data source utama dan relasinya.';
+            }
+
+            if (submitButton) {
+                submitButton.textContent = 'Simpan';
+            }
+
+            clearFormFeedback();
+        };
+
+        const fillForm = (record) => {
+            [
+                'tanggal', 'no_bh', 'jenis', 'km_hm', 'arah_bh', 'nama', 'wil_ker', 'wil_op',
+                'id_prov', 'id_kabkot', 'lintas', 'stasiun1', 'stasiun2', 'lat', 'lon',
+                'active', 'status', 'statusdata', 'catatan',
+            ].forEach((field) => setFieldValue(field, record[field]));
+
+            setFieldValue('profile.perpotongan', record.profile?.perpotongan);
+            setFieldValue('profile.jml_lintasan', record.profile?.jml_lintasan);
+            setFieldValue('profile.jml_bentang', record.profile?.jml_bentang);
+            setFieldValue('profile.pjg_total', record.profile?.pjg_total);
+            setFieldValue('profile.thn_selesai', record.profile?.thn_selesai);
+            setFieldValue('profile.rm_bgn_atas', record.profile?.rm_bgn_atas);
+            setFieldValue('profile.rm_bgn_bawah', record.profile?.rm_bgn_bawah);
+            setFieldValue('profile_span_json', safeJson({
+                pjg_bentang1: record.profile?.pjg_bentang1 ?? '',
+                pjg_bentang2: record.profile?.pjg_bentang2 ?? '',
+                pjg_bentang3: record.profile?.pjg_bentang3 ?? '',
+            }, { pjg_bentang1: '', pjg_bentang2: '', pjg_bentang3: '' }));
+            setFieldValue('spans_json', safeJson(record.spans || [], []));
+            setFieldValue('substructures_json', safeJson(record.substructures || [], []));
+            setFieldValue('protection.pelindung_arus_material', record.protection?.pelindung_arus_material);
+            setFieldValue('protection.pelindung_arus_tipe', record.protection?.pelindung_arus_tipe);
+            setFieldValue('protection.pengarah_arus_material', record.protection?.pengarah_arus_material);
+            setFieldValue('protection.pengarah_arus_tipe', record.protection?.pengarah_arus_tipe);
+            setFieldValue('protection.pelindung_longsoran_material', record.protection?.pelindung_longsoran_material);
+            setFieldValue('protection.pelindung_longsoran_tipe', record.protection?.pelindung_longsoran_tipe);
+            setFieldValue('assessment.total', record.assessment?.total);
+            setFieldValue('assessment.kesimpulan', record.assessment?.kesimpulan);
+        };
+
+        const buildPayload = () => {
+            const profileSpan = parseJsonField('profile_span_json', {});
+            const spans = parseJsonField('spans_json', []);
+            const substructures = parseJsonField('substructures_json', []);
+
+            return {
+                tanggal: toNullable(getField('tanggal')?.value),
+                no_bh: toNullable(getField('no_bh')?.value),
+                jenis: toNullable(getField('jenis')?.value),
+                km_hm: toNullable(getField('km_hm')?.value),
+                arah_bh: toNullable(getField('arah_bh')?.value),
+                nama: toNullable(getField('nama')?.value),
+                wil_ker: toNullable(getField('wil_ker')?.value),
+                wil_op: toNullable(getField('wil_op')?.value),
+                id_prov: toNullable(getField('id_prov')?.value),
+                id_kabkot: toNullable(getField('id_kabkot')?.value),
+                lintas: toNullable(getField('lintas')?.value),
+                stasiun1: toNullable(getField('stasiun1')?.value),
+                stasiun2: toNullable(getField('stasiun2')?.value),
+                lat: toNullable(getField('lat')?.value),
+                lon: toNullable(getField('lon')?.value),
+                active: Number.parseInt(getField('active')?.value || '1', 10),
+                status: Number.parseInt(getField('status')?.value || '1', 10),
+                statusdata: Number.parseInt(getField('statusdata')?.value || '0', 10),
+                catatan: toNullable(getField('catatan')?.value),
+                profile: {
+                    perpotongan: toNullable(getField('profile.perpotongan')?.value),
+                    jml_lintasan: toNullableInteger(getField('profile.jml_lintasan')?.value),
+                    jml_bentang: toNullableInteger(getField('profile.jml_bentang')?.value),
+                    pjg_bentang1: toNullable(profileSpan.pjg_bentang1),
+                    pjg_bentang2: toNullable(profileSpan.pjg_bentang2),
+                    pjg_bentang3: toNullable(profileSpan.pjg_bentang3),
+                    pjg_total: toNullable(getField('profile.pjg_total')?.value),
+                    thn_selesai: toNullable(getField('profile.thn_selesai')?.value),
+                    rm_bgn_atas: toNullable(getField('profile.rm_bgn_atas')?.value),
+                    rm_bgn_bawah: toNullable(getField('profile.rm_bgn_bawah')?.value),
+                    active: 1,
+                },
+                spans: Array.isArray(spans) ? spans : [],
+                substructures: Array.isArray(substructures) ? substructures : [],
+                protection: {
+                    pelindung_arus_material: toNullable(getField('protection.pelindung_arus_material')?.value),
+                    pelindung_arus_tipe: toNullable(getField('protection.pelindung_arus_tipe')?.value),
+                    pengarah_arus_material: toNullable(getField('protection.pengarah_arus_material')?.value),
+                    pengarah_arus_tipe: toNullable(getField('protection.pengarah_arus_tipe')?.value),
+                    pelindung_longsoran_material: toNullable(getField('protection.pelindung_longsoran_material')?.value),
+                    pelindung_longsoran_tipe: toNullable(getField('protection.pelindung_longsoran_tipe')?.value),
+                },
+                assessment: {
+                    total: toNullableFloat(getField('assessment.total')?.value),
+                    kesimpulan: toNullableInteger(getField('assessment.kesimpulan')?.value),
+                },
+            };
+        };
+
+        const fetchRecord = async (uniqid) => {
+            const payload = await fetchJson(`${config.list_endpoint}/${encodeURIComponent(uniqid)}`);
+            return payload.data || null;
+        };
+
+        const renderDetail = (record) => {
+            if (!viewContent || !viewSubtitle) {
+                return;
+            }
+
+            viewSubtitle.textContent = `${record.uniqid || '-'} · ${record.no_bh || 'tanpa nomor'}`;
+
+            const profile = record.profile || {};
+            const spans = Array.isArray(record.spans) ? record.spans : [];
+            const substructures = Array.isArray(record.substructures) ? record.substructures : [];
+            const protection = record.protection || {};
+            const assessment = record.assessment || {};
+            const totalSpanLength = spans.reduce((sum, span) => {
+                const number = Number(span.pjg_bentang || 0);
+
+                return Number.isNaN(number) ? sum : sum + number;
+            }, 0);
+
+            const relationKeys = new Set([
+                'profile', 'spans', 'substructures', 'protection', 'assessment', 'relations',
+                'bridge_identity', 'location_summary', 'route_summary', 'wilayah_summary',
+                'profile_summary', 'span_summary', 'substructure_summary', 'protection_summary',
+                'assessment_summary', 'structure_summary',
+            ]);
+            const curatedSourceKeys = new Set([
+                'uniqid', 'no_bh', 'nama', 'jenis', 'tanggal', 'km_hm', 'arah_bh', 'lat', 'lon',
+                'wil_ker', 'wil_ker_name', 'wil_op', 'wil_op_name', 'id_prov', 'province_name',
+                'id_kabkot', 'city_name', 'lintas', 'lintas_name', 'stasiun1', 'stasiun1_name',
+                'stasiun2', 'stasiun2_name', 'catatan', 'foto1', 'foto2', 'foto3', 'foto4',
+                'caption1', 'caption2', 'caption3', 'caption4', 'dokumen', 'video',
+            ]);
+            const extraSourceFields = Object.entries(record).filter(([key, value]) => {
+                if (relationKeys.has(key) || curatedSourceKeys.has(key)) {
+                    return false;
+                }
+
+                return typeof value !== 'object' || value === null;
+            });
+
+            const identityRows = [
+                ['Uniqid', record.uniqid, 'uniqid'],
+                ['No. Jembatan', record.no_bh, 'no_bh'],
+                ['Nama', record.nama, 'nama'],
+                ['Jenis', record.jenis, 'jenis'],
+                ['Tanggal', record.tanggal, 'tanggal'],
+                ['KM/HM', record.km_hm, 'km_hm'],
+                ['Arah Jembatan', record.arah_bh, 'arah_bh'],
+                ['Koordinat', [record.lat, record.lon].filter(Boolean).join(', '), 'lat'],
+            ];
+
+            const routeRows = [
+                ['Wilayah Kerja', formatLookup(record.wil_ker_name, record.wil_ker), 'wil_ker'],
+                ['Wilayah Operasi', formatLookup(record.wil_op_name, record.wil_op), 'wil_op'],
+                ['Provinsi', formatLookup(record.province_name, record.id_prov), 'id_prov'],
+                ['Kabupaten/Kota', formatLookup(record.city_name, record.id_kabkot), 'id_kabkot'],
+                ['Lintas', formatLookup(record.lintas_name, record.lintas), 'lintas'],
+                ['Stasiun Awal', formatLookup(record.stasiun1_name, record.stasiun1), 'stasiun1'],
+                ['Stasiun Akhir', formatLookup(record.stasiun2_name, record.stasiun2), 'stasiun2'],
+                ['Ringkasan Rute', record.route_summary, 'route_summary'],
+            ];
+
+            const profileRows = [
+                ['Uniqid Profil', profile.uniqid, 'uniqid'],
+                ['ID Jembatan', profile.id_jembatan, 'id_jembatan'],
+                ['Perpotongan', profile.perpotongan, 'perpotongan'],
+                ['Jumlah Lintasan', profile.jml_lintasan, 'jml_lintasan'],
+                ['Jumlah Bentang', profile.jml_bentang, 'jml_bentang'],
+                ['Panjang Bentang 1', profile.pjg_bentang1, 'pjg_bentang1'],
+                ['Panjang Bentang 2', profile.pjg_bentang2, 'pjg_bentang2'],
+                ['Panjang Bentang 3', profile.pjg_bentang3, 'pjg_bentang3'],
+                ['Panjang Total', profile.pjg_total, 'pjg_total'],
+                ['Tahun Selesai', profile.thn_selesai, 'thn_selesai'],
+                ['RM Bangunan Atas', profile.rm_bgn_atas, 'rm_bgn_atas'],
+                ['RM Bangunan Bawah', profile.rm_bgn_bawah, 'rm_bgn_bawah'],
+                ['Active', profile.active, 'active'],
+                ['Created By', profile.created_by, 'created_by'],
+                ['Created At', profile.created_at, 'created_at'],
+                ['Updated By', profile.updated_by, 'updated_by'],
+                ['Updated At', profile.updated_at, 'updated_at'],
+            ];
+
+            const protectionRows = [
+                ['Uniqid Proteksi', protection.uniqid, 'uniqid'],
+                ['ID Jembatan', protection.id_jembatan, 'id_jembatan'],
+                ['Pelindung Arus Material', protection.pelindung_arus_material, 'pelindung_arus_material'],
+                ['Pelindung Arus Tipe', protection.pelindung_arus_tipe, 'pelindung_arus_tipe'],
+                ['Pengarah Arus Material', protection.pengarah_arus_material, 'pengarah_arus_material'],
+                ['Pengarah Arus Tipe', protection.pengarah_arus_tipe, 'pengarah_arus_tipe'],
+                ['Pelindung Longsoran Material', protection.pelindung_longsoran_material, 'pelindung_longsoran_material'],
+                ['Pelindung Longsoran Tipe', protection.pelindung_longsoran_tipe, 'pelindung_longsoran_tipe'],
+                ['Created By', protection.created_by, 'created_by'],
+                ['Created At', protection.created_at, 'created_at'],
+                ['Updated By', protection.updated_by, 'updated_by'],
+                ['Updated At', protection.updated_at, 'updated_at'],
+            ];
+
+            const assessmentRows = [
+                ['Uniqid Asesmen', assessment.uniqid, 'uniqid'],
+                ['ID Jembatan', assessment.id_jembatan, 'id_jembatan'],
+                ['Nilai Total', assessment.total, 'total'],
+                ['Kesimpulan', assessment.kesimpulan, 'kesimpulan'],
+                ['Created By', assessment.created_by, 'created_by'],
+                ['Created At', assessment.created_at, 'created_at'],
+                ['Updated By', assessment.updated_by, 'updated_by'],
+                ['Updated At', assessment.updated_at, 'updated_at'],
+            ];
+
+            const mediaRows = [
+                ['Foto 1', record.foto1, 'foto1'],
+                ['Caption 1', record.caption1, 'caption1'],
+                ['Foto 2', record.foto2, 'foto2'],
+                ['Caption 2', record.caption2, 'caption2'],
+                ['Foto 3', record.foto3, 'foto3'],
+                ['Caption 3', record.caption3, 'caption3'],
+                ['Foto 4', record.foto4, 'foto4'],
+                ['Caption 4', record.caption4, 'caption4'],
+                ['Dokumen', record.dokumen, 'dokumen'],
+                ['Video', record.video, 'video'],
+                ['Catatan', record.catatan, 'catatan'],
+            ];
+
+            viewContent.innerHTML = `
+                <section class="detail-hero">
+                    <div class="detail-hero-main">
+                        <span class="detail-hero-icon">${iconMarkup('bridge')}</span>
+                        <div class="detail-hero-main-copy">
+                            <span class="detail-eyebrow">Source m_jembatan</span>
+                            <h3>${escapeHtml(record.bridge_identity || record.no_bh || record.uniqid || 'Detail Jembatan')}</h3>
+                            <p>${escapeHtml(record.route_summary || 'Data detail ini menggabungkan induk jembatan, lookup, bentang, struktur bawah, proteksi, dan asesmen.')}</p>
+                            <div class="detail-chip-grid">
+                                <span class="detail-chip">${escapeHtml(record.wilayah_summary || 'Wilayah belum tersedia')}</span>
+                                <span class="detail-chip">${escapeHtml(record.location_summary || 'Lokasi belum tersedia')}</span>
+                                <span class="detail-chip">${escapeHtml('6 tabel source terhubung')}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="detail-hero-stats">
+                        <div class="detail-stat">
+                            <span>Bentang</span>
+                            <strong>${escapeHtml(String(spans.length))} data</strong>
+                        </div>
+                        <div class="detail-stat">
+                            <span>Struktur Bawah</span>
+                            <strong>${escapeHtml(String(substructures.length))} data</strong>
+                        </div>
+                        <div class="detail-stat">
+                            <span>Panjang Total</span>
+                            <strong>${escapeHtml(profile.pjg_total || (totalSpanLength > 0 ? compactNumber(totalSpanLength) : '-'))}</strong>
+                        </div>
+                        <div class="detail-stat">
+                            <span>Nilai Asesmen</span>
+                            <strong>${escapeHtml(assessment.total !== undefined && assessment.total !== null ? compactNumber(assessment.total) : '-')}</strong>
+                        </div>
+                    </div>
+                </section>
+
+                <div class="detail-stack">
+                    ${renderSection('Identitas & Lokasi', 'Ringkasan utama dari tabel source induk m_jembatan.', 'map', renderKeyValueTable(identityRows))}
+                    ${renderSection('Kewilayahan & Rute', 'Lookup ditampilkan dengan nama lengkap, bukan kode mentah saja.', 'route', renderKeyValueTable(routeRows))}
+                    ${renderSection('Profil Struktur', 'Data lengkap dari tabel m_jembatan_profil.', 'profile', renderKeyValueTable(profileRows), record.profile_summary || 'profil')}
+                    ${renderSection('Bentang', 'Gabungan seluruh baris dari tabel m_jembatan_bentang.', 'span', renderRecordTable(spans, ['urut', 'pjg_bentang', 'uniqid', 'id_jembatan', 'active', 'updated_at']), `${spans.length} baris`)}
+                    ${renderSection('Struktur Bawah', 'Gabungan seluruh baris dari tabel m_jembatan_bawah.', 'substructure', renderRecordTable(substructures, ['urut', 'nomor', 'material', 'tipe', 'manteling', 'jenis', 'uniqid', 'id_jembatan', 'updated_at']), `${substructures.length} baris`)}
+                    ${renderSection('Pelindung', 'Detail pelindung arus, pengarah arus, dan longsoran.', 'shield', renderKeyValueTable(protectionRows))}
+                    ${renderSection('Asesmen Total', 'Nilai akhir dari tabel m_jembatan_nilai_total.', 'assessment', renderKeyValueTable(assessmentRows), record.assessment_summary || 'nilai')}
+                    ${renderSection('Media & Catatan', 'Dokumen pendukung, media, dan catatan operasional.', 'media', renderKeyValueTable(mediaRows))}
+                    ${renderSection('Atribut Source Tambahan', 'Field lain dari tabel m_jembatan yang tetap dipertahankan apa adanya.', 'database', renderKeyValueTable(extraSourceFields.map(([key, value]) => [prettifyField(key), value, key])))}
+                </div>
+            `;
+        };
+
+        const loadRecords = async () => {
+            setLoadingState(true);
+            renderRows([]);
+            renderPagination();
+
+            const params = new URLSearchParams({
+                page: String(state.page),
+                per_page: String(state.perPage),
+            });
+
+            if (state.search) {
+                params.set('search', state.search);
+            }
+
+            try {
+                const payload = await fetchJson(`${config.list_endpoint}?${params.toString()}`);
+                state.pagination = payload.meta?.pagination || state.pagination;
+                setLoadingState(false);
+                renderRows(Array.isArray(payload.data) ? payload.data : []);
+                renderPagination();
+            } catch (errorPayload) {
+                setLoadingState(false);
+                state.pagination = {
+                    current_page: 1,
+                    last_page: 1,
+                    total: 0,
+                    per_page: state.perPage,
+                };
+                gridBody.innerHTML = `<tr><td colspan="${columns.length + 1}" class="grid-empty">${escapeHtml(extractErrorMessage(errorPayload))}</td></tr>`;
+                renderPagination();
+            }
+        };
+
+        const openCreateForm = () => {
+            resetForm();
+            openModal(formModal);
+        };
+
+        const openEditForm = async (uniqid) => {
+            resetForm();
+            state.mode = 'edit';
+            state.activeUniqid = uniqid;
+
+            if (formTitle) {
+                formTitle.textContent = `Edit ${config.label || 'Jembatan'}`;
+            }
+
+            if (formSubtitle) {
+                formSubtitle.textContent = 'Perbarui record source utama beserta relasinya.';
+            }
+
+            if (submitButton) {
+                submitButton.textContent = 'Simpan Perubahan';
+            }
+
+            openModal(formModal);
+            showFormFeedback('Memuat data...');
+
+            try {
+                const record = await fetchRecord(uniqid);
+                fillForm(record);
+                clearFormFeedback();
+            } catch (errorPayload) {
+                showFormFeedback(extractErrorMessage(errorPayload));
+            }
+        };
+
+        const openDetailModal = async (uniqid) => {
+            if (viewContent) {
+                viewContent.innerHTML = '<div class="grid-loading">Memuat detail...</div>';
+            }
+
+            if (viewSubtitle) {
+                viewSubtitle.textContent = 'Memuat data...';
+            }
+
+            openModal(viewModal);
+
+            try {
+                const record = await fetchRecord(uniqid);
+                renderDetail(record);
+            } catch (errorPayload) {
+                if (viewContent) {
+                    viewContent.innerHTML = `<div class="feedback">${escapeHtml(extractErrorMessage(errorPayload))}</div>`;
+                }
+            }
+        };
+
+        const deleteRecord = async (uniqid) => {
+            const confirmed = window.confirm(`Hapus data jembatan source ${uniqid}?`);
+
+            if (!confirmed) {
+                return;
+            }
+
+            try {
+                await fetchJson(`${config.list_endpoint}/${encodeURIComponent(uniqid)}`, {
+                    method: 'DELETE',
+                });
+                if (state.page > 1 && Number(state.pagination.total || 0) <= 1) {
+                    state.page -= 1;
+                }
+                loadRecords();
+            } catch (errorPayload) {
+                window.alert(extractErrorMessage(errorPayload));
+            }
+        };
+
+        renderHeader();
+        renderPagination();
+        loadRecords();
+
+        gridSearch?.addEventListener('input', (event) => {
+            window.clearTimeout(searchTimer);
+            state.search = event.target.value.trim();
+            searchTimer = window.setTimeout(() => {
+                state.page = 1;
+                loadRecords();
+            }, 280);
+        });
+
+        gridPerPage?.addEventListener('change', (event) => {
+            state.perPage = Number(event.target.value || 10);
+            state.page = 1;
+            loadRecords();
+        });
+
+        prevButton?.addEventListener('click', () => {
+            if (state.page <= 1) {
+                return;
+            }
+
+            state.page -= 1;
+            loadRecords();
+        });
+
+        nextButton?.addEventListener('click', () => {
+            if (state.page >= Number(state.pagination.last_page || 1)) {
+                return;
+            }
+
+            state.page += 1;
+            loadRecords();
+        });
+
+        createButton?.addEventListener('click', openCreateForm);
+
+        root.addEventListener('click', (event) => {
+            const trigger = event.target.closest('[data-bridge-row-action]');
+
+            if (!trigger) {
+                return;
+            }
+
+            const { bridgeRowAction, uniqid } = trigger.dataset;
+
+            if (bridgeRowAction === 'view') {
+                openDetailModal(uniqid);
+            }
+
+            if (bridgeRowAction === 'edit') {
+                openEditForm(uniqid);
+            }
+
+            if (bridgeRowAction === 'delete') {
+                deleteRecord(uniqid);
+            }
+        });
+
+        document.querySelectorAll('[data-bridge-view-modal] [data-modal-close], [data-bridge-form-modal] [data-modal-close]').forEach((button) => {
+            button.addEventListener('click', () => {
+                closeAllModals();
+            });
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                closeAllModals();
+            }
+        });
+
+        form?.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            clearFormFeedback();
+
+            let payload = null;
+
+            try {
+                payload = buildPayload();
+            } catch (error) {
+                showFormFeedback('JSON pada bagian bentang atau struktur bawah tidak valid.');
+                return;
+            }
+
+            const url = state.mode === 'edit' && state.activeUniqid
+                ? `${config.list_endpoint}/${encodeURIComponent(state.activeUniqid)}`
+                : config.store_endpoint;
+            const method = state.mode === 'edit' ? 'PATCH' : 'POST';
+
+            setLoadingState(true);
+
+            try {
+                await fetchJson(url, {
+                    method,
+                    body: JSON.stringify(payload),
+                });
+                state.page = 1;
+                closeModal(formModal);
+                resetForm();
+                loadRecords();
+            } catch (errorPayload) {
+                showFormFeedback(extractErrorMessage(errorPayload));
+            } finally {
+                setLoadingState(false);
+            }
+        });
+    })();
+
+    (() => {
+        const root = document.querySelector('[data-bridge-source-table-app]');
+        const body = document.body;
+
+        if (!root) {
+            return;
+        }
+
+        const config = JSON.parse(root.dataset.bridgeSourceTableApp || '{}');
+        const columns = Array.isArray(config.columns) && config.columns.length > 0
+            ? config.columns
+            : ['row_key'];
+        const gridHead = root.querySelector('[data-grid-head]');
+        const gridBody = root.querySelector('[data-grid-body]');
+        const gridSearch = root.querySelector('[data-grid-search]');
+        const gridPerPage = root.querySelector('[data-grid-per-page]');
+        const gridCount = root.querySelector('[data-grid-count]');
+        const gridSummary = root.querySelector('[data-grid-summary]');
+        const gridPage = root.querySelector('[data-grid-page]');
+        const prevButton = root.querySelector('[data-grid-prev]');
+        const nextButton = root.querySelector('[data-grid-next]');
+        const viewModal = document.querySelector('[data-bridge-source-table-view-modal]');
+        const viewSubtitle = viewModal?.querySelector('[data-bridge-source-table-view-subtitle]');
+        const viewContent = viewModal?.querySelector('[data-bridge-source-table-view-content]');
+        const state = {
+            page: 1,
+            perPage: Number(gridPerPage?.value || 10),
+            search: '',
+            rows: [],
+            pagination: {
+                current_page: 1,
+                last_page: 1,
+                total: Number(config.row_count || 0),
+                per_page: Number(gridPerPage?.value || 10),
+            },
+            loading: false,
+        };
+
+        let searchTimer = null;
+
+        const escapeHtml = (value) => String(value ?? '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#039;');
+
+        const formatText = (value) => {
+            if (value === null || value === undefined || value === '') {
+                return '-';
+            }
+
+            if (typeof value === 'object') {
+                return JSON.stringify(value);
+            }
+
+            return String(value);
+        };
+
+        const formatFieldValue = (value, key = '') => {
+            if (value === null || value === undefined || value === '') {
+                return '-';
+            }
+
+            if (typeof value === 'object') {
+                return JSON.stringify(value);
+            }
+
+            if (key.endsWith('_at') || key === 'tanggal') {
+                const date = new Date(value);
+
+                if (!Number.isNaN(date.getTime())) {
+                    return new Intl.DateTimeFormat('id-ID', {
+                        dateStyle: 'medium',
+                        timeStyle: key.endsWith('_at') ? 'short' : undefined,
+                        timeZone: 'UTC',
+                    }).format(date);
+                }
+            }
+
+            return String(value);
+        };
+
+        const prettifyColumn = (column) => column
+            .replaceAll('_', ' ')
+            .replace(/\b\w/g, (letter) => letter.toUpperCase());
+
+        const renderFieldTable = (record) => {
+            const priority = ['row_key', 'uniqid', 'id', 'kode', 'nama', 'tanggal', 'updated_at', 'created_at'];
+            const entries = Object.entries(record || {}).sort(([left], [right]) => {
+                const leftIndex = priority.indexOf(left);
+                const rightIndex = priority.indexOf(right);
+
+                if (leftIndex === -1 && rightIndex === -1) {
+                    return left.localeCompare(right);
+                }
+
+                if (leftIndex === -1) {
+                    return 1;
+                }
+
+                if (rightIndex === -1) {
+                    return -1;
+                }
+
+                return leftIndex - rightIndex;
+            });
+
+            if (!entries.length) {
+                return '<div class="detail-empty">Tidak ada field yang bisa ditampilkan.</div>';
+            }
+
+            return `
+                <div class="detail-table-wrap">
+                    <table class="detail-kv-table">
+                        <tbody>
+                            ${entries.map(([key, value]) => `
+                                <tr>
+                                    <th>${escapeHtml(prettifyColumn(key))}</th>
+                                    <td>${escapeHtml(formatFieldValue(value, key))}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        };
+
+        const fetchJson = async (url) => {
+            const response = await fetch(url, {
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            });
+            const payload = await response.json().catch(() => null);
+
+            if (!response.ok || (payload && payload.success === false)) {
+                throw payload || { message: 'Permintaan gagal.' };
+            }
+
+            return payload;
+        };
+
+        const renderHeader = () => {
+            gridHead.innerHTML = `
+                <tr>
+                    ${columns.map((column) => `<th>${escapeHtml(prettifyColumn(column))}</th>`).join('')}
+                    <th>Aksi</th>
+                </tr>
+            `;
+        };
+
+        const renderRows = () => {
+            const totalColumns = columns.length + 1;
+
+            if (state.loading) {
+                gridBody.innerHTML = `<tr><td colspan="${totalColumns}" class="grid-loading">Memuat data...</td></tr>`;
+                return;
+            }
+
+            if (!state.rows.length) {
+                gridBody.innerHTML = `<tr><td colspan="${totalColumns}" class="grid-empty">Belum ada data pada tabel ${escapeHtml(config.table || 'source')}.</td></tr>`;
+                return;
+            }
+
+            gridBody.innerHTML = state.rows.map((row) => `
+                <tr>
+                    ${columns.map((column, index) => {
+                        const value = row[column] ?? null;
+
+                        if (index === 0) {
+                            return `
+                                <td>
+                                    <div class="row-title">
+                                        <strong>${escapeHtml(formatText(value))}</strong>
+                                        <span>${escapeHtml(formatText(row.uniqid ?? row.nama ?? row.kode ?? '-'))}</span>
+                                    </div>
+                                </td>
+                            `;
+                        }
+
+                        return `<td>${escapeHtml(formatFieldValue(value, column))}</td>`;
+                    }).join('')}
+                    <td>
+                        <div class="inline-actions">
+                            <button class="inline-button" type="button" data-bridge-source-table-view="${escapeHtml(row.row_key)}">Lihat</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        };
+
+        const renderPagination = () => {
+            const total = Number(state.pagination.total || 0);
+            const currentPage = Number(state.pagination.current_page || 1);
+            const lastPage = Number(state.pagination.last_page || 1);
+            const perPage = Number(state.pagination.per_page || state.perPage || 10);
+            const start = total === 0 ? 0 : ((currentPage - 1) * perPage) + 1;
+            const end = total === 0 ? 0 : Math.min(currentPage * perPage, total);
+
+            if (gridCount) {
+                gridCount.textContent = `${new Intl.NumberFormat('id-ID').format(total)} data`;
+            }
+
+            if (gridSummary) {
+                gridSummary.textContent = total === 0
+                    ? 'Belum ada data.'
+                    : `Menampilkan ${new Intl.NumberFormat('id-ID').format(start)}-${new Intl.NumberFormat('id-ID').format(end)} dari ${new Intl.NumberFormat('id-ID').format(total)} data`;
+            }
+
+            if (gridPage) {
+                gridPage.textContent = `Halaman ${currentPage} / ${lastPage}`;
+            }
+
+            if (prevButton) {
+                prevButton.disabled = currentPage <= 1 || state.loading;
+            }
+
+            if (nextButton) {
+                nextButton.disabled = currentPage >= lastPage || state.loading;
+            }
+        };
+
+        const openModal = (modal) => {
+            if (!modal) {
+                return;
+            }
+
+            modal.classList.add('is-open');
+            modal.setAttribute('aria-hidden', 'false');
+            body.classList.add('modal-open');
+        };
+
+        const closeModal = (modal) => {
+            if (!modal) {
+                return;
+            }
+
+            modal.classList.remove('is-open');
+            modal.setAttribute('aria-hidden', 'true');
+
+            if (!document.querySelector('.modal.is-open')) {
+                body.classList.remove('modal-open');
+            }
+        };
+
+        const loadRows = async () => {
+            state.loading = true;
+            renderRows();
+            renderPagination();
+
+            const params = new URLSearchParams({
+                page: String(state.page),
+                per_page: String(state.perPage),
+            });
+
+            if (state.search) {
+                params.set('search', state.search);
+            }
+
+            try {
+                const payload = await fetchJson(`${config.list_endpoint}?${params.toString()}`);
+                state.rows = Array.isArray(payload.data) ? payload.data : [];
+                state.pagination = payload.meta?.pagination || state.pagination;
+            } catch {
+                state.rows = [];
+                state.pagination = {
+                    current_page: 1,
+                    last_page: 1,
+                    total: 0,
+                    per_page: state.perPage,
+                };
+            } finally {
+                state.loading = false;
+                renderRows();
+                renderPagination();
+            }
+        };
+
+        const openDetail = (rowKey) => {
+            const record = state.rows.find((row) => String(row.row_key) === String(rowKey));
+
+            if (!record || !viewContent || !viewSubtitle) {
+                return;
+            }
+
+            viewSubtitle.textContent = `${config.table || 'table'} · ${record.row_key}`;
+            viewContent.innerHTML = `
+                <section class="detail-hero">
+                    <div class="detail-hero-main">
+                        <span class="detail-hero-icon">
+                            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <ellipse cx="12" cy="5" rx="7" ry="3"/><path d="M5 5v14c0 1.7 3.1 3 7 3s7-1.3 7-3V5"/><path d="M5 12c0 1.7 3.1 3 7 3s7-1.3 7-3"/>
+                            </svg>
+                        </span>
+                        <div class="detail-hero-main-copy">
+                            <span class="detail-eyebrow">Source Table</span>
+                            <h3>${escapeHtml(config.table || 'Tabel Source')}</h3>
+                            <p>${escapeHtml(config.description || 'Tampilan lengkap per baris dari tabel source hasil seeder SQL.')}</p>
+                            <div class="detail-chip-grid">
+                                <span class="detail-chip">${escapeHtml(`Row Key ${record.row_key}`)}</span>
+                                <span class="detail-chip">${escapeHtml(`${Object.keys(record).length} field`)}</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                <section class="detail-section">
+                    <div class="detail-section-head">
+                        <div class="detail-section-title">
+                            <span class="detail-section-icon">
+                                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/><path d="M8 6v12"/><path d="M16 6v12"/>
+                                </svg>
+                            </span>
+                            <div>
+                                <h4>Detail Field</h4>
+                                <p>Setiap kolom ditampilkan sebagai tabel baca, bukan JSON mentah.</p>
+                            </div>
+                        </div>
+                    </div>
+                    ${renderFieldTable(record)}
+                </section>
+            `;
+            openModal(viewModal);
+        };
+
+        renderHeader();
+        renderRows();
+        renderPagination();
+        loadRows();
+
+        gridSearch?.addEventListener('input', (event) => {
+            window.clearTimeout(searchTimer);
+            state.search = event.target.value.trim();
+            searchTimer = window.setTimeout(() => {
+                state.page = 1;
+                loadRows();
+            }, 280);
+        });
+
+        gridPerPage?.addEventListener('change', (event) => {
+            state.perPage = Number(event.target.value || 10);
+            state.page = 1;
+            loadRows();
+        });
+
+        prevButton?.addEventListener('click', () => {
+            if (state.page <= 1) {
+                return;
+            }
+
+            state.page -= 1;
+            loadRows();
+        });
+
+        nextButton?.addEventListener('click', () => {
+            if (state.page >= Number(state.pagination.last_page || 1)) {
+                return;
+            }
+
+            state.page += 1;
+            loadRows();
+        });
+
+        root.addEventListener('click', (event) => {
+            const trigger = event.target.closest('[data-bridge-source-table-view]');
+
+            if (!trigger) {
+                return;
+            }
+
+            openDetail(trigger.dataset.bridgeSourceTableView);
+        });
+
+        document.querySelectorAll('[data-bridge-source-table-view-modal] [data-modal-close]').forEach((button) => {
+            button.addEventListener('click', () => {
+                closeModal(viewModal);
+            });
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                closeModal(viewModal);
+            }
+        });
+    })();
+
+    (() => {
+        const root = document.querySelector('[data-superadmin-users-app]');
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        const body = document.body;
+
+        if (!root) {
+            return;
+        }
+
+        const config = JSON.parse(root.dataset.superadminUsersApp || '{}');
+        const columns = Array.isArray(config.columns) && config.columns.length
+            ? config.columns
+            : ['name', 'email', 'role_label', 'email_verified_at', 'updated_at'];
+        const labels = {
+            name: 'Nama',
+            email: 'Email',
+            role_label: 'Role',
+            email_verified_at: 'Email Verified',
+            updated_at: 'Diperbarui',
+        };
+
+        const gridHead = root.querySelector('[data-grid-head]');
+        const gridBody = root.querySelector('[data-grid-body]');
+        const gridSearch = root.querySelector('[data-grid-search]');
+        const gridPerPage = root.querySelector('[data-grid-per-page]');
+        const gridCount = root.querySelector('[data-grid-count]');
+        const gridSummary = root.querySelector('[data-grid-summary]');
+        const gridPage = root.querySelector('[data-grid-page]');
+        const prevButton = root.querySelector('[data-grid-prev]');
+        const nextButton = root.querySelector('[data-grid-next]');
+        const createButton = root.querySelector('[data-grid-create]');
+        const viewModal = document.querySelector('[data-superadmin-user-view-modal]');
+        const viewSubtitle = viewModal?.querySelector('[data-user-view-subtitle]');
+        const viewContent = viewModal?.querySelector('[data-user-view-content]');
+        const formModal = document.querySelector('[data-superadmin-user-form-modal]');
+        const formTitle = formModal?.querySelector('[data-user-form-title]');
+        const formSubtitle = formModal?.querySelector('[data-user-form-subtitle]');
+        const form = formModal?.querySelector('[data-superadmin-user-form]');
+        const formFeedback = formModal?.querySelector('[data-user-form-feedback]');
+        const submitButton = formModal?.querySelector('[data-user-form-submit]');
+
+        const state = {
+            page: 1,
+            perPage: Number(gridPerPage?.value || 10),
+            search: '',
+            loading: false,
+            mode: 'create',
+            activeUuid: null,
+            pagination: {
+                current_page: 1,
+                last_page: 1,
+                total: Number(config.records_count || 0),
+                per_page: Number(gridPerPage?.value || 10),
+            },
+        };
+
+        let searchTimer = null;
+
+        const escapeHtml = (value) => String(value ?? '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#039;');
+
+        const prettify = (key) => labels[key] || key.replaceAll('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
+
+        const formatText = (value) => {
+            if (value === null || value === undefined || value === '') {
+                return '-';
+            }
+
+            return String(value);
+        };
+
+        const formatDate = (value) => {
+            if (!value) {
+                return '-';
+            }
+
+            const date = new Date(value);
+
+            if (Number.isNaN(date.getTime())) {
+                return String(value);
+            }
+
+            return new Intl.DateTimeFormat('id-ID', {
+                dateStyle: 'medium',
+                timeStyle: 'short',
+                timeZone: 'UTC',
+            }).format(date);
+        };
+
+        const fetchJson = async (url, options = {}) => {
+            const response = await fetch(url, {
+                ...options,
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+                    ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {}),
+                    ...(options.headers || {}),
+                },
+            });
+
+            const payload = await response.json().catch(() => null);
+
+            if (!response.ok || (payload && payload.success === false)) {
+                throw payload || { message: 'Permintaan gagal.' };
+            }
+
+            return payload;
+        };
+
+        const extractError = (payload) => {
+            if (payload?.error?.details && typeof payload.error.details === 'object') {
+                return Object.values(payload.error.details).flat().join('\n');
+            }
+
+            if (payload?.errors && typeof payload.errors === 'object') {
+                return Object.values(payload.errors).flat().join('\n');
+            }
+
+            return payload?.message || 'Terjadi kesalahan saat memproses data user.';
+        };
+
+        const openModal = (modal) => {
+            if (!modal) {
+                return;
+            }
+
+            modal.classList.add('is-open');
+            modal.setAttribute('aria-hidden', 'false');
+            body.classList.add('modal-open');
+        };
+
+        const closeModal = (modal) => {
+            if (!modal) {
+                return;
+            }
+
+            modal.classList.remove('is-open');
+            modal.setAttribute('aria-hidden', 'true');
+
+            if (!document.querySelector('.modal.is-open')) {
+                body.classList.remove('modal-open');
+            }
+        };
+
+        const renderHeader = () => {
+            gridHead.innerHTML = `
+                <tr>
+                    ${columns.map((column) => `<th>${escapeHtml(prettify(column))}</th>`).join('')}
+                    <th>Aksi</th>
+                </tr>
+            `;
+        };
+
+        const renderRows = (rows = []) => {
+            const totalColumns = columns.length + 1;
+
+            if (state.loading) {
+                gridBody.innerHTML = `<tr><td colspan="${totalColumns}" class="grid-loading">Memuat data user...</td></tr>`;
+                return;
+            }
+
+            if (!rows.length) {
+                gridBody.innerHTML = `<tr><td colspan="${totalColumns}" class="grid-empty">Belum ada data user.</td></tr>`;
+                return;
+            }
+
+            gridBody.innerHTML = rows.map((row) => `
+                <tr>
+                    <td>
+                        <div class="row-title">
+                            <strong>${escapeHtml(formatText(row.name))}</strong>
+                            <span>${escapeHtml(formatText(row.uuid))}</span>
+                        </div>
+                    </td>
+                    <td>${escapeHtml(formatText(row.email))}</td>
+                    <td>${escapeHtml(formatText(row.role_label))}</td>
+                    <td>${escapeHtml(formatDate(row.email_verified_at))}</td>
+                    <td>${escapeHtml(formatDate(row.updated_at))}</td>
+                    <td>
+                        <div class="inline-actions">
+                            <button class="inline-button" type="button" data-user-action="view" data-user-uuid="${escapeHtml(row.uuid)}">Lihat</button>
+                            <button class="inline-button primary" type="button" data-user-action="edit" data-user-uuid="${escapeHtml(row.uuid)}">Edit</button>
+                            <button class="inline-button danger" type="button" data-user-action="delete" data-user-uuid="${escapeHtml(row.uuid)}">Hapus</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        };
+
+        const renderPagination = () => {
+            const total = Number(state.pagination.total || 0);
+            const currentPage = Number(state.pagination.current_page || 1);
+            const lastPage = Number(state.pagination.last_page || 1);
+            const perPage = Number(state.pagination.per_page || state.perPage || 10);
+            const start = total === 0 ? 0 : ((currentPage - 1) * perPage) + 1;
+            const end = total === 0 ? 0 : Math.min(currentPage * perPage, total);
+
+            if (gridCount) {
+                gridCount.textContent = `${new Intl.NumberFormat('id-ID').format(total)} data`;
+            }
+
+            if (gridSummary) {
+                gridSummary.textContent = total === 0
+                    ? 'Belum ada data user.'
+                    : `Menampilkan ${new Intl.NumberFormat('id-ID').format(start)}-${new Intl.NumberFormat('id-ID').format(end)} dari ${new Intl.NumberFormat('id-ID').format(total)} user`;
+            }
+
+            if (gridPage) {
+                gridPage.textContent = `Halaman ${currentPage} / ${lastPage}`;
+            }
+
+            if (prevButton) {
+                prevButton.disabled = state.loading || currentPage <= 1;
+            }
+
+            if (nextButton) {
+                nextButton.disabled = state.loading || currentPage >= lastPage;
+            }
+        };
+
+        const clearFeedback = () => {
+            if (!formFeedback) {
+                return;
+            }
+
+            formFeedback.hidden = true;
+            formFeedback.textContent = '';
+            formFeedback.classList.remove('success');
+        };
+
+        const showFeedback = (message) => {
+            if (!formFeedback) {
+                return;
+            }
+
+            formFeedback.hidden = false;
+            formFeedback.textContent = message;
+            formFeedback.classList.remove('success');
+        };
+
+        const loadRows = async () => {
+            state.loading = true;
+            renderRows([]);
+            renderPagination();
+
+            const params = new URLSearchParams({
+                page: String(state.page),
+                per_page: String(state.perPage),
+            });
+
+            if (state.search) {
+                params.set('search', state.search);
+            }
+
+            try {
+                const payload = await fetchJson(`${config.list_endpoint}?${params.toString()}`);
+                state.pagination = payload.meta?.pagination || state.pagination;
+                state.loading = false;
+                renderRows(Array.isArray(payload.data) ? payload.data : []);
+            } catch (errorPayload) {
+                state.loading = false;
+                state.pagination = {
+                    current_page: 1,
+                    last_page: 1,
+                    total: 0,
+                    per_page: state.perPage,
+                };
+                gridBody.innerHTML = `<tr><td colspan="${columns.length + 1}" class="grid-empty">${escapeHtml(extractError(errorPayload))}</td></tr>`;
+            } finally {
+                renderPagination();
+            }
+        };
+
+        const fetchRecord = async (uuid) => {
+            const payload = await fetchJson(`${config.list_endpoint}/${uuid}`);
+            return payload.data || null;
+        };
+
+        const resetForm = () => {
+            if (!form) {
+                return;
+            }
+
+            form.reset();
+            form.querySelector('[name="email_verified"]').checked = true;
+            state.mode = 'create';
+            state.activeUuid = null;
+
+            if (formTitle) {
+                formTitle.textContent = 'Tambah User';
+            }
+
+            if (formSubtitle) {
+                formSubtitle.textContent = 'Isi akun baru beserta role aksesnya.';
+            }
+
+            if (submitButton) {
+                submitButton.textContent = 'Simpan';
+                submitButton.disabled = false;
+            }
+
+            clearFeedback();
+        };
+
+        const fillForm = (record) => {
+            if (!form) {
+                return;
+            }
+
+            form.querySelector('[name="name"]').value = record.name || '';
+            form.querySelector('[name="email"]').value = record.email || '';
+            form.querySelector('[name="role"]').value = record.role || 'viewer';
+            form.querySelector('[name="password"]').value = '';
+            form.querySelector('[name="email_verified"]').checked = Boolean(record.email_verified);
+        };
+
+        const renderDetail = (record) => {
+            if (!viewSubtitle || !viewContent) {
+                return;
+            }
+
+            viewSubtitle.textContent = `${record.name || '-'} · ${record.role_label || '-'}`;
+            viewContent.innerHTML = `
+                <div class="detail-grid">
+                    <div class="detail-item"><span>Nama</span><strong>${escapeHtml(formatText(record.name))}</strong></div>
+                    <div class="detail-item"><span>Email</span><strong>${escapeHtml(formatText(record.email))}</strong></div>
+                    <div class="detail-item"><span>Role</span><strong>${escapeHtml(formatText(record.role_label))}</strong></div>
+                    <div class="detail-item"><span>Email Verified</span><strong>${escapeHtml(formatDate(record.email_verified_at))}</strong></div>
+                    <div class="detail-item full"><span>Deskripsi Role</span><strong>${escapeHtml(formatText(record.role_description))}</strong></div>
+                </div>
+                <section class="detail-section">
+                    <div class="detail-section-head">
+                        <div class="detail-section-title">
+                            <span class="detail-section-icon"><svg class="icon" viewBox="0 0 24 24"><path d="M9 12h6"/><path d="M12 9v6"/><path d="M12 3 4 7v5c0 5 3.4 9.4 8 10 4.6-.6 8-5 8-10V7z"/></svg></span>
+                            <div>
+                                <h4>Ability Role</h4>
+                                <p>Hak akses turunan dari role user saat ini.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="detail-table-wrap">
+                        <table class="detail-record-table">
+                            <thead><tr><th>Ability</th></tr></thead>
+                            <tbody>${(Array.isArray(record.abilities) ? record.abilities : []).map((ability) => `<tr><td class="mono">${escapeHtml(formatText(ability))}</td></tr>`).join('') || '<tr><td>-</td></tr>'}</tbody>
+                        </table>
+                    </div>
+                </section>
+            `;
+        };
+
+        const openCreate = () => {
+            resetForm();
+            openModal(formModal);
+        };
+
+        const openEdit = async (uuid) => {
+            resetForm();
+            state.mode = 'edit';
+            state.activeUuid = uuid;
+
+            if (formTitle) {
+                formTitle.textContent = 'Edit User';
+            }
+
+            if (formSubtitle) {
+                formSubtitle.textContent = 'Perbarui identitas, role, atau password user.';
+            }
+
+            if (submitButton) {
+                submitButton.textContent = 'Simpan Perubahan';
+            }
+
+            openModal(formModal);
+            showFeedback('Memuat detail user...');
+
+            try {
+                const record = await fetchRecord(uuid);
+                fillForm(record);
+                clearFeedback();
+            } catch (errorPayload) {
+                showFeedback(extractError(errorPayload));
+            }
+        };
+
+        const openView = async (uuid) => {
+            if (viewContent) {
+                viewContent.innerHTML = '<div class="grid-loading">Memuat detail user...</div>';
+            }
+
+            if (viewSubtitle) {
+                viewSubtitle.textContent = 'Memuat data...';
+            }
+
+            openModal(viewModal);
+
+            try {
+                renderDetail(await fetchRecord(uuid));
+            } catch (errorPayload) {
+                if (viewContent) {
+                    viewContent.innerHTML = `<div class="feedback">${escapeHtml(extractError(errorPayload))}</div>`;
+                }
+            }
+        };
+
+        const destroyUser = async (uuid) => {
+            const confirmed = window.confirm('Hapus user ini? Tindakan ini tidak bisa dibatalkan.');
+
+            if (!confirmed) {
+                return;
+            }
+
+            try {
+                await fetchJson(`${config.list_endpoint}/${uuid}`, {
+                    method: 'DELETE',
+                });
+                await loadRows();
+            } catch (errorPayload) {
+                window.alert(extractError(errorPayload));
+            }
+        };
+
+        renderHeader();
+        renderPagination();
+        loadRows();
+
+        gridSearch?.addEventListener('input', (event) => {
+            window.clearTimeout(searchTimer);
+            state.search = event.target.value.trim();
+            searchTimer = window.setTimeout(() => {
+                state.page = 1;
+                loadRows();
+            }, 280);
+        });
+
+        gridPerPage?.addEventListener('change', (event) => {
+            state.perPage = Number(event.target.value || 10);
+            state.page = 1;
+            loadRows();
+        });
+
+        prevButton?.addEventListener('click', () => {
+            if (state.page <= 1) {
+                return;
+            }
+
+            state.page -= 1;
+            loadRows();
+        });
+
+        nextButton?.addEventListener('click', () => {
+            if (state.page >= Number(state.pagination.last_page || 1)) {
+                return;
+            }
+
+            state.page += 1;
+            loadRows();
+        });
+
+        createButton?.addEventListener('click', openCreate);
+
+        root.addEventListener('click', (event) => {
+            const trigger = event.target.closest('[data-user-action]');
+
+            if (!trigger) {
+                return;
+            }
+
+            const uuid = trigger.dataset.userUuid;
+            const action = trigger.dataset.userAction;
+
+            if (action === 'view') {
+                openView(uuid);
+            }
+
+            if (action === 'edit') {
+                openEdit(uuid);
+            }
+
+            if (action === 'delete') {
+                destroyUser(uuid);
+            }
+        });
+
+        document.querySelectorAll('[data-superadmin-user-view-modal] [data-modal-close], [data-superadmin-user-form-modal] [data-modal-close]').forEach((button) => {
+            button.addEventListener('click', () => {
+                closeModal(viewModal);
+                closeModal(formModal);
+            });
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                closeModal(viewModal);
+                closeModal(formModal);
+            }
+        });
+
+        form?.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            clearFeedback();
+
+            const payload = {
+                name: form.querySelector('[name="name"]').value.trim(),
+                email: form.querySelector('[name="email"]').value.trim(),
+                role: form.querySelector('[name="role"]').value,
+                password: form.querySelector('[name="password"]').value,
+                email_verified: form.querySelector('[name="email_verified"]').checked,
+            };
+
+            if (state.mode === 'edit' && payload.password.trim() === '') {
+                delete payload.password;
+            }
+
+            submitButton.disabled = true;
+
+            try {
+                const url = state.mode === 'edit' && state.activeUuid
+                    ? `${config.list_endpoint}/${state.activeUuid}`
+                    : config.store_endpoint;
+                const method = state.mode === 'edit' ? 'PATCH' : 'POST';
+
+                await fetchJson(url, {
+                    method,
+                    body: JSON.stringify(payload),
+                });
+
+                closeModal(formModal);
+                resetForm();
+                await loadRows();
+            } catch (errorPayload) {
+                showFeedback(extractError(errorPayload));
+            } finally {
+                submitButton.disabled = false;
+            }
+        });
+    })();
+
+    (() => {
+        const root = document.querySelector('[data-superadmin-api-clients-app]');
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        const body = document.body;
+
+        if (!root) {
+            return;
+        }
+
+        const config = JSON.parse(root.dataset.superadminApiClientsApp || '{}');
+        const columns = Array.isArray(config.columns) && config.columns.length
+            ? config.columns
+            : ['name', 'code', 'owner_email', 'access_tokens_count', 'is_active', 'expires_at', 'updated_at'];
+        const labels = {
+            name: 'Client',
+            code: 'Code',
+            owner_email: 'Owner',
+            access_tokens_count: 'Token',
+            is_active: 'Status',
+            expires_at: 'Expired',
+            updated_at: 'Diperbarui',
+        };
+
+        const gridHead = root.querySelector('[data-grid-head]');
+        const gridBody = root.querySelector('[data-grid-body]');
+        const gridSearch = root.querySelector('[data-grid-search]');
+        const gridPerPage = root.querySelector('[data-grid-per-page]');
+        const gridCount = root.querySelector('[data-grid-count]');
+        const gridSummary = root.querySelector('[data-grid-summary]');
+        const gridPage = root.querySelector('[data-grid-page]');
+        const prevButton = root.querySelector('[data-grid-prev]');
+        const nextButton = root.querySelector('[data-grid-next]');
+        const createButton = root.querySelector('[data-grid-create]');
+        const viewModal = document.querySelector('[data-superadmin-api-client-view-modal]');
+        const viewSubtitle = viewModal?.querySelector('[data-api-client-view-subtitle]');
+        const viewContent = viewModal?.querySelector('[data-api-client-view-content]');
+        const formModal = document.querySelector('[data-superadmin-api-client-form-modal]');
+        const formTitle = formModal?.querySelector('[data-api-client-form-title]');
+        const formSubtitle = formModal?.querySelector('[data-api-client-form-subtitle]');
+        const form = formModal?.querySelector('[data-superadmin-api-client-form]');
+        const formFeedback = formModal?.querySelector('[data-api-client-form-feedback]');
+        const submitButton = formModal?.querySelector('[data-api-client-form-submit]');
+        const tokenModal = document.querySelector('[data-superadmin-api-token-modal]');
+        const tokenSubtitle = tokenModal?.querySelector('[data-api-token-subtitle]');
+        const tokenForm = tokenModal?.querySelector('[data-superadmin-api-token-form]');
+        const tokenFeedback = tokenModal?.querySelector('[data-api-token-feedback]');
+        const tokenSubmitButton = tokenModal?.querySelector('[data-api-token-submit]');
+        const tokenResult = tokenModal?.querySelector('[data-api-token-result]');
+        const tokenSecret = tokenModal?.querySelector('[data-api-token-secret]');
+        const copyTokenButton = tokenModal?.querySelector('[data-copy-api-token]');
+
+        const state = {
+            page: 1,
+            perPage: Number(gridPerPage?.value || 10),
+            search: '',
+            loading: false,
+            mode: 'create',
+            activeUuid: null,
+            activeTokenUuid: null,
+            activeTokenValue: '',
+            pagination: {
+                current_page: 1,
+                last_page: 1,
+                total: Number(config.records_count || 0),
+                per_page: Number(gridPerPage?.value || 10),
+            },
+        };
+
+        let searchTimer = null;
+
+        const escapeHtml = (value) => String(value ?? '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#039;');
+
+        const prettify = (key) => labels[key] || key.replaceAll('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
+
+        const formatText = (value) => {
+            if (value === null || value === undefined || value === '') {
+                return '-';
+            }
+
+            return String(value);
+        };
+
+        const formatDate = (value) => {
+            if (!value) {
+                return '-';
+            }
+
+            const date = new Date(value);
+
+            if (Number.isNaN(date.getTime())) {
+                return String(value);
+            }
+
+            return new Intl.DateTimeFormat('id-ID', {
+                dateStyle: 'medium',
+                timeStyle: 'short',
+                timeZone: 'UTC',
+            }).format(date);
+        };
+
+        const toDateTimeInput = (value) => {
+            if (!value) {
+                return '';
+            }
+
+            const date = new Date(value);
+
+            if (Number.isNaN(date.getTime())) {
+                return '';
+            }
+
+            const shifted = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
+
+            return shifted.toISOString().slice(0, 16);
+        };
+
+        const splitLines = (value) => value
+            .split('\n')
+            .map((item) => item.trim())
+            .filter(Boolean);
+
+        const fetchJson = async (url, options = {}) => {
+            const response = await fetch(url, {
+                ...options,
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+                    ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {}),
+                    ...(options.headers || {}),
+                },
+            });
+
+            const payload = await response.json().catch(() => null);
+
+            if (!response.ok || (payload && payload.success === false)) {
+                throw payload || { message: 'Permintaan gagal.' };
+            }
+
+            return payload;
+        };
+
+        const extractError = (payload) => {
+            if (payload?.error?.details && typeof payload.error.details === 'object') {
+                return Object.values(payload.error.details).flat().join('\n');
+            }
+
+            if (payload?.errors && typeof payload.errors === 'object') {
+                return Object.values(payload.errors).flat().join('\n');
+            }
+
+            return payload?.message || 'Terjadi kesalahan saat memproses client API.';
+        };
+
+        const openModal = (modal) => {
+            if (!modal) {
+                return;
+            }
+
+            modal.classList.add('is-open');
+            modal.setAttribute('aria-hidden', 'false');
+            body.classList.add('modal-open');
+        };
+
+        const closeModal = (modal) => {
+            if (!modal) {
+                return;
+            }
+
+            modal.classList.remove('is-open');
+            modal.setAttribute('aria-hidden', 'true');
+
+            if (!document.querySelector('.modal.is-open')) {
+                body.classList.remove('modal-open');
+            }
+        };
+
+        const clearFeedback = (element) => {
+            if (!element) {
+                return;
+            }
+
+            element.hidden = true;
+            element.textContent = '';
+            element.classList.remove('success');
+        };
+
+        const showFeedback = (element, message, success = false) => {
+            if (!element) {
+                return;
+            }
+
+            element.hidden = false;
+            element.textContent = message;
+            element.classList.toggle('success', success);
+        };
+
+        const renderHeader = () => {
+            gridHead.innerHTML = `
+                <tr>
+                    ${columns.map((column) => `<th>${escapeHtml(prettify(column))}</th>`).join('')}
+                    <th>Aksi</th>
+                </tr>
+            `;
+        };
+
+        const renderRows = (rows = []) => {
+            const totalColumns = columns.length + 1;
+
+            if (state.loading) {
+                gridBody.innerHTML = `<tr><td colspan="${totalColumns}" class="grid-loading">Memuat client API...</td></tr>`;
+                return;
+            }
+
+            if (!rows.length) {
+                gridBody.innerHTML = `<tr><td colspan="${totalColumns}" class="grid-empty">Belum ada client API.</td></tr>`;
+                return;
+            }
+
+            gridBody.innerHTML = rows.map((row) => `
+                <tr>
+                    <td>
+                        <div class="row-title">
+                            <strong>${escapeHtml(formatText(row.name))}</strong>
+                            <span>${escapeHtml(formatText(row.uuid))}</span>
+                        </div>
+                    </td>
+                    <td class="mono">${escapeHtml(formatText(row.code))}</td>
+                    <td>${escapeHtml(formatText(row.owner_email || row.owner_name))}</td>
+                    <td>${escapeHtml(formatText(row.access_tokens_count))}</td>
+                    <td><span class="status ${row.is_active ? 'ready' : 'partial'}">${row.is_active ? 'active' : 'inactive'}</span></td>
+                    <td>${escapeHtml(formatDate(row.expires_at))}</td>
+                    <td>${escapeHtml(formatDate(row.updated_at))}</td>
+                    <td>
+                        <div class="inline-actions">
+                            <button class="inline-button" type="button" data-api-client-action="view" data-api-client-uuid="${escapeHtml(row.uuid)}">Lihat</button>
+                            <button class="inline-button primary" type="button" data-api-client-action="edit" data-api-client-uuid="${escapeHtml(row.uuid)}">Edit</button>
+                            <button class="inline-button" type="button" data-api-client-action="token" data-api-client-uuid="${escapeHtml(row.uuid)}">Token</button>
+                            <button class="inline-button danger" type="button" data-api-client-action="delete" data-api-client-uuid="${escapeHtml(row.uuid)}">Hapus</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        };
+
+        const renderPagination = () => {
+            const total = Number(state.pagination.total || 0);
+            const currentPage = Number(state.pagination.current_page || 1);
+            const lastPage = Number(state.pagination.last_page || 1);
+            const perPage = Number(state.pagination.per_page || state.perPage || 10);
+            const start = total === 0 ? 0 : ((currentPage - 1) * perPage) + 1;
+            const end = total === 0 ? 0 : Math.min(currentPage * perPage, total);
+
+            if (gridCount) {
+                gridCount.textContent = `${new Intl.NumberFormat('id-ID').format(total)} data`;
+            }
+
+            if (gridSummary) {
+                gridSummary.textContent = total === 0
+                    ? 'Belum ada client API.'
+                    : `Menampilkan ${new Intl.NumberFormat('id-ID').format(start)}-${new Intl.NumberFormat('id-ID').format(end)} dari ${new Intl.NumberFormat('id-ID').format(total)} client`;
+            }
+
+            if (gridPage) {
+                gridPage.textContent = `Halaman ${currentPage} / ${lastPage}`;
+            }
+
+            if (prevButton) {
+                prevButton.disabled = state.loading || currentPage <= 1;
+            }
+
+            if (nextButton) {
+                nextButton.disabled = state.loading || currentPage >= lastPage;
+            }
+        };
+
+        const loadRows = async () => {
+            state.loading = true;
+            renderRows([]);
+            renderPagination();
+
+            const params = new URLSearchParams({
+                page: String(state.page),
+                per_page: String(state.perPage),
+            });
+
+            if (state.search) {
+                params.set('search', state.search);
+            }
+
+            try {
+                const payload = await fetchJson(`${config.list_endpoint}?${params.toString()}`);
+                state.pagination = payload.meta?.pagination || state.pagination;
+                state.loading = false;
+                renderRows(Array.isArray(payload.data) ? payload.data : []);
+            } catch (errorPayload) {
+                state.loading = false;
+                state.pagination = {
+                    current_page: 1,
+                    last_page: 1,
+                    total: 0,
+                    per_page: state.perPage,
+                };
+                gridBody.innerHTML = `<tr><td colspan="${columns.length + 1}" class="grid-empty">${escapeHtml(extractError(errorPayload))}</td></tr>`;
+            } finally {
+                renderPagination();
+            }
+        };
+
+        const fetchRecord = async (uuid) => {
+            const payload = await fetchJson(`${config.list_endpoint}/${uuid}`);
+            return payload.data || null;
+        };
+
+        const resetForm = () => {
+            if (!form) {
+                return;
+            }
+
+            form.reset();
+            form.querySelector('[name="is_active"]').checked = true;
+            state.mode = 'create';
+            state.activeUuid = null;
+
+            if (formTitle) {
+                formTitle.textContent = 'Tambah Client API';
+            }
+
+            if (formSubtitle) {
+                formSubtitle.textContent = 'Isi metadata integrasi lalu simpan.';
+            }
+
+            if (submitButton) {
+                submitButton.textContent = 'Simpan';
+                submitButton.disabled = false;
+            }
+
+            clearFeedback(formFeedback);
+        };
+
+        const fillForm = (record) => {
+            if (!form) {
+                return;
+            }
+
+            form.querySelector('[name="name"]').value = record.name || '';
+            form.querySelector('[name="code"]').value = record.code || '';
+            form.querySelector('[name="owner_name"]').value = record.owner_name || '';
+            form.querySelector('[name="owner_email"]').value = record.owner_email || '';
+            form.querySelector('[name="rate_limit_per_minute"]').value = record.rate_limit_per_minute || '';
+            form.querySelector('[name="rate_limit_per_day"]').value = record.rate_limit_per_day || '';
+            form.querySelector('[name="expires_at"]').value = toDateTimeInput(record.expires_at);
+            form.querySelector('[name="description"]').value = record.description || '';
+            form.querySelector('[name="allowed_ips"]').value = Array.isArray(record.allowed_ips) ? record.allowed_ips.join('\n') : '';
+            form.querySelector('[name="allowed_origins"]').value = Array.isArray(record.allowed_origins) ? record.allowed_origins.join('\n') : '';
+            form.querySelector('[name="is_active"]').checked = Boolean(record.is_active);
+        };
+
+        const renderDetail = (record) => {
+            if (!viewSubtitle || !viewContent) {
+                return;
+            }
+
+            viewSubtitle.textContent = `${record.name || '-'} · ${record.code || '-'}`;
+
+            const recentTokens = Array.isArray(record.recent_tokens) ? record.recent_tokens : [];
+            const tokenRows = recentTokens.length
+                ? recentTokens.map((token) => `
+                    <tr>
+                        <td>${escapeHtml(formatText(token.name))}</td>
+                        <td class="mono">${escapeHtml((token.abilities || []).join(', ') || '-')}</td>
+                        <td>${escapeHtml(formatDate(token.expires_at))}</td>
+                        <td>${escapeHtml(formatDate(token.created_at))}</td>
+                    </tr>
+                `).join('')
+                : '<tr><td colspan="4" class="empty">Belum ada token yang tercatat untuk client ini.</td></tr>';
+
+            viewContent.innerHTML = `
+                <div class="detail-grid">
+                    <div class="detail-item"><span>Nama Client</span><strong>${escapeHtml(formatText(record.name))}</strong></div>
+                    <div class="detail-item"><span>Code</span><strong class="mono">${escapeHtml(formatText(record.code))}</strong></div>
+                    <div class="detail-item"><span>Owner</span><strong>${escapeHtml(formatText(record.owner_name || '-'))}</strong></div>
+                    <div class="detail-item"><span>Email Owner</span><strong>${escapeHtml(formatText(record.owner_email || '-'))}</strong></div>
+                    <div class="detail-item"><span>Status</span><strong>${record.is_active ? 'Active' : 'Inactive'}</strong></div>
+                    <div class="detail-item"><span>Total Token</span><strong>${escapeHtml(formatText(record.access_tokens_count))}</strong></div>
+                    <div class="detail-item"><span>Rate / Menit</span><strong>${escapeHtml(formatText(record.rate_limit_per_minute))}</strong></div>
+                    <div class="detail-item"><span>Rate / Hari</span><strong>${escapeHtml(formatText(record.rate_limit_per_day))}</strong></div>
+                    <div class="detail-item full"><span>Deskripsi</span><strong>${escapeHtml(formatText(record.description || '-'))}</strong></div>
+                    <div class="detail-item full"><span>Allowed IPs</span><strong>${escapeHtml((record.allowed_ips || []).join(', ') || '-')}</strong></div>
+                    <div class="detail-item full"><span>Allowed Origins</span><strong>${escapeHtml((record.allowed_origins || []).join(', ') || '-')}</strong></div>
+                </div>
+                <section class="detail-section">
+                    <div class="detail-section-head">
+                        <div class="detail-section-title">
+                            <span class="detail-section-icon"><svg class="icon" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="7" ry="3"/><path d="M5 5v14c0 1.7 3.1 3 7 3s7-1.3 7-3V5"/><path d="M5 12c0 1.7 3.1 3 7 3s7-1.3 7-3"/></svg></span>
+                            <div>
+                                <h4>Riwayat Token Terakhir</h4>
+                                <p>Token plaintext tidak ditampilkan ulang, hanya metadata yang disimpan.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="detail-table-wrap">
+                        <table class="detail-record-table">
+                            <thead>
+                                <tr>
+                                    <th>Nama</th>
+                                    <th>Ability</th>
+                                    <th>Expired</th>
+                                    <th>Dibuat</th>
+                                </tr>
+                            </thead>
+                            <tbody>${tokenRows}</tbody>
+                        </table>
+                    </div>
+                </section>
+            `;
+        };
+
+        const openCreate = () => {
+            resetForm();
+            openModal(formModal);
+        };
+
+        const openEdit = async (uuid) => {
+            resetForm();
+            state.mode = 'edit';
+            state.activeUuid = uuid;
+
+            if (formTitle) {
+                formTitle.textContent = 'Edit Client API';
+            }
+
+            if (formSubtitle) {
+                formSubtitle.textContent = 'Perbarui metadata integrasi dan kebijakan akses.';
+            }
+
+            if (submitButton) {
+                submitButton.textContent = 'Simpan Perubahan';
+            }
+
+            openModal(formModal);
+            showFeedback(formFeedback, 'Memuat detail client API...');
+
+            try {
+                const record = await fetchRecord(uuid);
+                fillForm(record);
+                clearFeedback(formFeedback);
+            } catch (errorPayload) {
+                showFeedback(formFeedback, extractError(errorPayload));
+            }
+        };
+
+        const openView = async (uuid) => {
+            if (viewContent) {
+                viewContent.innerHTML = '<div class="grid-loading">Memuat detail client API...</div>';
+            }
+
+            if (viewSubtitle) {
+                viewSubtitle.textContent = 'Memuat data...';
+            }
+
+            openModal(viewModal);
+
+            try {
+                renderDetail(await fetchRecord(uuid));
+            } catch (errorPayload) {
+                if (viewContent) {
+                    viewContent.innerHTML = `<div class="feedback">${escapeHtml(extractError(errorPayload))}</div>`;
+                }
+            }
+        };
+
+        const openTokenModal = async (uuid) => {
+            state.activeTokenUuid = uuid;
+            state.activeTokenValue = '';
+
+            if (tokenForm) {
+                tokenForm.reset();
+                tokenForm.querySelectorAll('[name="abilities[]"]').forEach((input) => {
+                    input.checked = input.value === '*';
+                });
+            }
+
+            clearFeedback(tokenFeedback);
+            if (tokenResult) {
+                tokenResult.hidden = true;
+            }
+
+            if (tokenSecret) {
+                tokenSecret.textContent = '';
+            }
+
+            try {
+                const record = await fetchRecord(uuid);
+                if (tokenSubtitle) {
+                    tokenSubtitle.textContent = `Client ${record.name || '-'} (${record.code || '-'})`;
+                }
+            } catch (errorPayload) {
+                if (tokenSubtitle) {
+                    tokenSubtitle.textContent = extractError(errorPayload);
+                }
+            }
+
+            openModal(tokenModal);
+        };
+
+        const destroyClient = async (uuid) => {
+            const confirmed = window.confirm('Hapus client API ini? Semua token client ini akan ikut dicabut.');
+
+            if (!confirmed) {
+                return;
+            }
+
+            try {
+                await fetchJson(`${config.list_endpoint}/${uuid}`, {
+                    method: 'DELETE',
+                });
+                await loadRows();
+            } catch (errorPayload) {
+                window.alert(extractError(errorPayload));
+            }
+        };
+
+        renderHeader();
+        renderPagination();
+        loadRows();
+
+        gridSearch?.addEventListener('input', (event) => {
+            window.clearTimeout(searchTimer);
+            state.search = event.target.value.trim();
+            searchTimer = window.setTimeout(() => {
+                state.page = 1;
+                loadRows();
+            }, 280);
+        });
+
+        gridPerPage?.addEventListener('change', (event) => {
+            state.perPage = Number(event.target.value || 10);
+            state.page = 1;
+            loadRows();
+        });
+
+        prevButton?.addEventListener('click', () => {
+            if (state.page <= 1) {
+                return;
+            }
+
+            state.page -= 1;
+            loadRows();
+        });
+
+        nextButton?.addEventListener('click', () => {
+            if (state.page >= Number(state.pagination.last_page || 1)) {
+                return;
+            }
+
+            state.page += 1;
+            loadRows();
+        });
+
+        createButton?.addEventListener('click', openCreate);
+
+        root.addEventListener('click', (event) => {
+            const trigger = event.target.closest('[data-api-client-action]');
+
+            if (!trigger) {
+                return;
+            }
+
+            const uuid = trigger.dataset.apiClientUuid;
+            const action = trigger.dataset.apiClientAction;
+
+            if (action === 'view') {
+                openView(uuid);
+            }
+
+            if (action === 'edit') {
+                openEdit(uuid);
+            }
+
+            if (action === 'token') {
+                openTokenModal(uuid);
+            }
+
+            if (action === 'delete') {
+                destroyClient(uuid);
+            }
+        });
+
+        document.querySelectorAll('[data-superadmin-api-client-view-modal] [data-modal-close], [data-superadmin-api-client-form-modal] [data-modal-close], [data-superadmin-api-token-modal] [data-modal-close]').forEach((button) => {
+            button.addEventListener('click', () => {
+                closeModal(viewModal);
+                closeModal(formModal);
+                closeModal(tokenModal);
+            });
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                closeModal(viewModal);
+                closeModal(formModal);
+                closeModal(tokenModal);
+            }
+        });
+
+        form?.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            clearFeedback(formFeedback);
+
+            const payload = {
+                name: form.querySelector('[name="name"]').value.trim(),
+                code: form.querySelector('[name="code"]').value.trim(),
+                owner_name: form.querySelector('[name="owner_name"]').value.trim() || null,
+                owner_email: form.querySelector('[name="owner_email"]').value.trim() || null,
+                description: form.querySelector('[name="description"]').value.trim() || null,
+                allowed_ips: splitLines(form.querySelector('[name="allowed_ips"]').value),
+                allowed_origins: splitLines(form.querySelector('[name="allowed_origins"]').value),
+                rate_limit_per_minute: form.querySelector('[name="rate_limit_per_minute"]').value || null,
+                rate_limit_per_day: form.querySelector('[name="rate_limit_per_day"]').value || null,
+                expires_at: form.querySelector('[name="expires_at"]').value || null,
+                is_active: form.querySelector('[name="is_active"]').checked,
+            };
+
+            submitButton.disabled = true;
+
+            try {
+                const url = state.mode === 'edit' && state.activeUuid
+                    ? `${config.list_endpoint}/${state.activeUuid}`
+                    : config.store_endpoint;
+                const method = state.mode === 'edit' ? 'PATCH' : 'POST';
+
+                await fetchJson(url, {
+                    method,
+                    body: JSON.stringify(payload),
+                });
+
+                closeModal(formModal);
+                resetForm();
+                await loadRows();
+            } catch (errorPayload) {
+                showFeedback(formFeedback, extractError(errorPayload));
+            } finally {
+                submitButton.disabled = false;
+            }
+        });
+
+        tokenForm?.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            clearFeedback(tokenFeedback);
+            if (tokenResult) {
+                tokenResult.hidden = true;
+            }
+
+            const abilities = Array.from(tokenForm.querySelectorAll('[name="abilities[]"]:checked')).map((input) => input.value);
+            const endpoint = String(config.token_endpoint || '').replace('__client__', state.activeTokenUuid || '');
+
+            tokenSubmitButton.disabled = true;
+
+            try {
+                const payload = await fetchJson(endpoint, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        token_name: tokenForm.querySelector('[name="token_name"]').value.trim(),
+                        abilities,
+                        expires_at: tokenForm.querySelector('[name="expires_at"]').value || null,
+                    }),
+                });
+
+                state.activeTokenValue = payload.data?.plain_text_token || '';
+
+                if (tokenSecret) {
+                    tokenSecret.textContent = state.activeTokenValue;
+                }
+
+                if (tokenResult) {
+                    tokenResult.hidden = false;
+                }
+
+                showFeedback(tokenFeedback, payload.message || 'Bearer token berhasil dibuat.', true);
+                await loadRows();
+            } catch (errorPayload) {
+                showFeedback(tokenFeedback, extractError(errorPayload));
+            } finally {
+                tokenSubmitButton.disabled = false;
+            }
+        });
+
+        copyTokenButton?.addEventListener('click', async () => {
+            if (!state.activeTokenValue) {
+                return;
+            }
+
+            try {
+                await navigator.clipboard.writeText(state.activeTokenValue);
+                showFeedback(tokenFeedback, 'Token berhasil disalin ke clipboard.', true);
+            } catch {
+                showFeedback(tokenFeedback, 'Gagal menyalin token. Salin manual dari panel token.', false);
+            }
+        });
+    })();
+</script>
 </body>
 </html>

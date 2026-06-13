@@ -13,6 +13,7 @@ use App\Models\MasterData;
 use App\Models\MasterDataType;
 use App\Models\PersonalAccessToken;
 use App\Models\User;
+use App\Support\MasterData\BridgeModuleCatalog;
 use Illuminate\Database\Connection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Routing\Route;
@@ -51,6 +52,8 @@ class DashboardService
             ],
             'metrics' => $metrics,
             'modules' => $this->modules($metrics, $healthChecks),
+            'infrastructure_domains' => $this->infrastructureDomains(),
+            'bridge_module' => $this->bridgeModule(),
             'entity_types' => $this->entityTypes(),
             'recent_records' => $this->recentMasterData(),
             'recent_mappings' => $this->recentMappings(),
@@ -69,14 +72,7 @@ class DashboardService
     private function healthChecks(): array
     {
         return [
-            $this->databaseCheck(
-                label: 'Database utama',
-                connectionName: config('database.default', 'mysql'),
-            ),
-            $this->databaseCheck(
-                label: 'Database legacy',
-                connectionName: 'legacy',
-            ),
+            ...$this->databaseHealthChecks(),
             [
                 'label' => 'Storage aplikasi',
                 'ok' => is_writable(storage_path('app')),
@@ -103,6 +99,61 @@ class DashboardService
                 'detail' => public_path('storage'),
             ],
         ];
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function databaseHealthChecks(): array
+    {
+        $checks = [];
+        $seenConnections = [];
+
+        foreach (config('infrastructure.connections', []) as $connection) {
+            if (! is_array($connection)) {
+                continue;
+            }
+
+            $name = $connection['connection'] ?? null;
+            $label = $connection['label'] ?? null;
+            $required = (bool) ($connection['required'] ?? false);
+
+            if (! is_string($name) || $name === '' || ! is_string($label) || $label === '') {
+                continue;
+            }
+
+            if (in_array($name, $seenConnections, true)) {
+                continue;
+            }
+
+            $database = config('database.connections.'.$name.'.database');
+
+            if ((! is_string($database) || $database === '') && ! $required) {
+                $checks[] = [
+                    'label' => $label,
+                    'ok' => true,
+                    'detail' => 'Belum dikonfigurasi (opsional)',
+                ];
+            } else {
+                $checks[] = $this->databaseCheck(
+                    label: $label,
+                    connectionName: $name,
+                );
+            }
+
+            $seenConnections[] = $name;
+        }
+
+        $defaultConnection = (string) config('database.default', 'mysql');
+
+        if (! in_array($defaultConnection, $seenConnections, true)) {
+            array_unshift($checks, $this->databaseCheck(
+                label: 'Database Default Aplikasi',
+                connectionName: $defaultConnection,
+            ));
+        }
+
+        return $checks;
     }
 
     /**
@@ -203,6 +254,63 @@ class DashboardService
         } catch (Throwable) {
             return collect();
         }
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function bridgeModule(): array
+    {
+        $recordCount = 0;
+        $activeRecordCount = 0;
+
+        if ($this->tableExists((new MasterData)->getTable())) {
+            try {
+                $recordCount = MasterData::query()->where('entity_type', 'bridge')->count();
+                $activeRecordCount = MasterData::query()->where('entity_type', 'bridge')->where('status', 'active')->count();
+            } catch (Throwable) {
+                $recordCount = 0;
+                $activeRecordCount = 0;
+            }
+        }
+
+        return [
+            ...BridgeModuleCatalog::module(),
+            'record_count' => $recordCount,
+            'active_record_count' => $activeRecordCount,
+            'source_system' => BridgeModuleCatalog::sourceSystem(),
+            'source_tables' => BridgeModuleCatalog::sourceTables(),
+            'searchable_fields' => BridgeModuleCatalog::searchableFields(),
+            'visible_fields' => BridgeModuleCatalog::visibleFields(),
+            'filters' => BridgeModuleCatalog::filters(),
+            'fields' => BridgeModuleCatalog::fields(),
+            'endpoints' => BridgeModuleCatalog::endpoints(),
+        ];
+    }
+
+    /**
+     * @return \Illuminate\Support\Collection<int, array<string, mixed>>
+     */
+    private function infrastructureDomains(): Collection
+    {
+        return collect(config('infrastructure.connections', []))
+            ->filter(fn (mixed $connection): bool => is_array($connection))
+            ->map(function (array $connection): array {
+                $name = (string) ($connection['connection'] ?? '');
+                $database = config('database.connections.'.$name.'.database');
+
+                return [
+                    'key' => $connection['key'] ?? $name,
+                    'label' => $connection['label'] ?? $name,
+                    'connection' => $name,
+                    'database' => is_string($database) && $database !== '' ? $database : null,
+                    'domain' => $connection['domain'] ?? null,
+                    'description' => $connection['description'] ?? null,
+                    'required' => (bool) ($connection['required'] ?? false),
+                    'configured' => is_string($database) && $database !== '',
+                ];
+            })
+            ->values();
     }
 
     /**

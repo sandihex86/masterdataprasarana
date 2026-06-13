@@ -1,0 +1,102 @@
+<?php
+
+return [
+    'connections' => [
+        [
+            'key' => 'core',
+            'label' => 'Database Core',
+            'connection' => 'core',
+            'domain' => 'core_application',
+            'description' => 'Auth, RBAC, audit, API client, import batch, monitoring, dan workflow aplikasi inti.',
+            'required' => true,
+        ],
+        [
+            'key' => 'reference',
+            'label' => 'Database Reference',
+            'connection' => 'reference',
+            'domain' => 'shared_reference',
+            'description' => 'Data referensi lintas modul seperti provinsi, wilayah, lintas, stasiun, dan taxonomy bersama.',
+            'required' => false,
+        ],
+        [
+            'key' => 'bridge',
+            'label' => 'Database Jembatan',
+            'connection' => 'bridge',
+            'domain' => 'jembatan',
+            'description' => 'Source of truth modul Jembatan dan seluruh tabel source/survey/detail jembatan.',
+            'required' => true,
+        ],
+        [
+            'key' => 'track',
+            'label' => 'Database Jalur',
+            'connection' => 'track',
+            'domain' => 'jalur',
+            'description' => 'Bounded context untuk modul Jalur dan data operasionalnya.',
+            'required' => false,
+        ],
+        [
+            'key' => 'operational_facility',
+            'label' => 'Database Fasilitas Operasional',
+            'connection' => 'operational_facility',
+            'domain' => 'fasilitas_operasional',
+            'description' => 'Bounded context untuk modul Fasilitas Operasional.',
+            'required' => false,
+        ],
+        [
+            'key' => 'certificate',
+            'label' => 'Database Sertifikat',
+            'connection' => 'certificate',
+            'domain' => 'sertifikat',
+            'description' => 'Bounded context untuk modul Sertifikat dan lifecycle dokumennya.',
+            'required' => false,
+        ],
+        [
+            'key' => 'warehouse',
+            'label' => 'Database Gudang',
+            'connection' => 'warehouse',
+            'domain' => 'gudang',
+            'description' => 'Bounded context untuk modul Gudang dan stok/inventori terkait.',
+            'required' => false,
+        ],
+        [
+            'key' => 'reporting',
+            'label' => 'Database Reporting',
+            'connection' => 'reporting',
+            'domain' => 'reporting',
+            'description' => 'Read model, projection, dan agregasi lintas bounded context untuk dashboard cepat.',
+            'required' => false,
+        ],
+    ],
+    'domains' => [
+        'jembatan' => [
+            'label' => 'Jembatan',
+            'connection' => 'bridge',
+            'source_of_truth' => 'database bridge',
+            'shared_reference_connection' => 'reference',
+        ],
+        'jalur' => [
+            'label' => 'Jalur',
+            'connection' => 'track',
+            'source_of_truth' => 'database track',
+            'shared_reference_connection' => 'reference',
+        ],
+        'fasilitas_operasional' => [
+            'label' => 'Fasilitas Operasional',
+            'connection' => 'operational_facility',
+            'source_of_truth' => 'database operational_facility',
+            'shared_reference_connection' => 'reference',
+        ],
+        'sertifikat' => [
+            'label' => 'Sertifikat',
+            'connection' => 'certificate',
+            'source_of_truth' => 'database certificate',
+            'shared_reference_connection' => 'reference',
+        ],
+        'gudang' => [
+            'label' => 'Gudang',
+            'connection' => 'warehouse',
+            'source_of_truth' => 'database warehouse',
+            'shared_reference_connection' => 'reference',
+        ],
+    ],
+];

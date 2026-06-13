@@ -13,7 +13,7 @@ Karakter utama:
 - API: REST `api/v1/*`
 - Auth web: session auth
 - Auth API: Sanctum bearer token
-- Sumber data: database utama aplikasi dan koneksi database legacy
+- Sumber data: arsitektur multi-database bounded context dengan alias kompatibilitas legacy
 - Dokumentasi API: OpenAPI attributes + Swagger UI kustom
 
 ## Lapisan Sistem
@@ -34,6 +34,8 @@ Flow web saat ini:
 3. User terautentikasi masuk ke `/dashboard`
 4. Swagger docs juga berada di belakang auth web
 
+Dashboard web saat ini memakai satu shell Blade dengan navigasi halaman internal berbasis route terpisah, termasuk halaman master data mandiri per submenu seperti `Jembatan`, `Jalur`, `Fasilitas Operasional`, `Sertifikat`, dan `Gudang`.
+
 Flow API saat ini:
 
 1. Request masuk ke `api/v1/*`
@@ -48,7 +50,7 @@ Flow API saat ini:
 Controller bertugas tipis:
 
 - `AuthenticatedSessionController`: login/logout web + verifikasi reCAPTCHA
-- `DashboardController`: menyajikan dashboard dan snapshot sistem
+- `DashboardController`: menyajikan dashboard, halaman master data per submenu, endpoint AJAX grid master data internal, dan snapshot sistem
 - `MasterDataController`: CRUD master data
 - `MasterDataTypeController`: baca tipe master data dan record per tipe
 - `ImportMappingController`: CRUD mapping dan preview transformasi
@@ -87,7 +89,38 @@ Service utama yang membentuk inti aplikasi:
   Registry transformasi yang diizinkan pada import mapping.
 
 - `LegacyDatabaseService`
-  Adapter untuk membaca metadata dan sample row dari database legacy.
+  Adapter untuk membaca metadata dan sample row dari koneksi integrasi legacy. Dalam arsitektur target, koneksi ini dipertahankan sebagai alias kompatibilitas dan bukan lagi pusat data semua modul.
+
+## Arsitektur Database
+
+Arsitektur target aplikasi ini adalah **multi-database bounded context** dalam satu codebase Laravel.
+
+Koneksi utama yang kini disiapkan:
+
+- `core`
+  Untuk auth, RBAC, audit log, API client, import batch, request log, dan workflow aplikasi inti.
+- `reference`
+  Untuk data referensi lintas domain seperti provinsi, wilayah kerja, wilayah operasi, lintas, stasiun, dan taxonomy bersama.
+- `bridge`
+  Untuk seluruh source dan transaksi modul Jembatan.
+- `track`
+  Untuk bounded context modul Jalur.
+- `operational_facility`
+  Untuk bounded context modul Fasilitas Operasional.
+- `certificate`
+  Untuk bounded context modul Sertifikat.
+- `warehouse`
+  Untuk bounded context modul Gudang.
+- `reporting`
+  Untuk projection/read model lintas domain dan kebutuhan dashboard cepat.
+- `legacy`
+  Alias kompatibilitas untuk source lama atau integrasi lama yang belum dimigrasikan ke penamaan domain eksplisit.
+
+Prinsip ownership:
+
+- Setiap domain hanya menulis ke database miliknya sendiri.
+- `master_data` bukan tempat seluruh transaksi domain, melainkan lapisan canonical/reference jika benar-benar dibutuhkan lintas domain.
+- Integrasi lintas domain sebaiknya memakai service layer, event sinkronisasi, atau projection/read model, bukan join antar database di layer UI.
 
 - `AuditService`
   Mencatat jejak perubahan create/update/delete/restore.
@@ -121,8 +154,8 @@ Model utama:
 
 - Session-based auth
 - Login form memakai email + password
-- Login kini mendukung Google reCAPTCHA v2 checkbox
-- Route dashboard sistem dibatasi role `superadmin` dan `admin`
+- Login kini mendukung Google reCAPTCHA dengan mode v2 atau v3 sesuai konfigurasi
+- Route dashboard sistem dibatasi role `superadmin`
 
 ### API
 
@@ -182,13 +215,13 @@ Respons API juga membawa:
 
 ## Integrasi Legacy
 
-Database legacy dipakai untuk:
+Koneksi legacy/integrasi dipakai untuk:
 
 - inspeksi struktur tabel
 - validasi source table/column
 - sampling row untuk preview mapping
 
-Layer integrasi ini dipusatkan di `LegacyDatabaseService`, sehingga controller dan service domain tidak berinteraksi langsung dengan query mentah legacy.
+Layer integrasi ini dipusatkan di `LegacyDatabaseService`, sehingga controller dan service domain tidak berinteraksi langsung dengan query mentah source. Untuk modul Jembatan, source of truth kini diarahkan ke database domain `bridge`.
 
 ## Dokumentasi API
 
@@ -200,7 +233,7 @@ OpenAPI dibangun dari attribute PHP di controller dan schema class:
 Swagger UI kustom:
 
 - route: `/docs/swagger`
-- JSON spec: route `l5-swagger.default.docs`
+- JSON spec: route `docs.openapi`
 
 Swagger saat ini berada di belakang autentikasi web.
 
@@ -216,7 +249,16 @@ Dashboard internal bukan sekadar tampilan statis. `DashboardService` menyusun da
 - daftar route API aktif
 - ringkasan recent data/mapping/import/client/audit/request
 
-Dengan begitu dashboard berfungsi sebagai ringkasan operasional dan observability ringan.
+Untuk area master data internal, dashboard juga menyediakan grid interaktif berbasis JavaScript pada route web `/dashboard/master-data/{entity}` dengan endpoint session-auth untuk list, detail, create, dan update record per entitas.
+
+Visibilitas dashboard saat ini dibedakan per role:
+
+- `viewer`: dokumentasi API
+- `operator` dan `verifikator`: dokumentasi API
+- `admin`: dokumentasi API, master data, import dan mapping, monitoring
+- `superadmin`: seluruh panel termasuk diagnostik internal
+
+Dengan begitu dashboard berfungsi sebagai ringkasan operasional dan observability ringan sesuai hak akses pengguna.
 
 ## Konfigurasi Penting
 

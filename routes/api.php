@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Api\V1\BridgeController;
+use App\Http\Controllers\Api\V1\BridgeSourceTableController;
 use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\ImportMappingController;
 use App\Http\Controllers\Api\V1\MasterDataController;
@@ -12,6 +14,47 @@ Route::prefix('v1')->group(function (): void {
     Route::get('/health/ready', [HealthController::class, 'ready'])->name('api.v1.health.ready');
 
     Route::middleware(['auth:sanctum', 'api.actor'])->group(function (): void {
+        Route::get('/bridges/metadata', [BridgeController::class, 'metadata'])
+            ->middleware('abilities:master-data:read')
+            ->name('api.v1.bridges.metadata');
+        Route::get('/bridges', [BridgeController::class, 'index'])
+            ->middleware('abilities:master-data:read')
+            ->name('api.v1.bridges.index');
+        Route::post('/bridges', [BridgeController::class, 'store'])
+            ->middleware('abilities:master-data:write')
+            ->name('api.v1.bridges.store');
+        Route::get('/bridges/{bridgeUniqid}', [BridgeController::class, 'show'])
+            ->middleware('abilities:master-data:read')
+            ->name('api.v1.bridges.show');
+        Route::match(['put', 'patch'], '/bridges/{bridgeUniqid}', [BridgeController::class, 'update'])
+            ->middleware('abilities:master-data:write')
+            ->name('api.v1.bridges.update');
+        Route::delete('/bridges/{bridgeUniqid}', [BridgeController::class, 'destroy'])
+            ->middleware('abilities:master-data:delete')
+            ->name('api.v1.bridges.destroy');
+
+        Route::get('/bridge-source/tables', [BridgeSourceTableController::class, 'catalog'])
+            ->middleware('abilities:master-data:read')
+            ->name('api.v1.bridge-source.tables.catalog');
+        Route::get('/bridge-source/tables/{table}/schema', [BridgeSourceTableController::class, 'schema'])
+            ->middleware('abilities:master-data:read')
+            ->name('api.v1.bridge-source.tables.schema');
+        Route::get('/bridge-source/tables/{table}/records', [BridgeSourceTableController::class, 'index'])
+            ->middleware('abilities:master-data:read')
+            ->name('api.v1.bridge-source.tables.records.index');
+        Route::post('/bridge-source/tables/{table}/records', [BridgeSourceTableController::class, 'store'])
+            ->middleware('abilities:master-data:write')
+            ->name('api.v1.bridge-source.tables.records.store');
+        Route::get('/bridge-source/tables/{table}/records/{rowKey}', [BridgeSourceTableController::class, 'show'])
+            ->middleware('abilities:master-data:read')
+            ->name('api.v1.bridge-source.tables.records.show');
+        Route::match(['put', 'patch'], '/bridge-source/tables/{table}/records/{rowKey}', [BridgeSourceTableController::class, 'update'])
+            ->middleware('abilities:master-data:write')
+            ->name('api.v1.bridge-source.tables.records.update');
+        Route::delete('/bridge-source/tables/{table}/records/{rowKey}', [BridgeSourceTableController::class, 'destroy'])
+            ->middleware('abilities:master-data:delete')
+            ->name('api.v1.bridge-source.tables.records.destroy');
+
         Route::get('/master-data', [MasterDataController::class, 'index'])
             ->middleware('abilities:master-data:read')
             ->name('api.v1.master-data.index');

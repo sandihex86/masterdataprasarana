@@ -18,8 +18,8 @@ class ImportMappingApiTest extends TestCase
     {
         parent::setUp();
 
-        if (! Schema::connection('legacy')->hasTable('legacy_stations')) {
-            Schema::connection('legacy')->create('legacy_stations', function (Blueprint $table): void {
+        if (! Schema::connection('bridge')->hasTable('legacy_stations')) {
+            Schema::connection('bridge')->create('legacy_stations', function (Blueprint $table): void {
                 $table->unsignedBigInteger('id_stasiun')->primary();
                 $table->string('kode_stasiun', 20);
                 $table->string('nama_stasiun', 191);
@@ -33,8 +33,8 @@ class ImportMappingApiTest extends TestCase
             });
         }
 
-        DB::connection('legacy')->table('legacy_stations')->truncate();
-        DB::connection('legacy')->table('legacy_stations')->insert([
+        DB::connection('bridge')->table('legacy_stations')->truncate();
+        DB::connection('bridge')->table('legacy_stations')->insert([
             [
                 'id_stasiun' => 1,
                 'kode_stasiun' => ' gmr ',

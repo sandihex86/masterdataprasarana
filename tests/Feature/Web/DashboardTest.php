@@ -28,11 +28,10 @@ class DashboardTest extends TestCase
 
         $this->get('/login')
             ->assertOk()
-            ->assertSee('Master Data Prasarana DJKA')
+            ->assertSee('Master Data Prasarana')
             ->assertSee('Masuk')
-            ->assertSee('reCAPTCHA v3 berjalan otomatis')
-            ->assertDontSee('example.com')
             ->assertSee('action="/login"', false)
+            ->assertDontSee('example.com')
             ->assertDontSee('https://prasarana.labdata.id')
             ->assertDontSee('Masuk ke sistem.');
     }
@@ -71,9 +70,9 @@ class DashboardTest extends TestCase
             ->assertOk()
             ->assertSee('Dashboard')
             ->assertSee('Status Modul')
-            ->assertSee('Swagger Docs')
+            ->assertSee('Dokumentasi API')
             ->assertSee('Admin')
-            ->assertSee('Client API');
+            ->assertSee('Monitoring');
     }
 
     public function test_dashboard_system_route_requires_authentication(): void
@@ -85,7 +84,7 @@ class DashboardTest extends TestCase
     public function test_dashboard_system_route_returns_json_overview_for_authenticated_user(): void
     {
         $this->seed();
-        $user = User::factory()->admin()->create();
+        $user = User::factory()->superadmin()->create();
 
         $this->actingAs($user)
             ->getJson('/dashboard/system')
@@ -97,9 +96,11 @@ class DashboardTest extends TestCase
                 'health' => ['status', 'checks'],
                 'metrics',
                 'modules',
+                'infrastructure_domains',
                 'user_roles',
                 'api_routes',
-            ]);
+            ])
+            ->assertJsonPath('infrastructure_domains.0.connection', 'core');
     }
 
     public function test_non_privileged_user_cannot_access_system_snapshot(): void
@@ -115,6 +116,9 @@ class DashboardTest extends TestCase
     {
         $this->get('/docs/swagger')
             ->assertRedirect('/login');
+
+        $this->get('/docs/openapi')
+            ->assertRedirect('/login');
     }
 
     public function test_authenticated_user_can_open_swagger_and_openapi_json(): void
@@ -125,15 +129,14 @@ class DashboardTest extends TestCase
         $this->actingAs($user)
             ->get('/docs/swagger')
             ->assertOk()
-            ->assertSee('Master Data Prasarana DJKA API Docs')
+            ->assertSee('Master Data Prasarana API Docs')
             ->assertSee('/docs/openapi');
 
         $this->actingAs($user)
             ->getJson('/docs/openapi')
             ->assertOk()
             ->assertJsonPath('openapi', '3.0.0')
-            ->assertJsonPath('paths./api/v1/health.get.summary', 'Ringkasan health dan readiness aplikasi')
-            ->assertJsonPath('paths./api/v1/master-data.get.summary', 'Daftar master data');
+            ->assertJsonPath('paths./api/v1/health.get.summary', 'Ringkasan health dan readiness aplikasi');
     }
 
     public function test_seeder_does_not_create_dummy_users(): void
