@@ -1841,8 +1841,11 @@
 
         .secret-code {
             display: block;
+            width: 100%;
+            min-height: 92px;
             padding: 14px 16px;
             border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
             background: #111827;
             color: #f8fafc;
             overflow: auto;
@@ -1850,6 +1853,9 @@
             font-size: 0.84rem;
             line-height: 1.55;
             word-break: break-all;
+            resize: vertical;
+            user-select: text;
+            white-space: pre-wrap;
         }
 
         .logout-form {
@@ -3359,7 +3365,7 @@
                                     <strong>Bearer Token Baru</strong>
                                     <span class="table-note">Token hanya muncul satu kali. Simpan segera setelah dibuat.</span>
                                 </div>
-                                <code class="secret-code" data-api-token-secret></code>
+                                <textarea class="secret-code" data-api-token-secret readonly rows="3" spellcheck="false" aria-label="Bearer token baru"></textarea>
                                 <div class="toolbar-actions">
                                     <button class="action-button" type="button" data-copy-api-token>Salin Token</button>
                                 </div>
@@ -7116,7 +7122,7 @@
             }
 
             if (tokenSecret) {
-                tokenSecret.textContent = '';
+                tokenSecret.value = '';
             }
 
             try {
@@ -7298,7 +7304,11 @@
                 state.activeTokenValue = payload.data?.plain_text_token || '';
 
                 if (tokenSecret) {
-                    tokenSecret.textContent = state.activeTokenValue;
+                    tokenSecret.value = state.activeTokenValue;
+                    requestAnimationFrame(() => {
+                        tokenSecret.focus();
+                        tokenSecret.select();
+                    });
                 }
 
                 if (tokenResult) {
@@ -7320,9 +7330,29 @@
             }
 
             try {
-                await navigator.clipboard.writeText(state.activeTokenValue);
+                if (navigator.clipboard?.writeText) {
+                    await navigator.clipboard.writeText(state.activeTokenValue);
+                } else {
+                    throw new Error('Clipboard API unavailable');
+                }
                 showFeedback(tokenFeedback, 'Token berhasil disalin ke clipboard.', true);
             } catch {
+                if (tokenSecret) {
+                    tokenSecret.focus();
+                    tokenSecret.select();
+
+                    try {
+                        document.execCommand('copy');
+                        showFeedback(tokenFeedback, 'Token berhasil disalin ke clipboard.', true);
+
+                        return;
+                    } catch {
+                        showFeedback(tokenFeedback, 'Token sudah diblok. Tekan Ctrl+C atau Cmd+C untuk menyalin.', false);
+
+                        return;
+                    }
+                }
+
                 showFeedback(tokenFeedback, 'Gagal menyalin token. Salin manual dari panel token.', false);
             }
         });

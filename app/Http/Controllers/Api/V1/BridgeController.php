@@ -3,14 +3,17 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\ListBridgeMasterRequest;
 use App\Http\Requests\Api\V1\ListBridgeSourceApiRequest;
 use App\Http\Requests\Api\V1\StoreBridgeSourceRecordRequest;
 use App\Http\Requests\Api\V1\UpdateBridgeSourceRecordRequest;
 use App\Http\Resources\Api\V1\BridgeSourceDetailResource;
 use App\Http\Resources\Api\V1\BridgeSourceSummaryResource;
+use App\Services\BridgeService;
 use App\Services\BridgeSource\BridgeSourceCrudService;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Illuminate\Validation\ValidationException;
 use OpenApi\Attributes as OA;
 
@@ -18,14 +21,97 @@ class BridgeController extends Controller
 {
     public function __construct(
         private readonly BridgeSourceCrudService $bridgeSourceCrudService,
+        private readonly BridgeService $bridgeService,
     ) {}
+
+    #[OA\Get(
+        path: '/api/v1/master/bridges',
+        operationId: 'bridgeMasterIndex',
+        summary: 'Mengambil daftar master data jembatan',
+        description: 'Endpoint ini digunakan untuk mengambil daftar master data jembatan dari tabel m_jembatan. Endpoint ini mendukung pagination, pencarian, dan filter wilayah operasi, wilayah kerja, lintas, provinsi, kabupaten/kota, jenis jembatan, status aktif, dan status data untuk kebutuhan referensi aplikasi lain.',
+        tags: ['Bridges'],
+        security: [['sanctumBearer' => []]],
+        parameters: [
+            new OA\Parameter(name: 'page', in: 'query', required: false, schema: new OA\Schema(type: 'integer', example: 1)),
+            new OA\Parameter(name: 'limit', in: 'query', required: false, schema: new OA\Schema(type: 'integer', example: 100)),
+            new OA\Parameter(name: 'keyword', in: 'query', required: false, schema: new OA\Schema(type: 'string', example: 'BH 334')),
+            new OA\Parameter(name: 'wil_op', in: 'query', required: false, schema: new OA\Schema(type: 'string')),
+            new OA\Parameter(name: 'wil_ker', in: 'query', required: false, schema: new OA\Schema(type: 'string')),
+            new OA\Parameter(name: 'lintas', in: 'query', required: false, schema: new OA\Schema(type: 'string')),
+            new OA\Parameter(name: 'id_prov', in: 'query', required: false, schema: new OA\Schema(type: 'string')),
+            new OA\Parameter(name: 'id_kabkot', in: 'query', required: false, schema: new OA\Schema(type: 'string')),
+            new OA\Parameter(name: 'jenis', in: 'query', required: false, schema: new OA\Schema(type: 'string')),
+            new OA\Parameter(name: 'active', in: 'query', required: false, schema: new OA\Schema(type: 'integer', example: 1)),
+            new OA\Parameter(name: 'statusdata', in: 'query', required: false, schema: new OA\Schema(type: 'integer', example: 1)),
+        ],
+        responses: [
+            new OA\Response(response: 200, description: 'Data berhasil diambil', content: new OA\JsonContent(ref: '#/components/schemas/ApiSuccessResponse')),
+            new OA\Response(response: 400, description: 'Input tidak valid', content: new OA\JsonContent(ref: '#/components/schemas/ApiErrorResponse')),
+            new OA\Response(response: 404, description: 'Data tidak ditemukan', content: new OA\JsonContent(ref: '#/components/schemas/ApiErrorResponse')),
+            new OA\Response(response: 500, description: 'Server error', content: new OA\JsonContent(ref: '#/components/schemas/ApiErrorResponse')),
+        ]
+    )]
+    public function masterIndex(ListBridgeMasterRequest $request): JsonResponse
+    {
+        $records = $this->bridgeService->paginate($request->validated());
+
+        return ApiResponse::paginated(
+            'Data jembatan berhasil diambil.',
+            $records->items(),
+            $records,
+        );
+    }
+
+    #[OA\Get(
+        path: '/api/v1/master/bridges/{kode_jembatan}',
+        operationId: 'bridgeMasterShow',
+        summary: 'Mengambil detail satu jembatan',
+        description: 'Endpoint ini mengambil detail satu jembatan berdasarkan kode_jembatan dari kolom m_jembatan.uniqid, termasuk profil singkat, nilai kondisi terakhir, perawatan terakhir, dan survey terakhir bila tersedia.',
+        tags: ['Bridges'],
+        security: [['sanctumBearer' => []]],
+        parameters: [
+            new OA\Parameter(name: 'kode_jembatan', in: 'path', required: true, schema: new OA\Schema(type: 'string', example: '6498347da7db7')),
+        ],
+        responses: [
+            new OA\Response(response: 200, description: 'Data berhasil diambil', content: new OA\JsonContent(ref: '#/components/schemas/ApiSuccessResponse')),
+            new OA\Response(response: 400, description: 'Input tidak valid', content: new OA\JsonContent(ref: '#/components/schemas/ApiErrorResponse')),
+            new OA\Response(response: 404, description: 'Data tidak ditemukan', content: new OA\JsonContent(ref: '#/components/schemas/ApiErrorResponse')),
+            new OA\Response(response: 500, description: 'Server error', content: new OA\JsonContent(ref: '#/components/schemas/ApiErrorResponse')),
+        ]
+    )]
+    public function masterShow(string $kodeJembatan): JsonResponse
+    {
+        $record = $this->bridgeService->findDetail($kodeJembatan);
+
+        if ($record === null) {
+            throw new NotFoundHttpException('Data jembatan tidak ditemukan.');
+        }
+
+        return ApiResponse::success('Data jembatan berhasil diambil.', $record);
+    }
+
+    public function byBridgeNumber(string $noBh): JsonResponse
+    {
+        return ApiResponse::success(
+            'Data jembatan berdasarkan nomor BH berhasil diambil.',
+            $this->bridgeService->byBridgeNumber($noBh),
+        );
+    }
+
+    public function masterSearch(ListBridgeMasterRequest $request): JsonResponse
+    {
+        return ApiResponse::success(
+            'Data pencarian jembatan berhasil diambil.',
+            $this->bridgeService->search($request->validated()),
+        );
+    }
 
     #[OA\Get(
         path: '/api/v1/bridges/metadata',
         operationId: 'bridgeSourceMetadata',
         summary: 'Metadata source modul Jembatan',
         description: 'Ringkasan profesional untuk modul source Jembatan berbasis tabel `m_jembatan` beserta relasi profil, bentang, struktur bawah, pelindung, asesmen, dan tabel lookup. Endpoint ini dipakai client untuk memahami struktur data, relasi, dan endpoint CRUD yang tersedia pada API v1.',
-        tags: ['Bridge Source'],
+        tags: ['Bridges'],
         security: [['sanctumBearer' => []]],
         responses: [
             new OA\Response(
@@ -80,7 +166,7 @@ class BridgeController extends Controller
         operationId: 'bridgeSourceIndex',
         summary: 'Daftar source data Jembatan',
         description: 'Mengembalikan daftar ringkas source data jembatan dari tabel `m_jembatan`, lengkap dengan route summary, wilayah kerja, jumlah relasi aktif, total panjang profil, dan asesmen total untuk konsumsi aplikasi utama.',
-        tags: ['Bridge Source'],
+        tags: ['Bridges'],
         security: [['sanctumBearer' => []]],
         parameters: [
             new OA\Parameter(name: 'search', in: 'query', required: false, schema: new OA\Schema(type: 'string')),
@@ -127,7 +213,7 @@ class BridgeController extends Controller
         operationId: 'bridgeSourceStore',
         summary: 'Tambah source data jembatan',
         description: 'Membuat data induk source jembatan baru pada tabel `m_jembatan`, sekaligus dapat menyimpan profil, bentang, struktur bawah, pelindung, dan asesmen total dalam satu payload.',
-        tags: ['Bridge Source'],
+        tags: ['Bridges'],
         security: [['sanctumBearer' => []]],
         requestBody: new OA\RequestBody(
             required: true,
@@ -167,7 +253,7 @@ class BridgeController extends Controller
         operationId: 'bridgeSourceShow',
         summary: 'Detail source data satu jembatan',
         description: 'Menampilkan detail penuh source data jembatan berdasarkan `uniqid`, termasuk identitas, kewilayahan, profil struktur, bentang, struktur bawah, pelindung, asesmen total, media, dan atribut source tambahan dari tabel induk.',
-        tags: ['Bridge Source'],
+        tags: ['Bridges'],
         security: [['sanctumBearer' => []]],
         parameters: [
             new OA\Parameter(name: 'bridgeUniqid', in: 'path', required: true, schema: new OA\Schema(type: 'string', example: '6498347da7db7')),
@@ -210,7 +296,7 @@ class BridgeController extends Controller
         operationId: 'bridgeSourceUpdate',
         summary: 'Perbarui source data jembatan',
         description: 'Memperbarui source data jembatan berdasarkan `uniqid`. Payload mendukung update parsial untuk tabel induk maupun relasi utama seperti profil, bentang, struktur bawah, pelindung, dan asesmen.',
-        tags: ['Bridge Source'],
+        tags: ['Bridges'],
         security: [['sanctumBearer' => []]],
         parameters: [
             new OA\Parameter(name: 'bridgeUniqid', in: 'path', required: true, schema: new OA\Schema(type: 'string', example: '6498347da7db7')),
@@ -252,7 +338,7 @@ class BridgeController extends Controller
         operationId: 'bridgeSourceDestroy',
         summary: 'Hapus source data jembatan',
         description: 'Melakukan penghapusan logis pada source data jembatan dengan menandai `deleted_at`, `active`, `status`, dan `statusdata` pada tabel induk.',
-        tags: ['Bridge Source'],
+        tags: ['Bridges'],
         security: [['sanctumBearer' => []]],
         parameters: [
             new OA\Parameter(name: 'bridgeUniqid', in: 'path', required: true, schema: new OA\Schema(type: 'string', example: '6498347da7db7')),

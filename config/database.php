@@ -3,6 +3,22 @@
 use Illuminate\Support\Str;
 use Pdo\Mysql;
 
+$blockedNonTestingDatabases = ['prasarana_test', 'prasarana_testing'];
+$assertNotTestingDatabase = static function (?string $database, string $envKey) use ($blockedNonTestingDatabases): void {
+    if (env('APP_ENV') === 'testing' || $database === null || $database === '') {
+        return;
+    }
+
+    if (in_array(Str::lower($database), $blockedNonTestingDatabases, true)) {
+        throw new RuntimeException("Database [{$database}] dari [{$envKey}] hanya boleh dipakai saat APP_ENV=testing.");
+    }
+};
+
+$assertNotTestingDatabase(env('DB_DATABASE'), 'DB_DATABASE');
+$assertNotTestingDatabase(env('CORE_DB_DATABASE'), 'CORE_DB_DATABASE');
+$assertNotTestingDatabase(env('REFERENCE_DB_DATABASE'), 'REFERENCE_DB_DATABASE');
+$assertNotTestingDatabase(env('BRIDGE_DB_DATABASE'), 'BRIDGE_DB_DATABASE');
+
 $mysqlConnection = static function (string $prefix, ?string $fallbackPrefix = null): array {
     $databaseDefault = $prefix === 'DB' ? 'laravel' : '';
     $usernameDefault = $prefix === 'DB' ? 'root' : '';

@@ -25,7 +25,7 @@ class BridgeSourceTableController extends Controller
         operationId: 'bridgeSourceTableCatalog',
         summary: 'Katalog tabel source bridge CRUD',
         description: 'Mengembalikan daftar tabel source/lookup yang diizinkan untuk API CRUD modul Jembatan, termasuk endpoint schema dan record pada masing-masing tabel.',
-        tags: ['Bridge Source Tables'],
+        tags: ['Bridges'],
         security: [['sanctumBearer' => []]],
         responses: [
             new OA\Response(
@@ -56,7 +56,7 @@ class BridgeSourceTableController extends Controller
         operationId: 'bridgeSourceTableSchema',
         summary: 'Struktur data satu tabel source bridge',
         description: 'Menampilkan struktur kolom, primary key, unique key, required columns, dan index dari satu tabel source bridge seperti `m_kabkot`, `m_lintas`, `m_stasiun`, dan lainnya.',
-        tags: ['Bridge Source Tables'],
+        tags: ['Bridges'],
         security: [['sanctumBearer' => []]],
         parameters: [
             new OA\Parameter(name: 'table', in: 'path', required: true, schema: new OA\Schema(type: 'string', example: 'm_kabkot')),
@@ -90,7 +90,7 @@ class BridgeSourceTableController extends Controller
         operationId: 'bridgeSourceTableRecordIndex',
         summary: 'Daftar record pada tabel source bridge',
         description: 'Mengambil daftar record paginasi dari tabel source bridge yang diizinkan untuk API CRUD, lengkap dengan `row_key` dan payload data mentah setiap baris.',
-        tags: ['Bridge Source Tables'],
+        tags: ['Bridges'],
         security: [['sanctumBearer' => []]],
         parameters: [
             new OA\Parameter(name: 'table', in: 'path', required: true, schema: new OA\Schema(type: 'string', example: 'm_wilayah_kerja')),
@@ -138,7 +138,7 @@ class BridgeSourceTableController extends Controller
         operationId: 'bridgeSourceTableRecordStore',
         summary: 'Tambah record ke tabel source bridge',
         description: 'Membuat record baru pada tabel source/lookup bridge yang diizinkan oleh sistem. Payload dikirim dalam objek `data` dan akan difilter berdasarkan kolom tabel aktual.',
-        tags: ['Bridge Source Tables'],
+        tags: ['Bridges'],
         security: [['sanctumBearer' => []]],
         parameters: [
             new OA\Parameter(name: 'table', in: 'path', required: true, schema: new OA\Schema(type: 'string', example: 'm_wilayah_kerja')),
@@ -179,7 +179,7 @@ class BridgeSourceTableController extends Controller
         operationId: 'bridgeSourceTableRecordShow',
         summary: 'Detail satu record tabel source bridge',
         description: 'Mengambil satu record dari tabel source bridge berdasarkan `row_key` yang diselesaikan dari kolom `uniqid`, `kode`, `uuid`, `code`, `id`, atau `nama` bila tersedia.',
-        tags: ['Bridge Source Tables'],
+        tags: ['Bridges'],
         security: [['sanctumBearer' => []]],
         parameters: [
             new OA\Parameter(name: 'table', in: 'path', required: true, schema: new OA\Schema(type: 'string', example: 'm_wilayah_kerja')),
@@ -214,7 +214,7 @@ class BridgeSourceTableController extends Controller
         operationId: 'bridgeSourceTableRecordUpdate',
         summary: 'Perbarui record tabel source bridge',
         description: 'Memperbarui satu record dari tabel source/lookup bridge yang diizinkan menggunakan payload parsial `data`.',
-        tags: ['Bridge Source Tables'],
+        tags: ['Bridges'],
         security: [['sanctumBearer' => []]],
         parameters: [
             new OA\Parameter(name: 'table', in: 'path', required: true, schema: new OA\Schema(type: 'string', example: 'm_wilayah_kerja')),
@@ -255,7 +255,7 @@ class BridgeSourceTableController extends Controller
         operationId: 'bridgeSourceTableRecordDelete',
         summary: 'Hapus record tabel source bridge',
         description: 'Menghapus satu record dari tabel source/lookup bridge yang diizinkan berdasarkan `row_key`.',
-        tags: ['Bridge Source Tables'],
+        tags: ['Bridges'],
         security: [['sanctumBearer' => []]],
         parameters: [
             new OA\Parameter(name: 'table', in: 'path', required: true, schema: new OA\Schema(type: 'string', example: 'm_wilayah_kerja')),

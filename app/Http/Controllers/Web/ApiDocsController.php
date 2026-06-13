@@ -9,7 +9,7 @@ class ApiDocsController extends Controller
 {
     public function swagger(): Response
     {
-        $title = 'Master Data Prasarana API Docs';
+        $title = 'Master Data API Docs';
         $docsUrl = route('docs.openapi');
         $cssUrl = 'https://unpkg.com/swagger-ui-dist@5/swagger-ui.css';
         $bundleUrl = 'https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js';
@@ -136,7 +136,11 @@ class ApiDocsController extends Controller
         }
         #swagger-ui { max-width: 1280px; margin: 0 auto; padding: 18px 12px 36px; }
         .swagger-ui .topbar { display: none; }
-        .swagger-ui .scheme-container { display: none; }
+        .swagger-ui .scheme-container {
+            background: transparent;
+            box-shadow: none;
+            padding: 0 0 18px;
+        }
         @media (max-width: 720px) {
             .topbar {
                 align-items: flex-start;

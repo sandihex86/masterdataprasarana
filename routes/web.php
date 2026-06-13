@@ -18,6 +18,7 @@ Route::middleware('guest')->group(function (): void {
 
 Route::middleware('auth')->group(function (): void {
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
+    Route::get('/api/documentation', [ApiDocsController::class, 'swagger'])->name('api.documentation');
 
     Route::prefix('dashboard')->name('dashboard.')->group(function (): void {
         Route::get('/', [DashboardController::class, 'index'])->name('index');

@@ -1,7 +1,14 @@
 <?php
 
 use App\Http\Controllers\Api\V1\BridgeController;
+use App\Http\Controllers\Api\V1\BridgeBatchController;
+use App\Http\Controllers\Api\V1\BridgeConditionController;
+use App\Http\Controllers\Api\V1\BridgeIntegrationController;
+use App\Http\Controllers\Api\V1\BridgeMaintenanceController;
+use App\Http\Controllers\Api\V1\BridgeMapController;
+use App\Http\Controllers\Api\V1\BridgeReferenceController;
 use App\Http\Controllers\Api\V1\BridgeSourceTableController;
+use App\Http\Controllers\Api\V1\BridgeTechnicalController;
 use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\ImportMappingController;
 use App\Http\Controllers\Api\V1\MasterDataController;
@@ -12,8 +19,73 @@ Route::prefix('v1')->group(function (): void {
     Route::get('/health', [HealthController::class, 'summary'])->name('api.v1.health.summary');
     Route::get('/health/live', [HealthController::class, 'live'])->name('api.v1.health.live');
     Route::get('/health/ready', [HealthController::class, 'ready'])->name('api.v1.health.ready');
+    Route::get('/integration/health', [BridgeIntegrationController::class, 'health'])
+        ->name('api.v1.integration.health');
 
     Route::middleware(['auth:sanctum', 'api.actor'])->group(function (): void {
+        Route::get('/master/bridges/batch', [BridgeBatchController::class, 'batch'])
+            ->middleware('abilities:master-data:read')
+            ->name('api.v1.master.bridges.batch');
+        Route::get('/master/bridges/full-batch', [BridgeBatchController::class, 'fullBatch'])
+            ->middleware('abilities:master-data:read')
+            ->name('api.v1.master.bridges.full-batch');
+        Route::get('/master/bridges/changed', [BridgeBatchController::class, 'changed'])
+            ->middleware('abilities:master-data:read')
+            ->name('api.v1.master.bridges.changed');
+        Route::get('/master/bridges/search', [BridgeController::class, 'masterSearch'])
+            ->middleware('abilities:master-data:read')
+            ->name('api.v1.master.bridges.search');
+        Route::get('/master/bridges/by-bh/{noBh}', [BridgeController::class, 'byBridgeNumber'])
+            ->middleware('abilities:master-data:read')
+            ->name('api.v1.master.bridges.by-bh');
+        Route::get('/master/bridges/geojson', [BridgeMapController::class, 'geoJson'])
+            ->middleware('abilities:master-data:read')
+            ->name('api.v1.master.bridges.geojson');
+        Route::get('/master/bridges/{kodeJembatan}/profile', [BridgeTechnicalController::class, 'profile'])
+            ->middleware('abilities:master-data:read')
+            ->name('api.v1.master.bridges.profile');
+        Route::get('/master/bridges/{kodeJembatan}/spans', [BridgeTechnicalController::class, 'spans'])
+            ->middleware('abilities:master-data:read')
+            ->name('api.v1.master.bridges.spans');
+        Route::get('/master/bridges/{kodeJembatan}', [BridgeController::class, 'masterShow'])
+            ->middleware('abilities:master-data:read')
+            ->name('api.v1.master.bridges.show');
+        Route::get('/master/bridges', [BridgeController::class, 'masterIndex'])
+            ->middleware('abilities:master-data:read')
+            ->name('api.v1.master.bridges.index');
+
+        Route::get('/bridges/{kodeJembatan}/condition', [BridgeConditionController::class, 'condition'])
+            ->middleware('abilities:master-data:read')
+            ->name('api.v1.bridges.condition');
+        Route::get('/bridges/{kodeJembatan}/maintenance', [BridgeMaintenanceController::class, 'index'])
+            ->middleware('abilities:master-data:read')
+            ->name('api.v1.bridges.maintenance.index');
+        Route::post('/bridges/{kodeJembatan}/maintenance', [BridgeMaintenanceController::class, 'store'])
+            ->middleware('abilities:master-data:write')
+            ->name('api.v1.bridges.maintenance.store');
+
+        Route::get('/references/provinces', [BridgeReferenceController::class, 'provinces'])
+            ->middleware('abilities:master-data:read')
+            ->name('api.v1.references.provinces');
+        Route::get('/references/cities', [BridgeReferenceController::class, 'cities'])
+            ->middleware('abilities:master-data:read')
+            ->name('api.v1.references.cities');
+        Route::get('/references/operation-areas', [BridgeReferenceController::class, 'operationAreas'])
+            ->middleware('abilities:master-data:read')
+            ->name('api.v1.references.operation-areas');
+        Route::get('/references/work-areas', [BridgeReferenceController::class, 'workAreas'])
+            ->middleware('abilities:master-data:read')
+            ->name('api.v1.references.work-areas');
+        Route::get('/references/routes', [BridgeReferenceController::class, 'routes'])
+            ->middleware('abilities:master-data:read')
+            ->name('api.v1.references.routes');
+        Route::get('/references/stations', [BridgeReferenceController::class, 'stations'])
+            ->middleware('abilities:master-data:read')
+            ->name('api.v1.references.stations');
+        Route::get('/references/segments', [BridgeReferenceController::class, 'segments'])
+            ->middleware('abilities:master-data:read')
+            ->name('api.v1.references.segments');
+
         Route::get('/bridges/metadata', [BridgeController::class, 'metadata'])
             ->middleware('abilities:master-data:read')
             ->name('api.v1.bridges.metadata');

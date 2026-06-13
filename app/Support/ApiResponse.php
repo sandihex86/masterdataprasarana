@@ -31,13 +31,16 @@ class ApiResponse
 
     public static function error(string $message, string $code, int $status, array $details = [], array $meta = []): JsonResponse
     {
+        $error = [
+            'code' => $code,
+            'details' => (object) $details,
+        ];
+
         return response()->json([
             'success' => false,
             'message' => $message,
-            'error' => [
-                'code' => $code,
-                'details' => (object) $details,
-            ],
+            'error' => $error,
+            'errors' => $error,
             'meta' => self::meta($meta),
         ], $status);
     }
