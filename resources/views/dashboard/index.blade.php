@@ -370,6 +370,7 @@
 
         .nav-copy {
             min-width: 0;
+            text-align: left;
         }
 
         .nav-copy strong {
