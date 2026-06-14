@@ -12,30 +12,33 @@ class ReferenceSourceSeeder extends Seeder
     private string $connectionName = 'reference';
 
     /**
-     * @var array<string, array{file: string, unique_by: array<int, string>, numeric?: array<int, string>, boolean?: array<int, string>, generated_id_prefix?: string}>
+     * @var array<string, array{file: string, unique_by: array<int, string>, numeric?: array<int, string>, boolean?: array<int, string>, ulid_id?: bool}>
      */
     private array $tables = [
         'm_prasarana' => [
             'file' => 'm_prasarana.csv',
             'unique_by' => ['kode_prasarana'],
             'boolean' => ['active'],
+            'ulid_id' => true,
         ],
         'm_lintas' => [
             'file' => 'm_lintas.csv',
             'unique_by' => ['kode_lintas'],
             'numeric' => ['panjang_km'],
             'boolean' => ['active'],
+            'ulid_id' => true,
         ],
         'm_stasiun' => [
             'file' => 'm_stasiun.csv',
             'unique_by' => ['id'],
             'numeric' => ['lat', 'long'],
-            'generated_id_prefix' => 'STA',
+            'ulid_id' => true,
         ],
         'm_wilker' => [
             'file' => 'm_wilker.csv',
             'unique_by' => ['kode_prasarana'],
             'boolean' => ['active'],
+            'ulid_id' => true,
         ],
         'kabupaten_kota' => [
             'file' => 'kabupaten_kota.csv',
@@ -67,7 +70,7 @@ class ReferenceSourceSeeder extends Seeder
     }
 
     /**
-     * @param  array{file: string, unique_by: array<int, string>, numeric?: array<int, string>, boolean?: array<int, string>, generated_id_prefix?: string}  $config
+     * @param  array{file: string, unique_by: array<int, string>, numeric?: array<int, string>, boolean?: array<int, string>, ulid_id?: bool}  $config
      */
     private function seedTable(string $table, array $config): void
     {
@@ -104,7 +107,7 @@ class ReferenceSourceSeeder extends Seeder
                 }
 
                 $payload = $this->payloadFromRow($headers, $row, $config);
-                $this->fillGeneratedId($payload, $config, $rowNumber);
+                $this->fillUlidId($table, $payload, $config, $rowNumber);
 
                 if (! $this->hasRequiredSeedIdentity($payload, $config['unique_by'])) {
                     continue;
@@ -132,7 +135,7 @@ class ReferenceSourceSeeder extends Seeder
     /**
      * @param  array<int, string>  $headers
      * @param  array<int, string|null>  $row
-     * @param  array{file: string, unique_by: array<int, string>, numeric?: array<int, string>, boolean?: array<int, string>, generated_id_prefix?: string}  $config
+     * @param  array{file: string, unique_by: array<int, string>, numeric?: array<int, string>, boolean?: array<int, string>, ulid_id?: bool}  $config
      * @return array<string, mixed>
      */
     private function payloadFromRow(array $headers, array $row, array $config): array
@@ -167,17 +170,28 @@ class ReferenceSourceSeeder extends Seeder
 
     /**
      * @param  array<string, mixed>  $payload
-     * @param  array{file: string, unique_by: array<int, string>, numeric?: array<int, string>, boolean?: array<int, string>, generated_id_prefix?: string}  $config
+     * @param  array{file: string, unique_by: array<int, string>, numeric?: array<int, string>, boolean?: array<int, string>, ulid_id?: bool}  $config
      */
-    private function fillGeneratedId(array &$payload, array $config, int $rowNumber): void
+    private function fillUlidId(string $table, array &$payload, array $config, int $rowNumber): void
     {
-        $prefix = $config['generated_id_prefix'] ?? null;
-
-        if (! is_string($prefix) || $prefix === '' || filled($payload['id'] ?? null)) {
+        if (($config['ulid_id'] ?? false) !== true || filled($payload['id'] ?? null)) {
             return;
         }
 
-        $payload['id'] = sprintf('%s-%06d', $prefix, $rowNumber - 1);
+        $payload['id'] = $this->deterministicUlid($table, $rowNumber);
+    }
+
+    private function deterministicUlid(string $table, int $rowNumber): string
+    {
+        $alphabet = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+        $hash = hash('sha256', $table.'|'.$rowNumber, true);
+        $suffix = '';
+
+        for ($index = 0; $index < 16; $index++) {
+            $suffix .= $alphabet[ord($hash[$index]) % 32];
+        }
+
+        return '01JREFEREN'.$suffix;
     }
 
     /**

@@ -1192,6 +1192,15 @@ class DashboardController extends Controller
                     default => $type?->records_count ?? 0,
                 };
 
+                $primaryChildren = $isReferenceSource ? [] : [[
+                    'key' => $key.'-records',
+                    'type' => 'entity',
+                    'kind' => 'combine',
+                    'label' => 'Data '.$config['label'],
+                    'href' => route('dashboard.master-data.entity', ['entity' => $key]),
+                    'row_count' => $recordCount,
+                ]];
+
                 return [
                     'key' => $key,
                     'label' => $config['label'],
@@ -1200,14 +1209,7 @@ class DashboardController extends Controller
                     'record_count' => $recordCount,
                     'is_available' => $isBridgeSource || $isTunnelSource || $isWarehouseSource || $isReferenceSource || $type !== null,
                     'children' => [
-                        [
-                            'key' => $key.'-records',
-                            'type' => 'entity',
-                            'kind' => 'combine',
-                            'label' => 'Data '.$config['label'],
-                            'href' => route('dashboard.master-data.entity', ['entity' => $key]),
-                            'row_count' => $recordCount,
-                        ],
+                        ...$primaryChildren,
                         ...$sourceChildren,
                     ],
                 ];

@@ -9990,6 +9990,7 @@
         const coordinateLiveLat = coordinateModal?.querySelector('[data-tunnel-source-table-coordinate-live-lat]');
         const coordinateLiveLon = coordinateModal?.querySelector('[data-tunnel-source-table-coordinate-live-lon]');
         const isTunnelMasterTable = config.table === 'm_tunnels';
+        const usesUlidId = config.metadata?.id_strategy === 'ulid';
         const hasCoordinatePicker = formColumns.some((column) => column.name === 'lat')
             && formColumns.some((column) => column.name === 'long');
         const lookupOptions = config.lookup_options && typeof config.lookup_options === 'object' ? config.lookup_options : {};
@@ -10179,6 +10180,9 @@
 
             gridBody.innerHTML = state.rows.map((row) => {
                 const data = row.data || {};
+                const rowIdentifier = usesUlidId
+                    ? (data.id ?? row.row_key)
+                    : (data.tunnel_id ?? data.kode_aset ?? data.kode_gudang ?? data.kode_prasarana ?? data.kode_lintas ?? data.id ?? data.name ?? row.row_key);
 
                 return `
                     <tr>
@@ -10191,7 +10195,7 @@
                                     <td>
                                         <div class="row-title">
                                             <strong>${cellValue}</strong>
-                                            <span>${escapeHtml(formatValue(data.tunnel_id ?? data.kode_aset ?? data.kode_gudang ?? data.kode_prasarana ?? data.kode_lintas ?? data.id ?? data.name ?? row.row_key))}</span>
+                                            <span>${escapeHtml(formatValue(rowIdentifier))}</span>
                                         </div>
                                     </td>
                                 `;
@@ -10348,6 +10352,15 @@
                     `;
                 }
 
+                if (usesUlidId && name === 'id') {
+                    return `
+                        <div class="field">
+                            <label for="tunnel-table-id">ULID${required ? ' *' : ''}</label>
+                            <input id="tunnel-table-id" name="id" type="text" disabled data-tunnel-source-table-generated-id>
+                        </div>
+                    `;
+                }
+
                 if (options.length) {
                     return renderSelectField(column, options);
                 }
@@ -10460,6 +10473,10 @@
 
             if (isTunnelMasterTable) {
                 setFormField('tunnel_id', generateDisplayUlid());
+            }
+
+            if (usesUlidId) {
+                setFormField('id', generateDisplayUlid());
             }
 
             if (formTitle) {

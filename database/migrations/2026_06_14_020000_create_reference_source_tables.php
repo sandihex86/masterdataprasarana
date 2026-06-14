@@ -15,7 +15,7 @@ return new class extends Migration
         if (! $schema->hasTable('m_prasarana')) {
             $schema->create('m_prasarana', function (Blueprint $table): void {
                 $table->bigIncrements('internal_id');
-                $table->string('id', 64)->nullable();
+                $table->char('id', 26);
                 $table->string('kode_prasarana', 64)->nullable();
                 $table->string('nama_prasarana', 191);
                 $table->boolean('active')->default(true);
@@ -27,8 +27,8 @@ return new class extends Migration
         if (! $schema->hasTable('m_lintas')) {
             $schema->create('m_lintas', function (Blueprint $table): void {
                 $table->bigIncrements('internal_id');
-                $table->string('id', 64)->nullable();
-                $table->string('kode_lintas', 64)->nullable()->nullable();
+                $table->char('id', 26);
+                $table->string('kode_lintas', 64)->nullable();
                 $table->string('nama_lintas', 191)->nullable();
                 $table->string('stasiun_awal_id', 64)->nullable();
                 $table->string('stasiun_akhir_id', 64)->nullable();
@@ -43,7 +43,7 @@ return new class extends Migration
         if (! $schema->hasTable('m_stasiun')) {
             $schema->create('m_stasiun', function (Blueprint $table): void {
                 $table->bigIncrements('internal_id');
-                $table->string('id', 64)->nullable();
+                $table->char('id', 26);
                 $table->string('nama_stasiun', 191);
                 $table->string('wilayah_operasi', 191)->nullable();
                 $table->string('kecamatan', 191)->nullable();
@@ -61,7 +61,7 @@ return new class extends Migration
         if (! $schema->hasTable('m_wilker')) {
             $schema->create('m_wilker', function (Blueprint $table): void {
                 $table->bigIncrements('internal_id');
-                $table->string('id', 64)->nullable();
+                $table->char('id', 26);
                 $table->string('kode_prasarana', 64)->nullable();
                 $table->string('nama_prasarana', 191);
                 $table->boolean('active')->default(true);
@@ -73,7 +73,7 @@ return new class extends Migration
         if (! $schema->hasTable('kabupaten_kota')) {
             $schema->create('kabupaten_kota', function (Blueprint $table): void {
                 $table->bigIncrements('internal_id');
-                $table->string('id', 32)->nullable();
+                $table->string('id', 32);
                 $table->string('name', 191);
                 $table->timestamps();
                 $table->softDeletes();
@@ -83,7 +83,7 @@ return new class extends Migration
         if (! $schema->hasTable('kelurahan')) {
             $schema->create('kelurahan', function (Blueprint $table): void {
                 $table->bigIncrements('internal_id');
-                $table->string('id', 32)->nullable();
+                $table->string('id', 32);
                 $table->string('name', 191);
                 $table->timestamps();
                 $table->softDeletes();
@@ -93,7 +93,7 @@ return new class extends Migration
         if (! $schema->hasTable('kecamatan')) {
             $schema->create('kecamatan', function (Blueprint $table): void {
                 $table->bigIncrements('internal_id');
-                $table->string('id', 32)->nullable();
+                $table->string('id', 32);
                 $table->string('name', 191);
                 $table->timestamps();
                 $table->softDeletes();
@@ -103,7 +103,7 @@ return new class extends Migration
         if (! $schema->hasTable('provinsi')) {
             $schema->create('provinsi', function (Blueprint $table): void {
                 $table->bigIncrements('internal_id');
-                $table->string('id', 32)->nullable();
+                $table->string('id', 32);
                 $table->string('name', 191);
                 $table->timestamps();
                 $table->softDeletes();

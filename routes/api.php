@@ -202,6 +202,29 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/references/tables', [ReferenceController::class, 'tables'])
             ->middleware('abilities:master-data:read')
             ->name('api.v1.references.tables.catalog');
+        Route::get('/references/entities', [ReferenceController::class, 'entities'])
+            ->middleware('abilities:master-data:read')
+            ->name('api.v1.references.entities.catalog');
+        Route::get('/references/{lookup}/metadata', [ReferenceController::class, 'lookupMetadata'])
+            ->whereIn('lookup', ['prasarana', 'lintas', 'routes', 'stasiun', 'stations', 'wilker', 'work-areas', 'wilops', 'wilayah-operasi', 'operation-areas', 'provinsi', 'province', 'provinces', 'kabupaten-kota', 'kabupatenkota', 'kabkot', 'cities', 'kecamatan', 'kelurahan'])
+            ->middleware('abilities:master-data:read')
+            ->name('api.v1.references.lookup.metadata');
+        Route::get('/references/{lookup}/batch', [ReferenceController::class, 'lookupBatch'])
+            ->whereIn('lookup', ['prasarana', 'lintas', 'routes', 'stasiun', 'stations', 'wilker', 'work-areas', 'wilops', 'wilayah-operasi', 'operation-areas', 'provinsi', 'province', 'provinces', 'kabupaten-kota', 'kabupatenkota', 'kabkot', 'cities', 'kecamatan', 'kelurahan'])
+            ->middleware('abilities:master-data:read')
+            ->name('api.v1.references.lookup.batch');
+        Route::get('/references/{lookup}/search', [ReferenceController::class, 'lookupSearch'])
+            ->whereIn('lookup', ['prasarana', 'lintas', 'routes', 'stasiun', 'stations', 'wilker', 'work-areas', 'wilops', 'wilayah-operasi', 'operation-areas', 'provinsi', 'province', 'provinces', 'kabupaten-kota', 'kabupatenkota', 'kabkot', 'cities', 'kecamatan', 'kelurahan'])
+            ->middleware('abilities:master-data:read')
+            ->name('api.v1.references.lookup.search');
+        Route::get('/references/{lookup}/kode/{kode}', [ReferenceController::class, 'lookupByCode'])
+            ->whereIn('lookup', ['prasarana', 'lintas', 'routes', 'stasiun', 'stations', 'wilker', 'work-areas', 'wilops', 'wilayah-operasi', 'operation-areas', 'provinsi', 'province', 'provinces', 'kabupaten-kota', 'kabupatenkota', 'kabkot', 'cities', 'kecamatan', 'kelurahan'])
+            ->middleware('abilities:master-data:read')
+            ->name('api.v1.references.lookup.by-code');
+        Route::get('/references/{lookup}/{id}', [ReferenceController::class, 'lookupById'])
+            ->whereIn('lookup', ['prasarana', 'lintas', 'routes', 'stasiun', 'stations', 'wilker', 'work-areas', 'wilops', 'wilayah-operasi', 'operation-areas', 'provinsi', 'province', 'provinces', 'kabupaten-kota', 'kabupatenkota', 'kabkot', 'cities', 'kecamatan', 'kelurahan'])
+            ->middleware('abilities:master-data:read')
+            ->name('api.v1.references.lookup.by-id');
         Route::get('/references/tables/{table}/schema', [ReferenceController::class, 'schema'])
             ->middleware('abilities:master-data:read')
             ->name('api.v1.references.tables.schema');
