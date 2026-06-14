@@ -33,6 +33,7 @@ use App\Services\BridgeSource\BridgeSourceDumpService;
 use App\Services\Dashboard\DashboardService;
 use App\Services\MasterData\MasterDataQueryService;
 use App\Services\MasterData\MasterDataWriteService;
+use App\Services\ReferenceSourceTableService;
 use App\Services\SuperAdmin\ApiClientManagementService;
 use App\Services\SuperAdmin\UserManagementService;
 use App\Services\TunnelDocumentUploadService;
@@ -70,6 +71,10 @@ class DashboardController extends Controller
         'gudang' => [
             'label' => 'Gudang',
             'type_code' => 'warehouse',
+        ],
+        'referensi' => [
+            'label' => 'Referensi',
+            'type_code' => 'reference',
         ],
     ];
 
@@ -138,6 +143,7 @@ class DashboardController extends Controller
         private readonly TunnelSourceTableService $tunnelSourceTableService,
         private readonly TunnelDocumentUploadService $tunnelDocumentUploadService,
         private readonly WarehouseSourceTableService $warehouseSourceTableService,
+        private readonly ReferenceSourceTableService $referenceSourceTableService,
     ) {}
 
     public function index(): View
@@ -198,6 +204,13 @@ class DashboardController extends Controller
     {
         return $this->renderPage('warehouse-source-table', [
             'warehouseSourceTablePage' => $this->resolveWarehouseSourceTablePage($table),
+        ]);
+    }
+
+    public function referenceSourceTable(string $table): View
+    {
+        return $this->renderPage('reference-source-table', [
+            'referenceSourceTablePage' => $this->resolveReferenceSourceTablePage($table),
         ]);
     }
 
@@ -666,6 +679,58 @@ class DashboardController extends Controller
         return ApiResponse::success('Data tabel gudang berhasil dihapus.');
     }
 
+    public function referenceSourceTableRows(ListBridgeSourceRequest $request, string $table): JsonResponse
+    {
+        $this->ensureOperationalDashboardAccess();
+        $rows = $this->referenceSourceTableService->paginate($table, $request->validated());
+        $tablePage = $this->resolveReferenceSourceTablePage($table);
+
+        return ApiResponse::paginated(
+            'Data tabel referensi berhasil diambil.',
+            $rows->items(),
+            $rows,
+            [
+                'reference_source_table' => [
+                    'table' => $tablePage['table'],
+                    'label' => $tablePage['label'],
+                ],
+            ],
+        );
+    }
+
+    public function storeReferenceSourceTableRow(Request $request, string $table): JsonResponse
+    {
+        $this->ensureOperationalDashboardAccess();
+
+        return ApiResponse::success(
+            'Data tabel referensi berhasil dibuat.',
+            $this->referenceSourceTableService->create($table, $request->validate([
+                'data' => ['required', 'array'],
+            ])),
+            status: 201,
+        );
+    }
+
+    public function updateReferenceSourceTableRow(Request $request, string $table, string $rowKey): JsonResponse
+    {
+        $this->ensureOperationalDashboardAccess();
+
+        return ApiResponse::success(
+            'Data tabel referensi berhasil diperbarui.',
+            $this->referenceSourceTableService->update($table, $rowKey, $request->validate([
+                'data' => ['required', 'array'],
+            ])),
+        );
+    }
+
+    public function destroyReferenceSourceTableRow(string $table, string $rowKey): JsonResponse
+    {
+        $this->ensureOperationalDashboardAccess();
+        $this->referenceSourceTableService->delete($table, $rowKey);
+
+        return ApiResponse::success('Data tabel referensi berhasil dihapus.');
+    }
+
     public function importTunnelSourceTableRows(Request $request, string $table): JsonResponse
     {
         $this->ensureOperationalDashboardAccess();
@@ -767,6 +832,58 @@ class DashboardController extends Controller
 
         return $this->downloadTunnelCsv('template-'.$table.'.csv', function ($handle) use ($table): void {
             $this->warehouseSourceTableService->streamCsv($table, $handle, includeRows: false);
+        });
+    }
+
+    public function importReferenceSourceTableRows(Request $request, string $table): JsonResponse
+    {
+        $this->ensureOperationalDashboardAccess();
+
+        $validated = $request->validate([
+            'file' => ['required', 'file', 'mimes:csv,txt', 'max:5120'],
+        ]);
+
+        $file = $validated['file'] ?? null;
+        if (! $file instanceof UploadedFile) {
+            throw ValidationException::withMessages([
+                'file' => ['File CSV tidak valid.'],
+            ]);
+        }
+
+        $result = $this->referenceSourceTableService->importCsv($table, $file->getRealPath());
+
+        if ($result['errors'] !== []) {
+            return ApiResponse::error(
+                'Sebagian data tabel referensi gagal diimport.',
+                'REFERENCE_TABLE_CSV_IMPORT_PARTIAL',
+                422,
+                [
+                    'created' => [$result['created'].' data berhasil dibuat.'],
+                    'rows' => $result['errors'],
+                ],
+            );
+        }
+
+        return ApiResponse::success('Import CSV tabel referensi berhasil.', [
+            'created' => $result['created'],
+        ]);
+    }
+
+    public function exportReferenceSourceTableRows(string $table): StreamedResponse
+    {
+        $this->ensureOperationalDashboardAccess();
+
+        return $this->downloadTunnelCsv($table.'-export-'.now()->format('Ymd-His').'.csv', function ($handle) use ($table): void {
+            $this->referenceSourceTableService->streamCsv($table, $handle);
+        });
+    }
+
+    public function referenceSourceTableCsvTemplate(string $table): StreamedResponse
+    {
+        $this->ensureOperationalDashboardAccess();
+
+        return $this->downloadTunnelCsv('template-'.$table.'.csv', function ($handle) use ($table): void {
+            $this->referenceSourceTableService->streamCsv($table, $handle, includeRows: false);
         });
     }
 
@@ -1029,7 +1146,7 @@ class DashboardController extends Controller
         }
 
         return $user->hasRole(UserRole::Operator)
-            && in_array($page, ['overview', 'master-data-entity', 'bridge-source-table', 'tunnel-source-table', 'warehouse-source-table'], true);
+            && in_array($page, ['overview', 'master-data-entity', 'bridge-source-table', 'tunnel-source-table', 'warehouse-source-table', 'reference-source-table'], true);
     }
 
     /**
@@ -1048,26 +1165,30 @@ class DashboardController extends Controller
             : $this->bridgeSourceDumpService->countCombined();
         $tunnelRecordCount = $this->tunnelRecordCount();
         $warehouseRecordCount = $this->warehouseRecordCount();
+        $referenceRecordCount = $this->referenceRecordCount();
 
         return collect(self::MASTER_DATA_PAGES)
-            ->map(function (array $config, string $key) use ($typeMap, $bridgeRecordCount, $tunnelRecordCount, $warehouseRecordCount): array {
+            ->map(function (array $config, string $key) use ($typeMap, $bridgeRecordCount, $tunnelRecordCount, $warehouseRecordCount, $referenceRecordCount): array {
                 /** @var MasterDataType|null $type */
                 $type = $typeMap->get($config['type_code']);
                 $isBridgeSource = $key === 'jembatan';
                 $isTunnelSource = $key === 'terowongan';
                 $isWarehouseSource = $key === 'gudang';
+                $isReferenceSource = $key === 'referensi';
                 $sourceChildren = match (true) {
                     $isBridgeSource => $this->bridgeSourceCrudService->isDatabaseSourceAvailable()
                         ? $this->bridgeSourceCrudService->tableCatalog()
                         : $this->bridgeSourceDumpService->tables(),
                     $isTunnelSource => $this->tunnelSourceTableService->catalog(),
                     $isWarehouseSource => $this->warehouseSourceTableService->catalog(),
+                    $isReferenceSource => $this->referenceSourceTableService->catalog(),
                     default => [],
                 };
                 $recordCount = match (true) {
                     $isBridgeSource => $bridgeRecordCount,
                     $isTunnelSource => $tunnelRecordCount,
                     $isWarehouseSource => $warehouseRecordCount,
+                    $isReferenceSource => $referenceRecordCount,
                     default => $type?->records_count ?? 0,
                 };
 
@@ -1077,7 +1198,7 @@ class DashboardController extends Controller
                     'type_code' => $config['type_code'],
                     'href' => route('dashboard.master-data.entity', ['entity' => $key]),
                     'record_count' => $recordCount,
-                    'is_available' => $isBridgeSource || $isTunnelSource || $isWarehouseSource || $type !== null,
+                    'is_available' => $isBridgeSource || $isTunnelSource || $isWarehouseSource || $isReferenceSource || $type !== null,
                     'children' => [
                         [
                             'key' => $key.'-records',
@@ -1186,6 +1307,23 @@ class DashboardController extends Controller
             ];
         }
 
+        if ($entity === 'referensi') {
+            $referencePage = $this->referenceSourceTableService->mainPage();
+
+            return [
+                ...$referencePage,
+                'key' => $entity,
+                'label' => $config['label'],
+                'type_code' => $config['type_code'],
+                'mode' => 'reference-source',
+                'records_count' => $this->referenceRecordCount(),
+                'type_exists' => true,
+                'type_name' => $config['label'],
+                'crud_enabled' => true,
+                'data_mode' => 'database',
+            ];
+        }
+
         $type = MasterDataType::query()
             ->withCount('records')
             ->where('code', $config['type_code'])
@@ -1264,6 +1402,19 @@ class DashboardController extends Controller
             'parent_key' => 'gudang',
             'mode' => 'warehouse-source-table',
             'breadcrumb_label' => 'Gudang',
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function resolveReferenceSourceTablePage(string $table): array
+    {
+        return [
+            ...$this->referenceSourceTableService->tablePage($table),
+            'parent_key' => 'referensi',
+            'mode' => 'reference-source-table',
+            'breadcrumb_label' => 'Referensi',
         ];
     }
 
@@ -1359,6 +1510,11 @@ class DashboardController extends Controller
         }
 
         return (int) DB::connection('warehouse')->table('m_gudang')->whereNull('deleted_at')->count();
+    }
+
+    private function referenceRecordCount(): int
+    {
+        return (int) collect($this->referenceSourceTableService->catalog())->sum('row_count');
     }
 
     private function downloadTunnelCsv(string $filename, callable $writer): StreamedResponse

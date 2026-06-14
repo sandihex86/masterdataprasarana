@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\ImportMappingController;
 use App\Http\Controllers\Api\V1\MasterDataController;
 use App\Http\Controllers\Api\V1\MasterDataTypeController;
+use App\Http\Controllers\Api\V1\ReferenceController;
 use App\Http\Controllers\Api\V1\TunnelController;
 use App\Http\Controllers\Api\V1\WarehouseController;
 use Illuminate\Support\Facades\Route;
@@ -197,6 +198,28 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/references/segments', [BridgeReferenceController::class, 'segments'])
             ->middleware('abilities:master-data:read')
             ->name('api.v1.references.segments');
+
+        Route::get('/references/tables', [ReferenceController::class, 'tables'])
+            ->middleware('abilities:master-data:read')
+            ->name('api.v1.references.tables.catalog');
+        Route::get('/references/tables/{table}/schema', [ReferenceController::class, 'schema'])
+            ->middleware('abilities:master-data:read')
+            ->name('api.v1.references.tables.schema');
+        Route::get('/references/tables/{table}/records', [ReferenceController::class, 'index'])
+            ->middleware('abilities:master-data:read')
+            ->name('api.v1.references.tables.records.index');
+        Route::post('/references/tables/{table}/records', [ReferenceController::class, 'store'])
+            ->middleware('abilities:master-data:write')
+            ->name('api.v1.references.tables.records.store');
+        Route::get('/references/tables/{table}/records/{rowKey}', [ReferenceController::class, 'show'])
+            ->middleware('abilities:master-data:read')
+            ->name('api.v1.references.tables.records.show');
+        Route::match(['put', 'patch'], '/references/tables/{table}/records/{rowKey}', [ReferenceController::class, 'update'])
+            ->middleware('abilities:master-data:write')
+            ->name('api.v1.references.tables.records.update');
+        Route::delete('/references/tables/{table}/records/{rowKey}', [ReferenceController::class, 'destroy'])
+            ->middleware('abilities:master-data:delete')
+            ->name('api.v1.references.tables.records.destroy');
 
         Route::get('/bridges/metadata', [BridgeController::class, 'metadata'])
             ->middleware('abilities:master-data:read')

@@ -1412,6 +1412,47 @@
             text-align: center;
         }
 
+        .reference-flow {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 10px;
+            margin: 16px 0 18px;
+        }
+
+        .reference-flow-node {
+            min-height: 82px;
+            display: grid;
+            align-content: center;
+            gap: 6px;
+            padding: 14px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--panel-strong);
+            position: relative;
+        }
+
+        .reference-flow-node:not(:last-child)::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            right: -10px;
+            width: 10px;
+            height: 1px;
+            background: var(--accent);
+        }
+
+        .reference-flow-node span {
+            color: var(--muted);
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        .reference-flow-node strong {
+            font-size: 0.92rem;
+        }
+
         .detail-icon .icon,
         .detail-section-icon .icon,
         .detail-hero-icon .icon {
@@ -2989,6 +3030,14 @@
                 grid-template-columns: 1fr;
             }
 
+            .reference-flow {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .reference-flow-node:nth-child(2)::after {
+                display: none;
+            }
+
             .detail-hero-stats {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
             }
@@ -3049,6 +3098,14 @@
                 grid-template-columns: 1fr;
             }
 
+            .reference-flow {
+                grid-template-columns: 1fr;
+            }
+
+            .reference-flow-node::after {
+                display: none;
+            }
+
             .coordinate-action-field {
                 min-width: 0;
             }
@@ -3099,12 +3156,13 @@
     $bridgeSourceTablePage = $bridgeSourceTablePage ?? null;
     $tunnelSourceTablePage = $tunnelSourceTablePage ?? null;
     $warehouseSourceTablePage = $warehouseSourceTablePage ?? null;
+    $referenceSourceTablePage = $referenceSourceTablePage ?? null;
     $superadminUserPage = $superadminUserPage ?? null;
     $superadminApiClientPage = $superadminApiClientPage ?? null;
-    $activeMasterDataKey = $masterDataPage['key'] ?? $bridgeSourceTablePage['parent_key'] ?? $tunnelSourceTablePage['parent_key'] ?? $warehouseSourceTablePage['parent_key'] ?? null;
+    $activeMasterDataKey = $masterDataPage['key'] ?? $bridgeSourceTablePage['parent_key'] ?? $tunnelSourceTablePage['parent_key'] ?? $warehouseSourceTablePage['parent_key'] ?? $referenceSourceTablePage['parent_key'] ?? null;
     $genericSourceTablePage = (($masterDataPage['mode'] ?? null) === 'warehouse-source')
         ? $masterDataPage
-        : ($warehouseSourceTablePage ?? $tunnelSourceTablePage);
+        : ($warehouseSourceTablePage ?? $tunnelSourceTablePage ?? $referenceSourceTablePage);
     $bridgeModule = $overview['bridge_module'] ?? null;
     $metadataModules = [
         ['key' => 'jembatan', 'label' => 'Jembatan', 'status' => $bridgeModule ? count($bridgeModule['fields']) . ' field' : 'Pending', 'fields' => $bridgeModule['fields'] ?? []],
@@ -3155,6 +3213,7 @@
         'bridge-source-table' => ['title' => $bridgeSourceTablePage['label'] ?? 'Tabel Source Jembatan', 'description' => $bridgeSourceTablePage['description'] ?? 'Data tabel source dari dump SQL.'],
         'tunnel-source-table' => ['title' => $tunnelSourceTablePage['label'] ?? 'Tabel Terowongan', 'description' => $tunnelSourceTablePage['description'] ?? 'Data tabel source Terowongan.'],
         'warehouse-source-table' => ['title' => $warehouseSourceTablePage['label'] ?? 'Tabel Gudang', 'description' => $warehouseSourceTablePage['description'] ?? 'Data tabel source Gudang.'],
+        'reference-source-table' => ['title' => $referenceSourceTablePage['label'] ?? 'Tabel Referensi', 'description' => $referenceSourceTablePage['description'] ?? 'Data tabel source Referensi.'],
         'superadmin-users' => ['title' => $superadminUserPage['label'] ?? 'Manajemen User', 'description' => 'CRUD akun internal, role, dan kontrol akses dashboard.'],
         'superadmin-api-clients' => ['title' => $superadminApiClientPage['label'] ?? 'Bearer Key API', 'description' => 'Kelola client API dan generate bearer token dengan desain dashboard modern.'],
     ];
@@ -3227,7 +3286,7 @@
                     <div class="nav-list">
                         @foreach ($masterDataMenu as $item)
                             @php
-                                $isActiveMasterItem = in_array($currentPage, ['master-data-entity', 'bridge-source-table', 'tunnel-source-table', 'warehouse-source-table'], true) && $activeMasterDataKey === $item['key'];
+                                $isActiveMasterItem = in_array($currentPage, ['master-data-entity', 'bridge-source-table', 'tunnel-source-table', 'warehouse-source-table', 'reference-source-table'], true) && $activeMasterDataKey === $item['key'];
                             @endphp
                             <div class="nav-group {{ $isActiveMasterItem ? 'is-expanded' : '' }}" data-master-nav-group data-master-nav-key="{{ $item['key'] }}">
                                 <button class="nav-link {{ $isActiveMasterItem ? 'active' : '' }}" type="button" data-master-nav-toggle aria-expanded="{{ $isActiveMasterItem ? 'true' : 'false' }}">
@@ -3241,6 +3300,9 @@
                                                 @break
                                             @case('gudang')
                                                 <svg class="icon" viewBox="0 0 24 24"><path d="M3 20h18"/><path d="M5 20V9l7-5 7 5v11"/><path d="M9 20v-7h6v7"/><path d="M8 11h8"/></svg>
+                                                @break
+                                            @case('referensi')
+                                                <svg class="icon" viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M4 10h16"/><path d="M9 5v14"/><path d="M15 5v14"/></svg>
                                                 @break
                                             @case('jalur')
                                                 <svg class="icon" viewBox="0 0 24 24"><path d="M7 4h10"/><path d="M8 4l-2 16"/><path d="M16 4l2 16"/><path d="M6.5 10h11"/><path d="M5.5 16h13"/></svg>
@@ -3273,6 +3335,7 @@
                                                         ($currentPage === 'bridge-source-table' && ($bridgeSourceTablePage['table'] ?? null) === ($child['table'] ?? null))
                                                         || ($currentPage === 'tunnel-source-table' && ($tunnelSourceTablePage['table'] ?? null) === ($child['table'] ?? null))
                                                         || ($currentPage === 'warehouse-source-table' && ($warehouseSourceTablePage['table'] ?? null) === ($child['table'] ?? null))
+                                                        || ($currentPage === 'reference-source-table' && ($referenceSourceTablePage['table'] ?? null) === ($child['table'] ?? null))
                                                     );
                                             @endphp
                                             <a class="nav-child-link nav-child-link-{{ $childKind }} {{ $isActiveChild ? 'active' : '' }}" href="{{ $child['href'] }}">
@@ -3914,6 +3977,52 @@
                         </div>
                     </div>
                 </section>
+            @elseif (($masterDataPage['mode'] ?? 'master-data') === 'reference-source')
+                <section class="section">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="section-header">
+                                <div>
+                                    <h2>Katalog Referensi</h2>
+                                    <p>Database {{ config('database.connections.reference.database', 'prasarana_referensi') }}</p>
+                                </div>
+                                {!! $tag('Tabel', number_format($masterDataPage['tables_count'] ?? 0), 'table') !!}
+                            </div>
+
+                            <div class="reference-flow" aria-label="Flow data referensi">
+                                <div class="reference-flow-node">
+                                    <span>Source</span>
+                                    <strong>CSV Referensi</strong>
+                                </div>
+                                <div class="reference-flow-node">
+                                    <span>Load</span>
+                                    <strong>Migration dan Seeder</strong>
+                                </div>
+                                <div class="reference-flow-node">
+                                    <span>Store</span>
+                                    <strong>prasarana_referensi</strong>
+                                </div>
+                                <div class="reference-flow-node">
+                                    <span>Access</span>
+                                    <strong>Dashboard dan API V1</strong>
+                                </div>
+                            </div>
+
+                            <div class="menu-list">
+                                @foreach (($masterDataPage['tables'] ?? []) as $referenceTable)
+                                    <a class="menu-item" href="{{ $referenceTable['href'] }}">
+                                        <div class="menu-main">
+                                            <strong>{{ $referenceTable['label'] }}</strong>
+                                            <span>{{ $referenceTable['description'] }}</span>
+                                            <small class="mono">{{ $referenceTable['table'] }}</small>
+                                        </div>
+                                        {!! $tag('Baris', number_format($referenceTable['row_count'] ?? 0), 'data') !!}
+                                    </a>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+                </section>
             @else
                 <section class="section">
                     <div class="table-card" data-master-data-app='@json($masterDataPage)'>
@@ -4149,6 +4258,76 @@
                                 <tbody data-grid-body>
                                     <tr>
                                         <td colspan="10" class="grid-loading">Memuat data tabel gudang...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="pagination-bar">
+                        <div class="pagination-meta">
+                            <div class="rows-per-page">
+                                <span class="rows-label">Baris</span>
+                                <label class="rows-select-wrap" aria-label="Jumlah data per halaman">
+                                    <select class="rows-select" data-grid-per-page>
+                                        <option value="10">10</option>
+                                        <option value="25">25</option>
+                                        <option value="50">50</option>
+                                    </select>
+                                    <svg class="rows-select-icon" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                </label>
+                            </div>
+                            <div class="helper-text" data-grid-summary>Menyiapkan data...</div>
+                        </div>
+                        <div class="pagination-controls">
+                            <button class="pagination-button" type="button" data-grid-prev>Sebelumnya</button>
+                            <span class="pagination-page" data-grid-page>Halaman 1</span>
+                            <button class="pagination-button" type="button" data-grid-next>Berikutnya</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        @endif
+
+        @if ($currentPage === 'reference-source-table' && $canViewMasterData && $referenceSourceTablePage)
+            <section class="section">
+                <div class="card" style="margin-bottom: 14px;">
+                    <div class="card-body">
+                        <div class="section-header">
+                            <div>
+                                <h2>{{ $referenceSourceTablePage['table'] }}</h2>
+                                <p>{{ $referenceSourceTablePage['description'] }}</p>
+                            </div>
+                            {!! $tag('Baris', number_format($referenceSourceTablePage['row_count']), 'table') !!}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-card" data-tunnel-source-table-app='@json($referenceSourceTablePage)'>
+                    <div class="master-data-toolbar">
+                        <div class="master-data-toolbar-main">
+                            <label class="search-field" aria-label="Cari baris tabel referensi">
+                                <svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+                                <input type="search" placeholder="Cari nilai pada tabel ini" data-grid-search>
+                            </label>
+                        </div>
+                        <div class="toolbar-actions">
+                            {!! $tag('Data', number_format($referenceSourceTablePage['row_count']), 'data', 'menu-tag', ' data-grid-count') !!}
+                            <a class="action-button" href="{{ $referenceSourceTablePage['template_endpoint'] }}">Template CSV</a>
+                            <button class="action-button" type="button" data-tunnel-table-import-trigger>Import CSV</button>
+                            <a class="action-button" href="{{ $referenceSourceTablePage['export_endpoint'] }}">Export CSV</a>
+                            <button class="action-button primary" type="button" data-grid-create>Tambah</button>
+                            <input type="file" accept=".csv,text/csv" data-tunnel-table-import-file hidden>
+                        </div>
+                    </div>
+
+                    <div class="table-body">
+                        <div class="master-data-table-wrap">
+                            <table class="master-data-table compact-data-table">
+                                <thead data-grid-head></thead>
+                                <tbody data-grid-body>
+                                    <tr>
+                                        <td colspan="10" class="grid-loading">Memuat data tabel referensi...</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -5184,6 +5363,7 @@
         @if ($canViewMasterData && $genericSourceTablePage && (
             ($currentPage === 'tunnel-source-table' && $tunnelSourceTablePage)
             || ($currentPage === 'warehouse-source-table' && $warehouseSourceTablePage)
+            || ($currentPage === 'reference-source-table' && $referenceSourceTablePage)
             || ($currentPage === 'master-data-entity' && (($masterDataPage['mode'] ?? null) === 'warehouse-source'))
         ))
             <div class="modal" data-tunnel-source-table-view-modal aria-hidden="true">
@@ -9810,7 +9990,8 @@
         const coordinateLiveLat = coordinateModal?.querySelector('[data-tunnel-source-table-coordinate-live-lat]');
         const coordinateLiveLon = coordinateModal?.querySelector('[data-tunnel-source-table-coordinate-live-lon]');
         const isTunnelMasterTable = config.table === 'm_tunnels';
-        const hasCoordinatePicker = ['m_tunnels', 'm_gudang'].includes(config.table);
+        const hasCoordinatePicker = formColumns.some((column) => column.name === 'lat')
+            && formColumns.some((column) => column.name === 'long');
         const lookupOptions = config.lookup_options && typeof config.lookup_options === 'object' ? config.lookup_options : {};
         const state = {
             page: 1,
@@ -10010,7 +10191,7 @@
                                     <td>
                                         <div class="row-title">
                                             <strong>${cellValue}</strong>
-                                            <span>${escapeHtml(formatValue(data.tunnel_id ?? data.kode_aset ?? data.kode_gudang ?? row.row_key))}</span>
+                                            <span>${escapeHtml(formatValue(data.tunnel_id ?? data.kode_aset ?? data.kode_gudang ?? data.kode_prasarana ?? data.kode_lintas ?? data.id ?? data.name ?? row.row_key))}</span>
                                         </div>
                                     </td>
                                 `;
@@ -10560,7 +10741,7 @@
 
             const record = state.rows.find((row) => String(row.row_key) === String(rowKey));
             const data = record?.data || {};
-            const label = data.nama_gudang || data.nama_terowongan || data.nama || data.nomor_bh || data.kode_gudang || data.kode || data.tunnel_id || rowKey;
+            const label = data.nama_gudang || data.nama_terowongan || data.nama_stasiun || data.nama_prasarana || data.nama || data.name || data.nomor_bh || data.kode_gudang || data.kode_prasarana || data.kode_lintas || data.kode || data.id || data.tunnel_id || rowKey;
 
             if (!window.confirm(`Hapus row ${label} dari ${config.table || `tabel ${entityLabel.toLowerCase()}`}?`)) {
                 return;

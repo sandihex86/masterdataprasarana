@@ -80,6 +80,7 @@ class DatabaseSeeder extends Seeder
         $this->seedApiClient($actorId);
         $this->seedImportMapping($actorId);
         $this->seedBridgeImportMapping($actorId);
+        $this->call(ReferenceSourceSeeder::class);
         $this->call(TunnelLookupSeeder::class);
         $this->call(WarehouseSourceSeeder::class);
     }

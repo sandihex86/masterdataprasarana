@@ -59,6 +59,14 @@ Route::middleware('auth')->group(function (): void {
         Route::post('/master-data/gudang/tables/{table}/rows', [DashboardController::class, 'storeWarehouseSourceTableRow'])->name('warehouse-source.tables.rows.store');
         Route::match(['put', 'patch'], '/master-data/gudang/tables/{table}/rows/{rowKey}', [DashboardController::class, 'updateWarehouseSourceTableRow'])->name('warehouse-source.tables.rows.update');
         Route::delete('/master-data/gudang/tables/{table}/rows/{rowKey}', [DashboardController::class, 'destroyWarehouseSourceTableRow'])->name('warehouse-source.tables.rows.destroy');
+        Route::get('/master-data/referensi/tables/{table}', [DashboardController::class, 'referenceSourceTable'])->name('reference-source.tables.show');
+        Route::get('/master-data/referensi/tables/{table}/template', [DashboardController::class, 'referenceSourceTableCsvTemplate'])->name('reference-source.tables.template');
+        Route::post('/master-data/referensi/tables/{table}/import', [DashboardController::class, 'importReferenceSourceTableRows'])->name('reference-source.tables.import');
+        Route::get('/master-data/referensi/tables/{table}/export', [DashboardController::class, 'exportReferenceSourceTableRows'])->name('reference-source.tables.export');
+        Route::get('/master-data/referensi/tables/{table}/rows', [DashboardController::class, 'referenceSourceTableRows'])->name('reference-source.tables.rows');
+        Route::post('/master-data/referensi/tables/{table}/rows', [DashboardController::class, 'storeReferenceSourceTableRow'])->name('reference-source.tables.rows.store');
+        Route::match(['put', 'patch'], '/master-data/referensi/tables/{table}/rows/{rowKey}', [DashboardController::class, 'updateReferenceSourceTableRow'])->name('reference-source.tables.rows.update');
+        Route::delete('/master-data/referensi/tables/{table}/rows/{rowKey}', [DashboardController::class, 'destroyReferenceSourceTableRow'])->name('reference-source.tables.rows.destroy');
         Route::get('/master-data/{entity}/records', [DashboardController::class, 'masterDataRecords'])->name('master-data.records');
         Route::post('/master-data/{entity}/records', [DashboardController::class, 'storeMasterDataRecord'])->name('master-data.records.store');
         Route::get('/master-data/{entity}/records/{masterData}', [DashboardController::class, 'masterDataRecord'])->name('master-data.record');

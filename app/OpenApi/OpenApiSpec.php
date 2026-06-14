@@ -28,6 +28,7 @@ use OpenApi\Attributes as OA;
 #[OA\Tag(name: 'Bridges', description: 'API untuk Master Data Jembatan, detail teknis, batch data, lokasi, survey, kondisi, perawatan, dan integrasi aplikasi lain.')]
 #[OA\Tag(name: 'Tunnels', description: 'API untuk Master Data Terowongan Kereta, struktur, spesifikasi teknis, dan dokumen.')]
 #[OA\Tag(name: 'Warehouses', description: 'API untuk Master Data Gudang pada database prasarana_warehouse.')]
+#[OA\Tag(name: 'References', description: 'API untuk tabel Referensi pada database prasarana_referensi.')]
 #[OA\Tag(name: 'Import Mappings', description: 'Konfigurasi mapping dan preview transformasi import.')]
 final class OpenApiSpec
 {
