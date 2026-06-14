@@ -3098,9 +3098,13 @@
     $masterDataPage = $masterDataPage ?? null;
     $bridgeSourceTablePage = $bridgeSourceTablePage ?? null;
     $tunnelSourceTablePage = $tunnelSourceTablePage ?? null;
+    $warehouseSourceTablePage = $warehouseSourceTablePage ?? null;
     $superadminUserPage = $superadminUserPage ?? null;
     $superadminApiClientPage = $superadminApiClientPage ?? null;
-    $activeMasterDataKey = $masterDataPage['key'] ?? $bridgeSourceTablePage['parent_key'] ?? $tunnelSourceTablePage['parent_key'] ?? null;
+    $activeMasterDataKey = $masterDataPage['key'] ?? $bridgeSourceTablePage['parent_key'] ?? $tunnelSourceTablePage['parent_key'] ?? $warehouseSourceTablePage['parent_key'] ?? null;
+    $genericSourceTablePage = (($masterDataPage['mode'] ?? null) === 'warehouse-source')
+        ? $masterDataPage
+        : ($warehouseSourceTablePage ?? $tunnelSourceTablePage);
     $bridgeModule = $overview['bridge_module'] ?? null;
     $metadataModules = [
         ['key' => 'jembatan', 'label' => 'Jembatan', 'status' => $bridgeModule ? count($bridgeModule['fields']) . ' field' : 'Pending', 'fields' => $bridgeModule['fields'] ?? []],
@@ -3150,6 +3154,7 @@
         'master-data-entity' => ['title' => $masterDataPage['label'] ?? 'Master Data', 'description' => 'Grid data aktif.'],
         'bridge-source-table' => ['title' => $bridgeSourceTablePage['label'] ?? 'Tabel Source Jembatan', 'description' => $bridgeSourceTablePage['description'] ?? 'Data tabel source dari dump SQL.'],
         'tunnel-source-table' => ['title' => $tunnelSourceTablePage['label'] ?? 'Tabel Terowongan', 'description' => $tunnelSourceTablePage['description'] ?? 'Data tabel source Terowongan.'],
+        'warehouse-source-table' => ['title' => $warehouseSourceTablePage['label'] ?? 'Tabel Gudang', 'description' => $warehouseSourceTablePage['description'] ?? 'Data tabel source Gudang.'],
         'superadmin-users' => ['title' => $superadminUserPage['label'] ?? 'Manajemen User', 'description' => 'CRUD akun internal, role, dan kontrol akses dashboard.'],
         'superadmin-api-clients' => ['title' => $superadminApiClientPage['label'] ?? 'Bearer Key API', 'description' => 'Kelola client API dan generate bearer token dengan desain dashboard modern.'],
     ];
@@ -3222,7 +3227,7 @@
                     <div class="nav-list">
                         @foreach ($masterDataMenu as $item)
                             @php
-                                $isActiveMasterItem = in_array($currentPage, ['master-data-entity', 'bridge-source-table', 'tunnel-source-table'], true) && $activeMasterDataKey === $item['key'];
+                                $isActiveMasterItem = in_array($currentPage, ['master-data-entity', 'bridge-source-table', 'tunnel-source-table', 'warehouse-source-table'], true) && $activeMasterDataKey === $item['key'];
                             @endphp
                             <div class="nav-group {{ $isActiveMasterItem ? 'is-expanded' : '' }}" data-master-nav-group data-master-nav-key="{{ $item['key'] }}">
                                 <button class="nav-link {{ $isActiveMasterItem ? 'active' : '' }}" type="button" data-master-nav-toggle aria-expanded="{{ $isActiveMasterItem ? 'true' : 'false' }}">
@@ -3233,6 +3238,9 @@
                                                 @break
                                             @case('terowongan')
                                                 <svg class="icon" viewBox="0 0 24 24"><path d="M4 18V9a8 8 0 0 1 16 0v9"/><path d="M8 18V9a4 4 0 0 1 8 0v9"/><path d="M3 18h18"/><path d="M6 13h12"/></svg>
+                                                @break
+                                            @case('gudang')
+                                                <svg class="icon" viewBox="0 0 24 24"><path d="M3 20h18"/><path d="M5 20V9l7-5 7 5v11"/><path d="M9 20v-7h6v7"/><path d="M8 11h8"/></svg>
                                                 @break
                                             @case('jalur')
                                                 <svg class="icon" viewBox="0 0 24 24"><path d="M7 4h10"/><path d="M8 4l-2 16"/><path d="M16 4l2 16"/><path d="M6.5 10h11"/><path d="M5.5 16h13"/></svg>
@@ -3264,6 +3272,7 @@
                                                     : (
                                                         ($currentPage === 'bridge-source-table' && ($bridgeSourceTablePage['table'] ?? null) === ($child['table'] ?? null))
                                                         || ($currentPage === 'tunnel-source-table' && ($tunnelSourceTablePage['table'] ?? null) === ($child['table'] ?? null))
+                                                        || ($currentPage === 'warehouse-source-table' && ($warehouseSourceTablePage['table'] ?? null) === ($child['table'] ?? null))
                                                     );
                                             @endphp
                                             <a class="nav-child-link nav-child-link-{{ $childKind }} {{ $isActiveChild ? 'active' : '' }}" href="{{ $child['href'] }}">
@@ -3848,6 +3857,63 @@
                         </div>
                     </div>
                 </section>
+            @elseif (($masterDataPage['mode'] ?? 'master-data') === 'warehouse-source')
+                <section class="section">
+                    <div class="table-card" data-tunnel-source-table-app='@json($masterDataPage)'>
+                        <div class="master-data-toolbar">
+                            <div class="master-data-toolbar-main">
+                                <label class="search-field" aria-label="Cari data gudang">
+                                    <svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+                                    <input type="search" placeholder="Cari nama, kode, tipe, wilayah, atau koordinat" data-grid-search>
+                                </label>
+                            </div>
+                            <div class="toolbar-actions">
+                                {!! $tag('Data', number_format($masterDataPage['records_count']), 'data', 'menu-tag', ' data-grid-count') !!}
+                                {!! $tag('DB', $masterDataPage['database_name'] ?? 'prasarana_warehouse', 'data') !!}
+                                <a class="action-button" href="{{ $masterDataPage['template_endpoint'] }}">Template CSV</a>
+                                <button class="action-button" type="button" data-tunnel-table-import-trigger>Import CSV</button>
+                                <a class="action-button" href="{{ $masterDataPage['export_endpoint'] }}">Export CSV</a>
+                                <button class="action-button primary" type="button" data-grid-create>Tambah</button>
+                                <input type="file" accept=".csv,text/csv" data-tunnel-table-import-file hidden>
+                            </div>
+                        </div>
+
+                        <div class="table-body">
+                            <div class="master-data-table-wrap">
+                                <table class="master-data-table compact-data-table">
+                                    <thead data-grid-head></thead>
+                                    <tbody data-grid-body>
+                                        <tr>
+                                            <td colspan="10" class="grid-loading">Memuat data gudang...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="pagination-bar">
+                            <div class="pagination-meta">
+                                <div class="rows-per-page">
+                                    <span class="rows-label">Baris</span>
+                                    <label class="rows-select-wrap" aria-label="Jumlah data per halaman">
+                                        <select class="rows-select" data-grid-per-page>
+                                            <option value="10">10</option>
+                                            <option value="25">25</option>
+                                            <option value="50">50</option>
+                                        </select>
+                                        <svg class="rows-select-icon" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                    </label>
+                                </div>
+                                <div class="helper-text" data-grid-summary>Menyiapkan data gudang...</div>
+                            </div>
+                            <div class="pagination-controls">
+                                <button class="pagination-button" type="button" data-grid-prev>Sebelumnya</button>
+                                <span class="pagination-page" data-grid-page>Halaman 1</span>
+                                <button class="pagination-button" type="button" data-grid-next>Berikutnya</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
             @else
                 <section class="section">
                     <div class="table-card" data-master-data-app='@json($masterDataPage)'>
@@ -4013,6 +4079,76 @@
                                 <tbody data-grid-body>
                                     <tr>
                                         <td colspan="8" class="grid-loading">Memuat data tabel terowongan...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="pagination-bar">
+                        <div class="pagination-meta">
+                            <div class="rows-per-page">
+                                <span class="rows-label">Baris</span>
+                                <label class="rows-select-wrap" aria-label="Jumlah data per halaman">
+                                    <select class="rows-select" data-grid-per-page>
+                                        <option value="10">10</option>
+                                        <option value="25">25</option>
+                                        <option value="50">50</option>
+                                    </select>
+                                    <svg class="rows-select-icon" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                </label>
+                            </div>
+                            <div class="helper-text" data-grid-summary>Menyiapkan data...</div>
+                        </div>
+                        <div class="pagination-controls">
+                            <button class="pagination-button" type="button" data-grid-prev>Sebelumnya</button>
+                            <span class="pagination-page" data-grid-page>Halaman 1</span>
+                            <button class="pagination-button" type="button" data-grid-next>Berikutnya</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        @endif
+
+        @if ($currentPage === 'warehouse-source-table' && $canViewMasterData && $warehouseSourceTablePage)
+            <section class="section">
+                <div class="card" style="margin-bottom: 14px;">
+                    <div class="card-body">
+                        <div class="section-header">
+                            <div>
+                                <h2>{{ $warehouseSourceTablePage['table'] }}</h2>
+                                <p>{{ $warehouseSourceTablePage['description'] }}</p>
+                            </div>
+                            {!! $tag('Baris', number_format($warehouseSourceTablePage['row_count']), 'table') !!}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-card" data-tunnel-source-table-app='@json($warehouseSourceTablePage)'>
+                    <div class="master-data-toolbar">
+                        <div class="master-data-toolbar-main">
+                            <label class="search-field" aria-label="Cari baris tabel gudang">
+                                <svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+                                <input type="search" placeholder="Cari nilai pada tabel ini" data-grid-search>
+                            </label>
+                        </div>
+                        <div class="toolbar-actions">
+                            {!! $tag('Data', number_format($warehouseSourceTablePage['row_count']), 'data', 'menu-tag', ' data-grid-count') !!}
+                            <a class="action-button" href="{{ $warehouseSourceTablePage['template_endpoint'] }}">Template CSV</a>
+                            <button class="action-button" type="button" data-tunnel-table-import-trigger>Import CSV</button>
+                            <a class="action-button" href="{{ $warehouseSourceTablePage['export_endpoint'] }}">Export CSV</a>
+                            <button class="action-button primary" type="button" data-grid-create>Tambah</button>
+                            <input type="file" accept=".csv,text/csv" data-tunnel-table-import-file hidden>
+                        </div>
+                    </div>
+
+                    <div class="table-body">
+                        <div class="master-data-table-wrap">
+                            <table class="master-data-table compact-data-table">
+                                <thead data-grid-head></thead>
+                                <tbody data-grid-body>
+                                    <tr>
+                                        <td colspan="10" class="grid-loading">Memuat data tabel gudang...</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -4921,6 +5057,7 @@
                         </div>
                     </div>
                 </div>
+            @elseif (($masterDataPage['mode'] ?? 'master-data') === 'warehouse-source')
             @else
                 <div class="modal" data-view-modal aria-hidden="true">
                     <div class="modal-backdrop" data-modal-close></div>
@@ -5044,13 +5181,17 @@
             </div>
         @endif
 
-        @if ($currentPage === 'tunnel-source-table' && $canViewMasterData && $tunnelSourceTablePage)
+        @if ($canViewMasterData && $genericSourceTablePage && (
+            ($currentPage === 'tunnel-source-table' && $tunnelSourceTablePage)
+            || ($currentPage === 'warehouse-source-table' && $warehouseSourceTablePage)
+            || ($currentPage === 'master-data-entity' && (($masterDataPage['mode'] ?? null) === 'warehouse-source'))
+        ))
             <div class="modal" data-tunnel-source-table-view-modal aria-hidden="true">
                 <div class="modal-backdrop" data-modal-close></div>
                 <div class="modal-panel modal-panel-xl">
                     <div class="modal-head">
                         <div>
-                            <h2>Detail {{ $tunnelSourceTablePage['table'] }}</h2>
+                            <h2>Detail {{ $genericSourceTablePage['table'] }}</h2>
                             <p data-tunnel-source-table-view-subtitle>Memuat data...</p>
                         </div>
                         <button class="icon-button" type="button" data-modal-close aria-label="Tutup detail">
@@ -5066,8 +5207,8 @@
                 <div class="modal-panel modal-panel-xl">
                     <div class="modal-head">
                         <div>
-                            <h2 data-tunnel-source-table-form-title>Tambah {{ $tunnelSourceTablePage['table'] }}</h2>
-                            <p data-tunnel-source-table-form-subtitle>Input row baru langsung ke database prasarana_tunnel.</p>
+                            <h2 data-tunnel-source-table-form-title>Tambah {{ $genericSourceTablePage['table'] }}</h2>
+                            <p data-tunnel-source-table-form-subtitle>Input row baru langsung ke database {{ $genericSourceTablePage['database_name'] ?? 'prasarana_tunnel' }}.</p>
                         </div>
                         <button class="icon-button" type="button" data-modal-close aria-label="Tutup form">
                             <svg class="icon" viewBox="0 0 24 24"><path d="M6 6 18 18"/><path d="M18 6 6 18"/></svg>
@@ -5092,7 +5233,7 @@
                     <div class="modal-head">
                         <div>
                             <h2>Pilih Koordinat</h2>
-                            <p>Geser peta sampai titik berada di lokasi terowongan.</p>
+                            <p>Geser peta sampai titik berada di lokasi aset.</p>
                         </div>
                         <button class="icon-button" type="button" data-modal-close aria-label="Tutup selector koordinat">
                             <svg class="icon" viewBox="0 0 24 24"><path d="M6 6 18 18"/><path d="M18 6 6 18"/></svg>
@@ -9636,6 +9777,8 @@
         const config = JSON.parse(root.dataset.tunnelSourceTableApp || '{}');
         const columns = Array.isArray(config.columns) && config.columns.length ? config.columns : ['row_key'];
         const formColumns = Array.isArray(config.form_columns) ? config.form_columns : [];
+        const entityLabel = config.label || (config.table === 'm_gudang' ? 'Gudang' : 'Terowongan');
+        const databaseName = config.database_name || 'prasarana_tunnel';
         const gridHead = root.querySelector('[data-grid-head]');
         const gridBody = root.querySelector('[data-grid-body]');
         const gridSearch = root.querySelector('[data-grid-search]');
@@ -9667,6 +9810,7 @@
         const coordinateLiveLat = coordinateModal?.querySelector('[data-tunnel-source-table-coordinate-live-lat]');
         const coordinateLiveLon = coordinateModal?.querySelector('[data-tunnel-source-table-coordinate-live-lon]');
         const isTunnelMasterTable = config.table === 'm_tunnels';
+        const hasCoordinatePicker = ['m_tunnels', 'm_gudang'].includes(config.table);
         const lookupOptions = config.lookup_options && typeof config.lookup_options === 'object' ? config.lookup_options : {};
         const state = {
             page: 1,
@@ -9790,7 +9934,7 @@
 
         const extractErrorMessage = (payload) => {
             if (!payload) {
-                return 'Terjadi kesalahan saat memproses tabel terowongan.';
+                return `Terjadi kesalahan saat memproses tabel ${entityLabel.toLowerCase()}.`;
             }
 
             if (payload.error?.details && typeof payload.error.details === 'object') {
@@ -9807,7 +9951,7 @@
                 return Object.values(payload.errors).flat().join('\n');
             }
 
-            return payload.message || 'Terjadi kesalahan saat memproses tabel terowongan.';
+            return payload.message || `Terjadi kesalahan saat memproses tabel ${entityLabel.toLowerCase()}.`;
         };
 
         const setLoadingState = (loading) => {
@@ -9848,7 +9992,7 @@
             }
 
             if (!state.rows.length) {
-                gridBody.innerHTML = `<tr><td colspan="${totalColumns}" class="grid-empty">Belum ada data pada tabel ${escapeHtml(config.table || 'terowongan')}.</td></tr>`;
+                gridBody.innerHTML = `<tr><td colspan="${totalColumns}" class="grid-empty">Belum ada data pada tabel ${escapeHtml(config.table || entityLabel.toLowerCase())}.</td></tr>`;
                 return;
             }
 
@@ -9866,7 +10010,7 @@
                                     <td>
                                         <div class="row-title">
                                             <strong>${cellValue}</strong>
-                                            <span>${escapeHtml(formatValue(data.tunnel_id ?? data.kode_aset ?? row.row_key))}</span>
+                                            <span>${escapeHtml(formatValue(data.tunnel_id ?? data.kode_aset ?? data.kode_gudang ?? row.row_key))}</span>
                                         </div>
                                     </td>
                                 `;
@@ -10064,10 +10208,10 @@
             formFields.innerHTML = groups
                 .filter((group) => group.columns.length)
                 .map((group) => {
-                    const renderedColumns = isTunnelMasterTable
+                    const renderedColumns = hasCoordinatePicker
                         ? group.columns.filter((column) => !isCoordinateColumn(column.name || ''))
                         : group.columns;
-                    const coordinateFields = isTunnelMasterTable ? renderCoordinateFields(group.columns) : '';
+                    const coordinateFields = hasCoordinatePicker ? renderCoordinateFields(group.columns) : '';
 
                     return `
                         <section class="form-section">
@@ -10142,7 +10286,7 @@
             }
 
             if (formSubtitle) {
-                formSubtitle.textContent = 'Input row baru langsung ke database prasarana_tunnel.';
+                formSubtitle.textContent = `Input row baru langsung ke database ${databaseName}.`;
             }
 
             openModal(formModal);
@@ -10416,9 +10560,9 @@
 
             const record = state.rows.find((row) => String(row.row_key) === String(rowKey));
             const data = record?.data || {};
-            const label = data.nama_terowongan || data.nama || data.nomor_bh || data.kode || data.tunnel_id || rowKey;
+            const label = data.nama_gudang || data.nama_terowongan || data.nama || data.nomor_bh || data.kode_gudang || data.kode || data.tunnel_id || rowKey;
 
-            if (!window.confirm(`Hapus row ${label} dari ${config.table || 'tabel terowongan'}?`)) {
+            if (!window.confirm(`Hapus row ${label} dari ${config.table || `tabel ${entityLabel.toLowerCase()}`}?`)) {
                 return;
             }
 

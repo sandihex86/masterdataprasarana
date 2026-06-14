@@ -50,6 +50,26 @@ class DatabaseSeeder extends Seeder
             actorId: $actorId,
             attributes: TunnelModuleDefinition::typeAttributes(),
         );
+        $this->seedMasterDataType(
+            code: 'warehouse',
+            name: 'Gudang',
+            actorId: $actorId,
+            attributes: [
+                'validation_rules' => [
+                    'code' => ['nullable', 'string', 'max:50'],
+                    'name' => ['required', 'string', 'max:191'],
+                    'data.tipe_gudang' => ['nullable', 'string', 'max:100'],
+                    'data.lat' => ['nullable', 'numeric', 'between:-90,90'],
+                    'data.long' => ['nullable', 'numeric', 'between:-180,180'],
+                ],
+                'searchable_fields' => ['code', 'name', 'data.tipe_gudang'],
+                'visible_fields' => ['code', 'name', 'data.tipe_gudang', 'status'],
+                'mapping_configuration' => [
+                    'source_system' => 'warehouse',
+                    'source_table' => 'm_gudang',
+                ],
+            ],
+        );
         $this->seedMasterDataType(code: 'railway_track', name: 'Jalur Kereta', actorId: $actorId);
         $this->seedMasterDataType(code: 'province', name: 'Provinsi', actorId: $actorId);
         $this->seedMasterDataType(code: 'city', name: 'Kabupaten/Kota', actorId: $actorId);
@@ -61,6 +81,7 @@ class DatabaseSeeder extends Seeder
         $this->seedImportMapping($actorId);
         $this->seedBridgeImportMapping($actorId);
         $this->call(TunnelLookupSeeder::class);
+        $this->call(WarehouseSourceSeeder::class);
     }
 
     private function seedMasterDataType(string $code, string $name, ?int $actorId, array $attributes = []): MasterDataType

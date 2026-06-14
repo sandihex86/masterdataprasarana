@@ -14,7 +14,26 @@ use App\Http\Controllers\Api\V1\ImportMappingController;
 use App\Http\Controllers\Api\V1\MasterDataController;
 use App\Http\Controllers\Api\V1\MasterDataTypeController;
 use App\Http\Controllers\Api\V1\TunnelController;
+use App\Http\Controllers\Api\V1\WarehouseController;
 use Illuminate\Support\Facades\Route;
+
+$warehouseRoutes = static function (): void {
+    Route::get('/warehouses', [WarehouseController::class, 'index'])
+        ->middleware('abilities:master-data:read')
+        ->name('api.warehouses.index');
+    Route::post('/warehouses', [WarehouseController::class, 'store'])
+        ->middleware('abilities:master-data:write')
+        ->name('api.warehouses.store');
+    Route::get('/warehouses/{id_gudang}', [WarehouseController::class, 'show'])
+        ->middleware('abilities:master-data:read')
+        ->name('api.warehouses.show');
+    Route::match(['put', 'patch'], '/warehouses/{id_gudang}', [WarehouseController::class, 'update'])
+        ->middleware('abilities:master-data:write')
+        ->name('api.warehouses.update');
+    Route::delete('/warehouses/{id_gudang}', [WarehouseController::class, 'destroy'])
+        ->middleware('abilities:master-data:delete')
+        ->name('api.warehouses.destroy');
+};
 
 $tunnelRoutes = static function (): void {
     Route::get('/tunnels', [TunnelController::class, 'index'])
@@ -53,6 +72,7 @@ $tunnelRoutes = static function (): void {
 };
 
 Route::middleware(['auth:sanctum', 'api.actor'])->group($tunnelRoutes);
+Route::middleware(['auth:sanctum', 'api.actor'])->group($warehouseRoutes);
 
 Route::prefix('v1')->group(function (): void {
     Route::get('/health', [HealthController::class, 'summary'])->name('api.v1.health.summary');
@@ -62,6 +82,25 @@ Route::prefix('v1')->group(function (): void {
         ->name('api.v1.integration.health');
 
     Route::middleware(['auth:sanctum', 'api.actor'])->group(function (): void {
+        Route::get('/warehouses', [WarehouseController::class, 'index'])
+            ->middleware('abilities:master-data:read')
+            ->name('api.v1.warehouses.index');
+        Route::post('/warehouses', [WarehouseController::class, 'store'])
+            ->middleware('abilities:master-data:write')
+            ->name('api.v1.warehouses.store');
+        Route::get('/warehouses/batch', [WarehouseController::class, 'batch'])
+            ->middleware('abilities:master-data:read')
+            ->name('api.v1.warehouses.batch');
+        Route::get('/warehouses/{id_gudang}', [WarehouseController::class, 'show'])
+            ->middleware('abilities:master-data:read')
+            ->name('api.v1.warehouses.show');
+        Route::match(['put', 'patch'], '/warehouses/{id_gudang}', [WarehouseController::class, 'update'])
+            ->middleware('abilities:master-data:write')
+            ->name('api.v1.warehouses.update');
+        Route::delete('/warehouses/{id_gudang}', [WarehouseController::class, 'destroy'])
+            ->middleware('abilities:master-data:delete')
+            ->name('api.v1.warehouses.destroy');
+
         Route::get('/tunnels', [TunnelController::class, 'index'])
             ->middleware('abilities:master-data:read')
             ->name('api.v1.tunnels.index');

@@ -38,6 +38,7 @@ use App\Services\SuperAdmin\UserManagementService;
 use App\Services\TunnelDocumentUploadService;
 use App\Services\TunnelService;
 use App\Services\TunnelSourceTableService;
+use App\Services\WarehouseSourceTableService;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -45,6 +46,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
@@ -64,6 +66,10 @@ class DashboardController extends Controller
         'terowongan' => [
             'label' => 'Terowongan',
             'type_code' => 'tunnel',
+        ],
+        'gudang' => [
+            'label' => 'Gudang',
+            'type_code' => 'warehouse',
         ],
     ];
 
@@ -131,6 +137,7 @@ class DashboardController extends Controller
         private readonly TunnelService $tunnelService,
         private readonly TunnelSourceTableService $tunnelSourceTableService,
         private readonly TunnelDocumentUploadService $tunnelDocumentUploadService,
+        private readonly WarehouseSourceTableService $warehouseSourceTableService,
     ) {}
 
     public function index(): View
@@ -184,6 +191,13 @@ class DashboardController extends Controller
     {
         return $this->renderPage('tunnel-source-table', [
             'tunnelSourceTablePage' => $this->resolveTunnelSourceTablePage($table),
+        ]);
+    }
+
+    public function warehouseSourceTable(string $table): View
+    {
+        return $this->renderPage('warehouse-source-table', [
+            'warehouseSourceTablePage' => $this->resolveWarehouseSourceTablePage($table),
         ]);
     }
 
@@ -600,6 +614,58 @@ class DashboardController extends Controller
         return ApiResponse::success('Data tabel terowongan berhasil dihapus.');
     }
 
+    public function warehouseSourceTableRows(ListBridgeSourceRequest $request, string $table): JsonResponse
+    {
+        $this->ensureOperationalDashboardAccess();
+        $rows = $this->warehouseSourceTableService->paginate($table, $request->validated());
+        $tablePage = $this->resolveWarehouseSourceTablePage($table);
+
+        return ApiResponse::paginated(
+            'Data tabel gudang berhasil diambil.',
+            $rows->items(),
+            $rows,
+            [
+                'warehouse_source_table' => [
+                    'table' => $tablePage['table'],
+                    'label' => $tablePage['label'],
+                ],
+            ],
+        );
+    }
+
+    public function storeWarehouseSourceTableRow(Request $request, string $table): JsonResponse
+    {
+        $this->ensureOperationalDashboardAccess();
+
+        return ApiResponse::success(
+            'Data tabel gudang berhasil dibuat.',
+            $this->warehouseSourceTableService->create($table, $request->validate([
+                'data' => ['required', 'array'],
+            ])),
+            status: 201,
+        );
+    }
+
+    public function updateWarehouseSourceTableRow(Request $request, string $table, string $rowKey): JsonResponse
+    {
+        $this->ensureOperationalDashboardAccess();
+
+        return ApiResponse::success(
+            'Data tabel gudang berhasil diperbarui.',
+            $this->warehouseSourceTableService->update($table, $rowKey, $request->validate([
+                'data' => ['required', 'array'],
+            ])),
+        );
+    }
+
+    public function destroyWarehouseSourceTableRow(string $table, string $rowKey): JsonResponse
+    {
+        $this->ensureOperationalDashboardAccess();
+        $this->warehouseSourceTableService->delete($table, $rowKey);
+
+        return ApiResponse::success('Data tabel gudang berhasil dihapus.');
+    }
+
     public function importTunnelSourceTableRows(Request $request, string $table): JsonResponse
     {
         $this->ensureOperationalDashboardAccess();
@@ -649,6 +715,58 @@ class DashboardController extends Controller
 
         return $this->downloadTunnelCsv('template-'.$table.'.csv', function ($handle) use ($table): void {
             $this->tunnelSourceTableService->streamCsv($table, $handle, includeRows: false);
+        });
+    }
+
+    public function importWarehouseSourceTableRows(Request $request, string $table): JsonResponse
+    {
+        $this->ensureOperationalDashboardAccess();
+
+        $validated = $request->validate([
+            'file' => ['required', 'file', 'mimes:csv,txt', 'max:5120'],
+        ]);
+
+        $file = $validated['file'] ?? null;
+        if (! $file instanceof UploadedFile) {
+            throw ValidationException::withMessages([
+                'file' => ['File CSV tidak valid.'],
+            ]);
+        }
+
+        $result = $this->warehouseSourceTableService->importCsv($table, $file->getRealPath());
+
+        if ($result['errors'] !== []) {
+            return ApiResponse::error(
+                'Sebagian data tabel gudang gagal diimport.',
+                'WAREHOUSE_TABLE_CSV_IMPORT_PARTIAL',
+                422,
+                [
+                    'created' => [$result['created'].' data berhasil dibuat.'],
+                    'rows' => $result['errors'],
+                ],
+            );
+        }
+
+        return ApiResponse::success('Import CSV tabel gudang berhasil.', [
+            'created' => $result['created'],
+        ]);
+    }
+
+    public function exportWarehouseSourceTableRows(string $table): StreamedResponse
+    {
+        $this->ensureOperationalDashboardAccess();
+
+        return $this->downloadTunnelCsv($table.'-export-'.now()->format('Ymd-His').'.csv', function ($handle) use ($table): void {
+            $this->warehouseSourceTableService->streamCsv($table, $handle);
+        });
+    }
+
+    public function warehouseSourceTableCsvTemplate(string $table): StreamedResponse
+    {
+        $this->ensureOperationalDashboardAccess();
+
+        return $this->downloadTunnelCsv('template-'.$table.'.csv', function ($handle) use ($table): void {
+            $this->warehouseSourceTableService->streamCsv($table, $handle, includeRows: false);
         });
     }
 
@@ -911,7 +1029,7 @@ class DashboardController extends Controller
         }
 
         return $user->hasRole(UserRole::Operator)
-            && in_array($page, ['overview', 'master-data-entity', 'bridge-source-table', 'tunnel-source-table'], true);
+            && in_array($page, ['overview', 'master-data-entity', 'bridge-source-table', 'tunnel-source-table', 'warehouse-source-table'], true);
     }
 
     /**
@@ -929,23 +1047,27 @@ class DashboardController extends Controller
             ? $this->bridgeSourceCrudService->count()
             : $this->bridgeSourceDumpService->countCombined();
         $tunnelRecordCount = $this->tunnelRecordCount();
+        $warehouseRecordCount = $this->warehouseRecordCount();
 
         return collect(self::MASTER_DATA_PAGES)
-            ->map(function (array $config, string $key) use ($typeMap, $bridgeRecordCount, $tunnelRecordCount): array {
+            ->map(function (array $config, string $key) use ($typeMap, $bridgeRecordCount, $tunnelRecordCount, $warehouseRecordCount): array {
                 /** @var MasterDataType|null $type */
                 $type = $typeMap->get($config['type_code']);
                 $isBridgeSource = $key === 'jembatan';
                 $isTunnelSource = $key === 'terowongan';
+                $isWarehouseSource = $key === 'gudang';
                 $sourceChildren = match (true) {
                     $isBridgeSource => $this->bridgeSourceCrudService->isDatabaseSourceAvailable()
                         ? $this->bridgeSourceCrudService->tableCatalog()
                         : $this->bridgeSourceDumpService->tables(),
                     $isTunnelSource => $this->tunnelSourceTableService->catalog(),
+                    $isWarehouseSource => $this->warehouseSourceTableService->catalog(),
                     default => [],
                 };
                 $recordCount = match (true) {
                     $isBridgeSource => $bridgeRecordCount,
                     $isTunnelSource => $tunnelRecordCount,
+                    $isWarehouseSource => $warehouseRecordCount,
                     default => $type?->records_count ?? 0,
                 };
 
@@ -955,7 +1077,7 @@ class DashboardController extends Controller
                     'type_code' => $config['type_code'],
                     'href' => route('dashboard.master-data.entity', ['entity' => $key]),
                     'record_count' => $recordCount,
-                    'is_available' => $isBridgeSource || $isTunnelSource || $type !== null,
+                    'is_available' => $isBridgeSource || $isTunnelSource || $isWarehouseSource || $type !== null,
                     'children' => [
                         [
                             'key' => $key.'-records',
@@ -1047,6 +1169,23 @@ class DashboardController extends Controller
             ];
         }
 
+        if ($entity === 'gudang') {
+            $warehousePage = $this->warehouseSourceTableService->mainPage();
+
+            return [
+                ...$warehousePage,
+                'key' => $entity,
+                'label' => $config['label'],
+                'type_code' => $config['type_code'],
+                'mode' => 'warehouse-source',
+                'records_count' => $this->warehouseRecordCount(),
+                'type_exists' => true,
+                'type_name' => $config['label'],
+                'crud_enabled' => true,
+                'data_mode' => 'database',
+            ];
+        }
+
         $type = MasterDataType::query()
             ->withCount('records')
             ->where('code', $config['type_code'])
@@ -1112,6 +1251,19 @@ class DashboardController extends Controller
             'parent_key' => 'terowongan',
             'mode' => 'tunnel-source-table',
             'breadcrumb_label' => 'Terowongan',
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function resolveWarehouseSourceTablePage(string $table): array
+    {
+        return [
+            ...$this->warehouseSourceTableService->tablePage($table),
+            'parent_key' => 'gudang',
+            'mode' => 'warehouse-source-table',
+            'breadcrumb_label' => 'Gudang',
         ];
     }
 
@@ -1198,6 +1350,15 @@ class DashboardController extends Controller
         }
 
         return Tunnel::query()->count();
+    }
+
+    private function warehouseRecordCount(): int
+    {
+        if (! Schema::connection('warehouse')->hasTable('m_gudang')) {
+            return 0;
+        }
+
+        return (int) DB::connection('warehouse')->table('m_gudang')->whereNull('deleted_at')->count();
     }
 
     private function downloadTunnelCsv(string $filename, callable $writer): StreamedResponse

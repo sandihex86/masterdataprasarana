@@ -4,6 +4,7 @@ namespace Tests\Feature\Web;
 
 use App\Models\User;
 use Database\Seeders\TunnelLookupSeeder;
+use Database\Seeders\WarehouseSourceSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
@@ -92,10 +93,10 @@ class DashboardTest extends TestCase
             ->assertSee('Master Data')
             ->assertSee('Jembatan')
             ->assertSee('Terowongan')
+            ->assertSee('Gudang')
             ->assertDontSee('<strong>Jalur</strong>', false)
             ->assertDontSee('<strong>Fasilitas Operasional</strong>', false)
             ->assertDontSee('<strong>Sertifikat</strong>', false)
-            ->assertDontSee('<strong>Gudang</strong>', false)
             ->assertDontSee('<p class="nav-title">Integrasi</p>', false)
             ->assertDontSee('Menu Utama');
 
@@ -323,6 +324,85 @@ class DashboardTest extends TestCase
             ->getJson('/dashboard/master-data/terowongan/tables/m_tunnel_specs/rows')
             ->assertOk()
             ->assertJsonPath('meta.tunnel_source_table.table', 'm_tunnel_specs');
+    }
+
+    public function test_admin_can_manage_warehouse_source_table_from_dashboard(): void
+    {
+        $this->ensureWarehouseSchema();
+        $this->seed(WarehouseSourceSeeder::class);
+        $user = User::factory()->admin()->create();
+
+        $this->actingAs($user)
+            ->get('/dashboard/master-data/gudang')
+            ->assertOk()
+            ->assertSee('Gudang')
+            ->assertSee('prasarana_warehouse')
+            ->assertSee('data-tunnel-source-table-app', false)
+            ->assertSee('data-tunnel-source-table-coordinate-modal', false)
+            ->assertSee('data-tunnel-source-table-coordinate-open', false)
+            ->assertSee('Template CSV')
+            ->assertSee('Import CSV')
+            ->assertSee('Export CSV')
+            ->assertSee('Tambah')
+            ->assertSee('Koordinat');
+
+        $this->actingAs($user)
+            ->getJson('/dashboard/master-data/gudang/tables/m_gudang/rows?search=Payakabung')
+            ->assertOk()
+            ->assertJsonPath('meta.warehouse_source_table.table', 'm_gudang')
+            ->assertJsonPath('data.0.data.nama_gudang', 'Gudang Prasarana Perkeretaapian Payakabung');
+
+        $createResponse = $this->actingAs($user)
+            ->postJson('/dashboard/master-data/gudang/tables/m_gudang/rows', [
+                'data' => [
+                    'nama_gudang' => 'Gudang Dashboard',
+                    'tipe_gudang' => 'Gudang Utama',
+                    'lat' => -6.175392,
+                    'long' => 106.827153,
+                    'active' => '1',
+                ],
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.data.nama_gudang', 'Gudang Dashboard')
+            ->assertJsonPath('data.data.lat', -6.175392)
+            ->assertJsonPath('data.data.long', 106.827153);
+
+        $rowKey = $createResponse->json('data.row_key');
+        $kodeGudang = $createResponse->json('data.data.kode_gudang');
+
+        $this->assertIsString($kodeGudang);
+        $this->assertMatchesRegularExpression('/^[0-9A-HJKMNP-TV-Z]{26}$/', $kodeGudang);
+        $this->assertSame($kodeGudang, $rowKey);
+        $this->assertSame($kodeGudang, $createResponse->json('data.data.id_gudang'));
+
+        $this->actingAs($user)
+            ->patchJson("/dashboard/master-data/gudang/tables/m_gudang/rows/{$rowKey}", [
+                'data' => [
+                    'nama_gudang' => 'Gudang Dashboard Baru',
+                    'active' => '0',
+                ],
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.data.nama_gudang', 'Gudang Dashboard Baru')
+            ->assertJsonPath('data.data.active', 0);
+
+        $this->assertDatabaseHas('m_gudang', [
+            'id_gudang' => $kodeGudang,
+            'kode_gudang' => $kodeGudang,
+            'nama_gudang' => 'Gudang Dashboard Baru',
+            'active' => 0,
+        ], 'warehouse');
+
+        $this->actingAs($user)
+            ->deleteJson("/dashboard/master-data/gudang/tables/m_gudang/rows/{$rowKey}")
+            ->assertOk();
+
+        $this->assertNotNull(
+            \DB::connection('warehouse')
+                ->table('m_gudang')
+                ->where('kode_gudang', $kodeGudang)
+                ->value('deleted_at'),
+        );
     }
 
     public function test_admin_can_view_seeded_tunnel_lookup_tables_from_dashboard(): void
@@ -590,6 +670,13 @@ class DashboardTest extends TestCase
 
         if (! Schema::connection('tunnel')->hasTable('m_tunnel_lookup_lintas')) {
             (require base_path('database/migrations/2026_06_13_090000_create_tunnel_lookup_tables.php'))->up();
+        }
+    }
+
+    private function ensureWarehouseSchema(): void
+    {
+        if (! Schema::connection('warehouse')->hasTable('m_gudang')) {
+            (require base_path('database/migrations/2026_06_14_000000_create_warehouse_source_tables.php'))->up();
         }
     }
 }

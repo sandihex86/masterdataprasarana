@@ -19,6 +19,7 @@ $assertNotTestingDatabase(env('CORE_DB_DATABASE'), 'CORE_DB_DATABASE');
 $assertNotTestingDatabase(env('REFERENCE_DB_DATABASE'), 'REFERENCE_DB_DATABASE');
 $assertNotTestingDatabase(env('BRIDGE_DB_DATABASE'), 'BRIDGE_DB_DATABASE');
 $assertNotTestingDatabase(env('TUNNEL_DB_DATABASE'), 'TUNNEL_DB_DATABASE');
+$assertNotTestingDatabase(env('WAREHOUSE_DB_DATABASE'), 'WAREHOUSE_DB_DATABASE');
 
 $mysqlConnection = static function (string $prefix, ?string $fallbackPrefix = null): array {
     $databaseDefault = $prefix === 'DB' ? 'laravel' : '';

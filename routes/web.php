@@ -51,6 +51,14 @@ Route::middleware('auth')->group(function (): void {
         Route::post('/master-data/terowongan/tables/{table}/rows', [DashboardController::class, 'storeTunnelSourceTableRow'])->name('tunnel-source.tables.rows.store');
         Route::match(['put', 'patch'], '/master-data/terowongan/tables/{table}/rows/{rowKey}', [DashboardController::class, 'updateTunnelSourceTableRow'])->name('tunnel-source.tables.rows.update');
         Route::delete('/master-data/terowongan/tables/{table}/rows/{rowKey}', [DashboardController::class, 'destroyTunnelSourceTableRow'])->name('tunnel-source.tables.rows.destroy');
+        Route::get('/master-data/gudang/tables/{table}', [DashboardController::class, 'warehouseSourceTable'])->name('warehouse-source.tables.show');
+        Route::get('/master-data/gudang/tables/{table}/template', [DashboardController::class, 'warehouseSourceTableCsvTemplate'])->name('warehouse-source.tables.template');
+        Route::post('/master-data/gudang/tables/{table}/import', [DashboardController::class, 'importWarehouseSourceTableRows'])->name('warehouse-source.tables.import');
+        Route::get('/master-data/gudang/tables/{table}/export', [DashboardController::class, 'exportWarehouseSourceTableRows'])->name('warehouse-source.tables.export');
+        Route::get('/master-data/gudang/tables/{table}/rows', [DashboardController::class, 'warehouseSourceTableRows'])->name('warehouse-source.tables.rows');
+        Route::post('/master-data/gudang/tables/{table}/rows', [DashboardController::class, 'storeWarehouseSourceTableRow'])->name('warehouse-source.tables.rows.store');
+        Route::match(['put', 'patch'], '/master-data/gudang/tables/{table}/rows/{rowKey}', [DashboardController::class, 'updateWarehouseSourceTableRow'])->name('warehouse-source.tables.rows.update');
+        Route::delete('/master-data/gudang/tables/{table}/rows/{rowKey}', [DashboardController::class, 'destroyWarehouseSourceTableRow'])->name('warehouse-source.tables.rows.destroy');
         Route::get('/master-data/{entity}/records', [DashboardController::class, 'masterDataRecords'])->name('master-data.records');
         Route::post('/master-data/{entity}/records', [DashboardController::class, 'storeMasterDataRecord'])->name('master-data.records.store');
         Route::get('/master-data/{entity}/records/{masterData}', [DashboardController::class, 'masterDataRecord'])->name('master-data.record');
