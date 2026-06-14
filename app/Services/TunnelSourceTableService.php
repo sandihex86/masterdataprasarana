@@ -81,6 +81,7 @@ class TunnelSourceTableService
             'list_endpoint' => route('dashboard.tunnel-source.tables.rows', ['table' => $table]),
             'store_endpoint' => route('dashboard.tunnel-source.tables.rows.store', ['table' => $table]),
             'update_endpoint' => route('dashboard.tunnel-source.tables.rows.update', ['table' => $table, 'rowKey' => '__row__']),
+            'delete_endpoint' => route('dashboard.tunnel-source.tables.rows.destroy', ['table' => $table, 'rowKey' => '__row__']),
             'template_endpoint' => route('dashboard.tunnel-source.tables.template', ['table' => $table]),
             'import_endpoint' => route('dashboard.tunnel-source.tables.import', ['table' => $table]),
             'export_endpoint' => route('dashboard.tunnel-source.tables.export', ['table' => $table]),
@@ -241,6 +242,38 @@ class TunnelSourceTableService
         }
 
         return $this->find($table, $current['row_key']);
+    }
+
+    public function delete(string $table, string $rowKey): void
+    {
+        $this->assertManagedTable($table);
+        $this->find($table, $rowKey);
+
+        $columns = $this->columnNames($table);
+
+        if (in_array('deleted_at', $columns, true)) {
+            $payload = [
+                'deleted_at' => now(),
+            ];
+
+            if (in_array('updated_at', $columns, true)) {
+                $payload['updated_at'] = now();
+            }
+
+            if (in_array('active', $columns, true)) {
+                $payload['active'] = 0;
+            }
+
+            $deleted = $this->rowLocatorQuery($table, $rowKey)->update($payload);
+        } else {
+            $deleted = $this->rowLocatorQuery($table, $rowKey)->delete();
+        }
+
+        if ($deleted === 0) {
+            throw ValidationException::withMessages([
+                'row_key' => ['Record tidak ditemukan pada tabel '.$table.'.'],
+            ]);
+        }
     }
 
     /**

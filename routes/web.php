@@ -39,7 +39,9 @@ Route::middleware('auth')->group(function (): void {
         Route::post('/master-data/terowongan/import', [DashboardController::class, 'importTunnelSourceRecords'])->name('tunnel-source.import');
         Route::get('/master-data/terowongan/export', [DashboardController::class, 'exportTunnelSourceRecords'])->name('tunnel-source.export');
         Route::get('/master-data/terowongan/template', [DashboardController::class, 'tunnelCsvTemplate'])->name('tunnel-source.template');
+        Route::get('/master-data/terowongan/documents/{path}', [DashboardController::class, 'tunnelDocument'])->where('path', '.*')->name('tunnel-source.documents.show');
         Route::match(['put', 'patch'], '/master-data/terowongan/source-records/{tunnel_id}', [DashboardController::class, 'updateTunnelSourceRecord'])->name('tunnel-source.records.update');
+        Route::delete('/master-data/terowongan/source-records/{tunnel_id}', [DashboardController::class, 'destroyTunnelSourceRecord'])->name('tunnel-source.records.destroy');
         Route::get('/master-data/terowongan/source-records/{tunnelId}', [DashboardController::class, 'tunnelSourceRecord'])->name('tunnel-source.records.show');
         Route::get('/master-data/terowongan/tables/{table}', [DashboardController::class, 'tunnelSourceTable'])->name('tunnel-source.tables.show');
         Route::get('/master-data/terowongan/tables/{table}/template', [DashboardController::class, 'tunnelSourceTableCsvTemplate'])->name('tunnel-source.tables.template');
@@ -48,6 +50,7 @@ Route::middleware('auth')->group(function (): void {
         Route::get('/master-data/terowongan/tables/{table}/rows', [DashboardController::class, 'tunnelSourceTableRows'])->name('tunnel-source.tables.rows');
         Route::post('/master-data/terowongan/tables/{table}/rows', [DashboardController::class, 'storeTunnelSourceTableRow'])->name('tunnel-source.tables.rows.store');
         Route::match(['put', 'patch'], '/master-data/terowongan/tables/{table}/rows/{rowKey}', [DashboardController::class, 'updateTunnelSourceTableRow'])->name('tunnel-source.tables.rows.update');
+        Route::delete('/master-data/terowongan/tables/{table}/rows/{rowKey}', [DashboardController::class, 'destroyTunnelSourceTableRow'])->name('tunnel-source.tables.rows.destroy');
         Route::get('/master-data/{entity}/records', [DashboardController::class, 'masterDataRecords'])->name('master-data.records');
         Route::post('/master-data/{entity}/records', [DashboardController::class, 'storeMasterDataRecord'])->name('master-data.records.store');
         Route::get('/master-data/{entity}/records/{masterData}', [DashboardController::class, 'masterDataRecord'])->name('master-data.record');

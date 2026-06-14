@@ -139,6 +139,10 @@ class DashboardTest extends TestCase
             ->assertSee('BTP KELAS II PALEMBANG')
             ->assertSee('KAMALPIER - KALIANGET')
             ->assertSee('tunnel-row-actions', false)
+            ->assertSee('data-tunnel-row-action="delete"', false)
+            ->assertSee('data-document-preview-modal', false)
+            ->assertSee('File DED/BED/Kajian Teknis')
+            ->assertSee('accept="application/pdf,image/*"', false)
             ->assertSee('Edit')
             ->assertSee('Koordinat')
             ->assertDontSee('<span>Tambah</span>', false)
@@ -208,6 +212,20 @@ class DashboardTest extends TestCase
         $this->assertIsString($path);
         $this->assertStringStartsWith('tunnels/docs/', $path);
         Storage::disk('public')->assertExists($path);
+
+        $this->actingAs($user)
+            ->get('/dashboard/master-data/terowongan/documents/'.$path)
+            ->assertOk();
+
+        $this->actingAs($user)
+            ->deleteJson("/dashboard/master-data/terowongan/source-records/{$tunnel->tunnel_id}")
+            ->assertOk();
+
+        $this->assertNotNull(
+            \App\Models\Tunnel::withTrashed()
+                ->where('tunnel_id', $tunnel->tunnel_id)
+                ->value('deleted_at'),
+        );
     }
 
     public function test_admin_can_create_import_export_and_download_tunnel_csv_template(): void
@@ -291,6 +309,7 @@ class DashboardTest extends TestCase
             ->assertSee('data-tunnel-source-table-coordinate-modal', false)
             ->assertSee('data-tunnel-source-table-coordinate-open', false)
             ->assertSee('data-tunnel-source-table-generated-id', false)
+            ->assertSee('data-tunnel-source-table-delete', false)
             ->assertSee('BTP KELAS II PALEMBANG')
             ->assertSee('KAMALPIER - KALIANGET')
             ->assertSee('Template CSV')
@@ -435,6 +454,17 @@ class DashboardTest extends TestCase
             'nama' => 'Test Lookup Lintasan Edit',
             'active' => 0,
         ], 'tunnel');
+
+        $this->actingAs($user)
+            ->deleteJson('/dashboard/master-data/terowongan/tables/m_tunnel_lookup_lintas/rows/'.$lookupId)
+            ->assertOk();
+
+        $this->assertNotNull(
+            \Illuminate\Support\Facades\DB::connection('tunnel')
+                ->table('m_tunnel_lookup_lintas')
+                ->where('id', $lookupId)
+                ->value('deleted_at'),
+        );
     }
 
     public function test_admin_can_import_export_and_download_template_for_tunnel_database_tables(): void

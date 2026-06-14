@@ -44,11 +44,14 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DashboardController extends Controller
@@ -589,6 +592,14 @@ class DashboardController extends Controller
         );
     }
 
+    public function destroyTunnelSourceTableRow(string $table, string $rowKey): JsonResponse
+    {
+        $this->ensureOperationalDashboardAccess();
+        $this->tunnelSourceTableService->delete($table, $rowKey);
+
+        return ApiResponse::success('Data tabel terowongan berhasil dihapus.');
+    }
+
     public function importTunnelSourceTableRows(Request $request, string $table): JsonResponse
     {
         $this->ensureOperationalDashboardAccess();
@@ -662,6 +673,14 @@ class DashboardController extends Controller
             'Data terowongan berhasil diperbarui.',
             TunnelDetailResource::make($this->tunnelService->update($tunnel_id, $payload))->resolve(),
         );
+    }
+
+    public function destroyTunnelSourceRecord(string $tunnel_id): JsonResponse
+    {
+        $this->ensureOperationalDashboardAccess();
+        $this->tunnelService->delete($tunnel_id);
+
+        return ApiResponse::success('Data terowongan berhasil dihapus.');
     }
 
     public function importTunnelSourceRecords(Request $request): JsonResponse
@@ -818,6 +837,43 @@ class DashboardController extends Controller
                 '{"path":"tunnels/docs/uji.pdf"}',
             ]);
         });
+    }
+
+    public function tunnelDocument(string $path): BinaryFileResponse|StreamedResponse
+    {
+        $this->ensureOperationalDashboardAccess();
+
+        $normalizedPath = ltrim(str_replace('\\', '/', $path), '/');
+
+        abort_unless(str_starts_with($normalizedPath, 'tunnels/docs/'), 404);
+
+        foreach ($this->tunnelDocumentCandidatePaths($normalizedPath) as $candidatePath) {
+            if (! is_file($candidatePath) || ! is_readable($candidatePath)) {
+                continue;
+            }
+
+            return response()->file($candidatePath, [
+                'Content-Type' => File::mimeType($candidatePath) ?: 'application/octet-stream',
+                'Content-Disposition' => 'inline; filename="'.basename($candidatePath).'"',
+            ]);
+        }
+
+        abort_unless(Storage::disk('public')->exists($normalizedPath), 404);
+
+        return Storage::disk('public')->response($normalizedPath);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function tunnelDocumentCandidatePaths(string $normalizedPath): array
+    {
+        return array_values(array_unique(array_filter([
+            Storage::disk('public')->path($normalizedPath),
+            storage_path('app/public/'.$normalizedPath),
+            public_path('storage/'.$normalizedPath),
+            public_path($normalizedPath),
+        ])));
     }
 
     private function renderPage(string $page, array $extra = []): View
@@ -983,6 +1039,7 @@ class DashboardController extends Controller
                 'list_endpoint' => route('dashboard.tunnel-source.records.index'),
                 'store_endpoint' => route('dashboard.tunnel-source.records.store'),
                 'update_endpoint' => route('dashboard.tunnel-source.records.update', ['tunnel_id' => '__tunnel__']),
+                'delete_endpoint' => route('dashboard.tunnel-source.records.destroy', ['tunnel_id' => '__tunnel__']),
                 'lookup_options' => $this->tunnelSourceTableService->tunnelLookupOptions(),
                 'import_endpoint' => route('dashboard.tunnel-source.import'),
                 'export_endpoint' => route('dashboard.tunnel-source.export'),

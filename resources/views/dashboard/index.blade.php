@@ -1586,7 +1586,8 @@
             display: flex;
             justify-content: flex-end;
             gap: 8px;
-            flex-wrap: wrap;
+            flex-wrap: nowrap;
+            white-space: nowrap;
         }
 
         .bridge-row-actions {
@@ -1602,12 +1603,13 @@
         }
 
         .tunnel-actions-cell {
-            width: 132px;
-            min-width: 132px;
+            width: 208px;
+            min-width: 208px;
             white-space: nowrap;
         }
 
-        .bridge-row-actions .inline-button {
+        .bridge-row-actions .inline-button,
+        .tunnel-row-actions .inline-button {
             min-width: 54px;
             padding: 7px 9px;
             border-radius: 10px;
@@ -1615,11 +1617,13 @@
             line-height: 1.15;
         }
 
-        .bridge-row-actions .inline-button::before {
+        .bridge-row-actions .inline-button::before,
+        .tunnel-row-actions .inline-button::before {
             display: none;
         }
 
-        .bridge-row-actions .inline-button:hover {
+        .bridge-row-actions .inline-button:hover,
+        .tunnel-row-actions .inline-button:hover {
             transform: translateY(-1px);
             box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
         }
@@ -2368,6 +2372,50 @@
             color: var(--text);
             background: rgba(255, 255, 255, 0.92);
             word-break: break-word;
+        }
+
+        .document-preview-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            max-width: 100%;
+            padding: 8px 10px;
+            border: 1px solid rgba(37, 99, 235, 0.16);
+            border-radius: 10px;
+            background: rgba(239, 246, 255, 0.84);
+            color: #1d4ed8;
+            font-size: 0.8rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .document-preview-button .icon {
+            width: 16px;
+            height: 16px;
+            flex: 0 0 16px;
+        }
+
+        .document-preview-label {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .document-preview-frame {
+            width: 100%;
+            min-height: min(72vh, 720px);
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            border-radius: 14px;
+            background: #f8fafc;
+        }
+
+        .document-preview-image {
+            display: block;
+            max-width: 100%;
+            max-height: min(72vh, 720px);
+            margin: 0 auto;
+            border-radius: 14px;
+            object-fit: contain;
         }
 
         .detail-record-table thead th {
@@ -5080,6 +5128,21 @@
                 </div>
             </div>
         @endif
+        <div class="modal" data-document-preview-modal aria-hidden="true">
+            <div class="modal-backdrop" data-modal-close></div>
+            <div class="modal-panel modal-panel-xl">
+                <div class="modal-head">
+                    <div>
+                        <h2 data-document-preview-title>Preview Dokumen</h2>
+                        <p data-document-preview-subtitle>Dokumen terunggah</p>
+                    </div>
+                    <button class="icon-button" type="button" data-modal-close aria-label="Tutup preview dokumen">
+                        <svg class="icon" viewBox="0 0 24 24"><path d="M6 6 18 18"/><path d="M18 6 6 18"/></svg>
+                    </button>
+                </div>
+                <div class="modal-body" data-document-preview-content></div>
+            </div>
+        </div>
     </main>
 </div>
 <script src="{{ asset('vendor-cytoscape.min.js') }}"></script>
@@ -5332,6 +5395,222 @@
             wrapRows,
             init,
         };
+    })();
+
+    window.dashboardDocumentPreview = (() => {
+        const modal = document.querySelector('[data-document-preview-modal]');
+        const titleNode = modal?.querySelector('[data-document-preview-title]');
+        const subtitleNode = modal?.querySelector('[data-document-preview-subtitle]');
+        const contentNode = modal?.querySelector('[data-document-preview-content]');
+        const body = document.body;
+
+        const escapeHtml = (value) => String(value ?? '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#039;');
+
+        const decodeAttribute = (value) => {
+            const textarea = document.createElement('textarea');
+            textarea.innerHTML = value || '';
+            return textarea.value;
+        };
+
+        const normalize = (value) => {
+            if (value === null || value === undefined || value === '') {
+                return null;
+            }
+
+            if (typeof value === 'string') {
+                const trimmed = value.trim();
+
+                if (trimmed.startsWith('{')) {
+                    try {
+                        return normalize(JSON.parse(trimmed));
+                    } catch {
+                        return null;
+                    }
+                }
+
+                if (/^(https?:\/\/|\/storage\/|storage\/|tunnels\/docs\/).+\.(pdf|jpe?g|png|webp)(\?.*)?$/i.test(trimmed)) {
+                    return {
+                        path: trimmed,
+                        file_name: trimmed.split('/').pop(),
+                        mime_type: '',
+                    };
+                }
+
+                return null;
+            }
+
+            if (Array.isArray(value)) {
+                return value.map(normalize).find(Boolean) || null;
+            }
+
+            if (typeof value !== 'object') {
+                return null;
+            }
+
+            const fallbackValue = typeof value.value === 'string' && /\.(pdf|jpe?g|png|webp)(\?.*)?$/i.test(value.value)
+                ? value.value
+                : null;
+            const url = value.path || value.url || fallbackValue;
+
+            if (!url) {
+                return null;
+            }
+
+            return {
+                url: String(url),
+                path: value.path ? String(value.path) : null,
+                file_name: String(value.file_name || value.name || String(url).split('/').pop() || 'Dokumen'),
+                mime_type: value.mime_type ? String(value.mime_type) : '',
+            };
+        };
+
+        const encodePath = (path) => String(path)
+            .split('/')
+            .filter((segment) => segment !== '')
+            .map((segment) => encodeURIComponent(segment))
+            .join('/');
+
+        const storagePathFromRaw = (raw) => {
+            const trimmed = String(raw || '').trim();
+
+            if (!trimmed) {
+                return null;
+            }
+
+            if (/^https?:\/\//i.test(trimmed)) {
+                try {
+                    const parsed = new URL(trimmed);
+
+                    if (parsed.pathname.startsWith('/storage/tunnels/docs/')) {
+                        return parsed.pathname.replace(/^\/storage\//, '');
+                    }
+                } catch {
+                    return null;
+                }
+
+                return null;
+            }
+
+            let normalized = trimmed.replace(/^\/+/, '');
+
+            if (normalized.startsWith('storage/')) {
+                normalized = normalized.slice('storage/'.length);
+            }
+
+            return normalized.startsWith('tunnels/docs/') ? normalized : null;
+        };
+
+        const previewUrl = (documentFile) => {
+            const raw = documentFile.path || documentFile.url || '';
+            const storagePath = storagePathFromRaw(raw);
+
+            if (storagePath) {
+                return `/dashboard/master-data/terowongan/documents/${encodePath(storagePath)}`;
+            }
+
+            if (/^https?:\/\//i.test(raw) || raw.startsWith('/')) {
+                return raw;
+            }
+
+            if (raw.startsWith('storage/')) {
+                return `/${raw}`;
+            }
+
+            return `/storage/${raw}`;
+        };
+
+        const isImage = (document, url) => /^image\//i.test(document.mime_type || '') || /\.(jpe?g|png|webp)(\?.*)?$/i.test(url);
+
+        const render = (value, fallbackLabel = 'Dokumen') => {
+            const document = normalize(value);
+
+            if (!document) {
+                return escapeHtml(fallbackLabel === 'Dokumen' ? '-' : fallbackLabel);
+            }
+
+            const url = previewUrl(document);
+            const label = document.file_name || fallbackLabel || 'Dokumen';
+
+            return `
+                <button class="document-preview-button" type="button" data-document-preview data-document-url="${escapeHtml(url)}" data-document-title="${escapeHtml(label)}" data-document-mime="${escapeHtml(document.mime_type || '')}">
+                    <svg class="icon" viewBox="0 0 24 24"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v6h6"/><path d="M9 14h6"/><path d="M9 18h4"/></svg>
+                    <span class="document-preview-label">${escapeHtml(label)}</span>
+                </button>
+            `;
+        };
+
+        const open = (url, title, mimeType = '') => {
+            if (!modal || !contentNode) {
+                return;
+            }
+
+            const label = title || 'Dokumen';
+
+            if (titleNode) {
+                titleNode.textContent = label;
+            }
+
+            if (subtitleNode) {
+                subtitleNode.textContent = 'Preview dokumen terunggah';
+            }
+
+            contentNode.innerHTML = isImage({ mime_type: mimeType }, url)
+                ? `<img class="document-preview-image" src="${escapeHtml(url)}" alt="${escapeHtml(label)}">`
+                : `<iframe class="document-preview-frame" src="${escapeHtml(url)}" title="${escapeHtml(label)}"></iframe>`;
+
+            modal.classList.add('is-open');
+            modal.setAttribute('aria-hidden', 'false');
+            body.classList.add('modal-open');
+        };
+
+        const close = () => {
+            if (!modal) {
+                return;
+            }
+
+            window.dashboardModalA11y?.prepareClose(modal);
+            modal.classList.remove('is-open');
+            modal.setAttribute('aria-hidden', 'true');
+
+            if (contentNode) {
+                contentNode.innerHTML = '';
+            }
+
+            if (!document.querySelector('.modal.is-open')) {
+                body.classList.remove('modal-open');
+            }
+        };
+
+        modal?.querySelectorAll('[data-modal-close]').forEach((button) => {
+            button.addEventListener('click', close);
+        });
+
+        document.addEventListener('click', (event) => {
+            const trigger = event.target.closest('[data-document-preview]');
+
+            if (!trigger) {
+                return;
+            }
+
+            open(
+                decodeAttribute(trigger.dataset.documentUrl || ''),
+                decodeAttribute(trigger.dataset.documentTitle || 'Dokumen'),
+                decodeAttribute(trigger.dataset.documentMime || ''),
+            );
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && modal?.classList.contains('is-open')) {
+                close();
+            }
+        });
+
+        return { render, normalize, open };
     })();
 
     window.dashboardModalA11y = {
@@ -7311,6 +7590,7 @@
                             <div class="inline-actions tunnel-row-actions">
                                 <button class="inline-button" type="button" data-tunnel-row-action="view" data-tunnel-id="${escapeHtml(row.tunnel_id)}">Lihat</button>
                                 <button class="inline-button" type="button" data-tunnel-row-action="edit" data-tunnel-id="${escapeHtml(row.tunnel_id)}">Edit</button>
+                                <button class="inline-button danger" type="button" data-tunnel-row-action="delete" data-tunnel-id="${escapeHtml(row.tunnel_id)}">Hapus</button>
                             </div>
                         </td>
                     </tr>
@@ -7382,6 +7662,14 @@
                 return '<div class="detail-empty">Belum ada data pada bagian ini.</div>';
             }
 
+            const renderDetailValue = (label, value, key = '') => {
+                if (window.dashboardDocumentPreview?.normalize(value)) {
+                    return window.dashboardDocumentPreview.render(value, label);
+                }
+
+                return escapeHtml(formatValue(value, key || ''));
+            };
+
             const tableHtml = `
                 <div class="detail-table-wrap">
                     <table class="detail-kv-table">
@@ -7389,7 +7677,7 @@
                             ${rows.map(([label, value, key]) => `
                                 <tr>
                                     <th>${escapeHtml(label)}</th>
-                                    <td>${escapeHtml(formatValue(value, key || ''))}</td>
+                                    <td>${renderDetailValue(label, value, key)}</td>
                                 </tr>
                             `).join('')}
                         </tbody>
@@ -7579,6 +7867,36 @@
             }
         };
 
+        const deleteRecord = async (tunnelId) => {
+            if (!tunnelId || !config.delete_endpoint) {
+                return;
+            }
+
+            const record = state.rows.find((row) => String(row.tunnel_id) === String(tunnelId));
+            const label = record?.nama_terowongan || record?.nomor_bh || tunnelId;
+
+            if (!window.confirm(`Hapus data terowongan ${label}?`)) {
+                return;
+            }
+
+            setLoadingState(true);
+
+            try {
+                await fetchJson(config.delete_endpoint.replace('__tunnel__', encodeURIComponent(tunnelId)), {
+                    method: 'DELETE',
+                });
+
+                if (state.rows.length === 1 && state.page > 1) {
+                    state.page -= 1;
+                }
+
+                await loadRecords();
+            } catch (errorPayload) {
+                setLoadingState(false);
+                window.alert(extractErrorMessage(errorPayload));
+            }
+        };
+
         renderHeader();
         renderPagination();
         loadRecords();
@@ -7690,10 +8008,16 @@
 
             if (trigger.dataset.tunnelRowAction === 'view') {
                 openDetail(trigger.dataset.tunnelId);
+                return;
             }
 
             if (trigger.dataset.tunnelRowAction === 'edit') {
                 openEditForm(trigger.dataset.tunnelId);
+                return;
+            }
+
+            if (trigger.dataset.tunnelRowAction === 'delete') {
+                deleteRecord(trigger.dataset.tunnelId);
             }
         });
 
@@ -9506,6 +9830,14 @@
             `;
         };
 
+        const renderCellValue = (value, column) => {
+            if (window.dashboardDocumentPreview?.normalize(value)) {
+                return window.dashboardDocumentPreview.render(value, prettify(column));
+            }
+
+            return escapeHtml(formatValue(value, column));
+        };
+
         const renderRows = () => {
             const totalColumns = columns.length + 1;
 
@@ -9526,24 +9858,26 @@
                     <tr>
                         ${columns.map((column, index) => {
                             const value = data[column] ?? row[column] ?? null;
+                            const cellValue = renderCellValue(value, column);
 
                             if (index === 0) {
                                 return `
                                     <td>
                                         <div class="row-title">
-                                            <strong>${escapeHtml(formatValue(value, column))}</strong>
+                                            <strong>${cellValue}</strong>
                                             <span>${escapeHtml(formatValue(data.tunnel_id ?? data.kode_aset ?? row.row_key))}</span>
                                         </div>
                                     </td>
                                 `;
                             }
 
-                            return `<td>${escapeHtml(formatValue(value, column))}</td>`;
+                            return `<td>${cellValue}</td>`;
                         }).join('')}
-                        <td>
-                            <div class="inline-actions">
+                        <td class="tunnel-actions-cell">
+                            <div class="inline-actions tunnel-row-actions">
                                 <button class="inline-button" type="button" data-tunnel-source-table-view="${escapeHtml(row.row_key)}">Lihat</button>
                                 <button class="inline-button" type="button" data-tunnel-source-table-edit="${escapeHtml(row.row_key)}">Edit</button>
+                                <button class="inline-button danger" type="button" data-tunnel-source-table-delete="${escapeHtml(row.row_key)}">Hapus</button>
                             </div>
                         </td>
                     </tr>
@@ -10036,6 +10370,14 @@
                 return '<div class="detail-empty">Tidak ada field yang bisa ditampilkan.</div>';
             }
 
+            const renderDetailValue = (key, value) => {
+                if (window.dashboardDocumentPreview?.normalize(value)) {
+                    return window.dashboardDocumentPreview.render(value, prettify(key));
+                }
+
+                return escapeHtml(formatValue(value, key));
+            };
+
             const tableHtml = `
                 <div class="detail-table-wrap">
                     <table class="detail-kv-table">
@@ -10043,7 +10385,7 @@
                             ${entries.map(([key, value]) => `
                                 <tr>
                                     <th>${escapeHtml(prettify(key))}</th>
-                                    <td>${escapeHtml(formatValue(value, key))}</td>
+                                    <td>${renderDetailValue(key, value)}</td>
                                 </tr>
                             `).join('')}
                         </tbody>
@@ -10064,6 +10406,37 @@
             viewSubtitle.textContent = `${config.table || 'table'} · ${record.row_key}`;
             viewContent.innerHTML = renderFieldTable(record);
             openModal(viewModal);
+        };
+
+        const deleteRow = async (rowKey) => {
+            if (!rowKey || !config.delete_endpoint) {
+                return;
+            }
+
+            const record = state.rows.find((row) => String(row.row_key) === String(rowKey));
+            const data = record?.data || {};
+            const label = data.nama_terowongan || data.nama || data.nomor_bh || data.kode || data.tunnel_id || rowKey;
+
+            if (!window.confirm(`Hapus row ${label} dari ${config.table || 'tabel terowongan'}?`)) {
+                return;
+            }
+
+            setLoadingState(true);
+
+            try {
+                await fetchJson(config.delete_endpoint.replace('__row__', encodeURIComponent(rowKey)), {
+                    method: 'DELETE',
+                });
+
+                if (state.rows.length === 1 && state.page > 1) {
+                    state.page -= 1;
+                }
+
+                await loadRows();
+            } catch (errorPayload) {
+                setLoadingState(false);
+                window.alert(extractErrorMessage(errorPayload));
+            }
         };
 
         const loadRows = async () => {
@@ -10165,6 +10538,13 @@
         coordinateApplyButton?.addEventListener('click', applyCoordinate);
 
         root.addEventListener('click', (event) => {
+            const deleteTrigger = event.target.closest('[data-tunnel-source-table-delete]');
+
+            if (deleteTrigger) {
+                deleteRow(deleteTrigger.dataset.tunnelSourceTableDelete);
+                return;
+            }
+
             const editTrigger = event.target.closest('[data-tunnel-source-table-edit]');
 
             if (editTrigger) {
